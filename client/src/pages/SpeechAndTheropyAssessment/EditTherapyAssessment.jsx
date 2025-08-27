@@ -140,7 +140,7 @@ const EditTherapyAssessment = () => {
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/therapyAssessments/${id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/therapyAssessments/${id}`);
         const data = response.data;
 
         // Flatten nested objects for state
@@ -322,7 +322,7 @@ const EditTherapyAssessment = () => {
       cleanedFormData.speechSkills = cleanObject(cleanedFormData.speechSkills);
       cleanedFormData.oralMotorAssessment = cleanObject(cleanedFormData.oralMotorAssessment);
 
-      await axios.put(`http://localhost:5000/api/therapyAssessments/${id}`, cleanedFormData);
+      await axios.put(`${import.meta.env.VITE_API_URL}/therapyAssessments/${id}`, cleanedFormData);
       alert("Therapy assessment updated successfully!");
       navigate(`/therapy-assessments/${id}`); // Go back to view the updated record
     } catch (err) {

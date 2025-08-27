@@ -1,18 +1,16 @@
-// client/src/pages/ManageUsers/ManageUser.jsx
-import React, { useEffect, useState, useMemo } from 'react'; // Added useMemo
+import React, { useEffect, useState, useMemo } from 'react'; 
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import debounce from 'lodash/debounce'; 
 
 export default function ManageUser() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-
-  // State for Filters and Sort
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterUserType, setFilterUserType] = useState(''); // Stores selected user type for filtering
-  const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'ascending' }); // Default sort
+  const [filterUserType, setFilterUserType] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'ascending' });
 
   const navigate = useNavigate();
 
@@ -24,14 +22,11 @@ export default function ManageUser() {
     try {
       setLoading(true);
       setError('');
-      // Fetch all users; filtering, sorting, and searching will be done client-side for simplicity.
-      // For large datasets, consider server-side filtering/sorting.
       const response = await axios.get('http://localhost:5000/api/users');
       setUsers(response.data);
       setLoading(false);
     } catch (err) {
-      console.error('Error fetching users:', err.response ? err.response.data : err.message);
-      setError(err.response && err.response.data && err.response.data.message ? err.response.data.message : 'Failed to load users.');
+      setError('Failed to load users.');
       setLoading(false);
     }
   };
@@ -40,37 +35,34 @@ export default function ManageUser() {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
         setMessage('');
-        const response = await axios.delete(`http://localhost:5000/api/users/${userId}`);
-        setMessage(response.data.message);
-        fetchUsers(); // Re-fetch users to update the list
+        await axios.delete(`http://localhost:5000/api/users/${userId}`);
+        setMessage('User deleted successfully.');
+        fetchUsers();
       } catch (err) {
-        console.error('Error deleting user:', err.response ? err.response.data : err.message);
-        setError(err.response && err.response.data && err.response.data.message ? err.response.data.message : 'Failed to delete user.');
+        setError('Failed to delete user.');
       }
     }
   };
 
   const handleEdit = (userId) => {
-    alert(`Edit user with ID: ${userId} (Implementation for edit page navigation needed)`);
+    navigate(`/dashboard/manage-users/edit/${userId}`);
   };
 
   const handleAddNewUserClick = () => {
     navigate('/dashboard/manage-users/add');
   };
 
-  // User Type options (should match backend enum)
   const userTypeOptions = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
 
-  // Memoized filtering and sorting logic
+  const handleSearch = debounce((e) => setSearchTerm(e.target.value), 500);
+
   const filteredAndSortedUsers = useMemo(() => {
     let currentUsers = [...users];
 
-    // 1. Filter by User Type
     if (filterUserType) {
       currentUsers = currentUsers.filter(user => user.userType === filterUserType);
     }
 
-    // 2. Search
     if (searchTerm) {
       const lowercasedSearchTerm = searchTerm.toLowerCase();
       currentUsers = currentUsers.filter(user =>
@@ -83,7 +75,6 @@ export default function ManageUser() {
       );
     }
 
-    // 3. Sort
     if (sortConfig.key) {
       currentUsers.sort((a, b) => {
         const aValue = a[sortConfig.key] || '';
@@ -117,9 +108,14 @@ export default function ManageUser() {
     return '';
   };
 
+  const resetFilters = () => {
+    setSearchTerm('');
+    setFilterUserType('');
+    setSortConfig({ key: 'firstName', direction: 'ascending' });
+  };
 
   if (loading) {
-    return <div style={styles.container}><p>Loading users...</p></div>;
+    return <div style={styles.container}><p>Loading...</p></div>;
   }
 
   if (error) {
@@ -130,11 +126,13 @@ export default function ManageUser() {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.heading}>Users List</h1>
-        <button onClick={handleAddNewUserClick} style={styles.addButton}>Add New User</button>
+        <div style={styles.headerActions}>
+          <button onClick={handleAddNewUserClick} style={styles.addButton}>Add New User</button>
+          <button onClick={resetFilters} style={styles.resetButton}>Reset Filters</button>
+        </div>
       </div>
       {message && <p style={styles.successMessage}>{message}</p>}
 
-      {/* Filters and Search Section */}
       <div style={styles.filterSortSection}>
         <div style={styles.filterSortGroup}>
           <label htmlFor="search" style={styles.label}>Search:</label>
@@ -143,7 +141,7 @@ export default function ManageUser() {
             id="search"
             placeholder="Search users..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={handleSearch}
             style={styles.input}
           />
         </div>
@@ -187,7 +185,6 @@ export default function ManageUser() {
         </div>
       </div>
 
-
       {filteredAndSortedUsers.length === 0 ? (
         <p>No users found matching your criteria.</p>
       ) : (
@@ -225,141 +222,155 @@ export default function ManageUser() {
   );
 }
 
-// Basic inline styles
 const styles = {
-    container: {
-      maxWidth: '1200px', // Increased max-width for filters
-      margin: '50px auto',
-      padding: '20px',
-      border: '1px solid #ccc',
-      borderRadius: '8px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      backgroundColor: '#fff',
+  container: {
+    maxWidth: '1200px',
+    margin: '50px auto',
+    padding: '20px',
+    border: '1px solid #ccc',
+    borderRadius: '8px',
+    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+    backgroundColor: '#fff',
+  },
+  header: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '20px',
+  },
+  heading: {
+    color: '#333',
+    fontSize: '24px',
+    fontWeight: '600',
+  },
+  headerActions: {
+    display: 'flex',
+    gap: '10px',
+  },
+  addButton: {
+    padding: '10px 15px',
+    backgroundColor: '#28a745',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  resetButton: {
+    padding: '10px 15px',
+    backgroundColor: '#6c757d',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+  },
+  filterSortSection: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '20px',
+    marginBottom: '20px',
+    padding: '15px',
+    border: '1px solid #eee',
+    borderRadius: '8px',
+    backgroundColor: '#f9f9f9',
+  },
+  filterSortGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: '200px',
+  },
+  label: {
+    marginBottom: '5px',
+    fontWeight: 'bold',
+    color: '#555',
+  },
+  input: {
+    padding: '8px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+  },
+  select: {
+    padding: '8px',
+    border: '1px solid #ddd',
+    borderRadius: '4px',
+    fontSize: '14px',
+    backgroundColor: '#fff',
+  },
+  sortDirectionButton: {
+    padding: '8px 12px',
+    backgroundColor: '#007bff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '14px',
+    marginTop: '10px',
+  },
+  table: {
+    width: '100%',
+    borderCollapse: 'collapse',
+    marginTop: '20px',
+  },
+  th: {
+    backgroundColor: '#f2f2f2',
+    border: '1px solid #ddd',
+    padding: '12px',
+    textAlign: 'left',
+    fontWeight: 'bold',
+    color: '#555',
+    cursor: 'pointer',
+  },
+  td: {
+    border: '1px solid #ddd',
+    padding: '10px',
+    textAlign: 'left',
+  },
+  tdActions: {
+    border: '1px solid #ddd',
+    padding: '10px',
+    textAlign: 'center',
+    whiteSpace: 'nowrap',
+  },
+  tr: {
+    '&:nth-child(even)': {
+      backgroundColor: '#f9f9f9',
     },
-    header: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '20px',
-    },
-    heading: {
-      color: '#333',
-    },
-    addButton: {
-      padding: '10px 15px',
-      backgroundColor: '#28a745',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '16px',
-    },
-    filterSortSection: {
-        display: 'flex',
-        flexWrap: 'wrap', // Allow items to wrap to the next line
-        gap: '20px', // Space between filter/sort groups
-        marginBottom: '20px',
-        padding: '15px',
-        border: '1px solid #eee',
-        borderRadius: '8px',
-        backgroundColor: '#f9f9f9',
-    },
-    filterSortGroup: {
-        display: 'flex',
-        flexDirection: 'column',
-        minWidth: '200px', // Minimum width for each group
-    },
-    label: {
-        marginBottom: '5px',
-        fontWeight: 'bold',
-        color: '#555',
-    },
-    input: {
-        padding: '8px',
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        fontSize: '14px',
-    },
-    select: {
-        padding: '8px',
-        border: '1px solid #ddd',
-        borderRadius: '4px',
-        fontSize: '14px',
-        backgroundColor: '#fff',
-    },
-    sortDirectionButton: {
-        padding: '8px 12px',
-        backgroundColor: '#007bff',
-        color: 'white',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontSize: '14px',
-        marginTop: '10px', // Space from select box
-    },
-    table: {
-      width: '100%',
-      borderCollapse: 'collapse',
-      marginTop: '20px',
-    },
-    th: {
-      backgroundColor: '#f2f2f2',
-      border: '1px solid #ddd',
-      padding: '12px',
-      textAlign: 'left',
-      fontWeight: 'bold',
-      color: '#555',
-      cursor: 'pointer', // Indicate sortable columns
-    },
-    td: {
-      border: '1px solid #ddd',
-      padding: '10px',
-      textAlign: 'left',
-    },
-    tdActions: {
-      border: '1px solid #ddd',
-      padding: '10px',
-      textAlign: 'center',
-      whiteSpace: 'nowrap',
-    },
-    tr: {
-      '&:nth-child(even)': {
-        backgroundColor: '#f9f9f9',
-      },
-    },
-    editButton: {
-      padding: '8px 12px',
-      backgroundColor: '#ffc107',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      marginRight: '5px',
-    },
-    deleteButton: {
-      padding: '8px 12px',
-      backgroundColor: '#dc3545',
-      color: 'white',
-      border: 'none',
-      borderRadius: '4px',
-      cursor: 'pointer',
-    },
-    successMessage: {
-      color: 'green',
-      backgroundColor: '#e6ffe6',
-      border: '1px solid green',
-      padding: '10px',
-      borderRadius: '5px',
-      marginBottom: '15px',
-      textAlign: 'center',
-    },
-    errorMessage: {
-      color: 'red',
-      backgroundColor: '#ffe6e6',
-      border: '1px solid red',
-      padding: '10px',
-      borderRadius: '5px',
-      marginBottom: '15px',
-      textAlign: 'center',
-    },
-  };
+  },
+  editButton: {
+    padding: '8px 12px',
+    backgroundColor: '#ffc107',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    marginRight: '5px',
+  },
+  deleteButton: {
+    padding: '8px 12px',
+    backgroundColor: '#dc3545',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+  },
+  successMessage: {
+    color: 'green',
+    backgroundColor: '#e6ffe6',
+    border: '1px solid green',
+    padding: '10px',
+    borderRadius: '5px',
+    marginBottom: '15px',
+    textAlign: 'center',
+  },
+  errorMessage: {
+    color: 'red',
+    backgroundColor: '#ffe6e6',
+    border: '1px solid red',
+    padding: '10px',
+    borderRadius: '5px',
+    marginBottom: '15px',
+    textAlign: 'center',
+  },
+};

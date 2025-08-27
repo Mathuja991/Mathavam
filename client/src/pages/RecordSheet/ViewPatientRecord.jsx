@@ -14,7 +14,7 @@ const ViewPatientRecord = () => {
     useEffect(() => {
         const fetchRecord = async () => {
             try {
-                const response = await axios.get(`http://localhost:5000/api/patientRecords/${id}`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/patientRecords/${id}`);
                 setRecord(response.data);
                 setLoading(false);
             } catch (err) {
@@ -30,7 +30,7 @@ const ViewPatientRecord = () => {
     const handleDelete = async () => {
         if (window.confirm('Are you sure you want to permanently delete this patient record?')) {
             try {
-                await axios.delete(`http://localhost:5000/api/patientRecords/${id}`);
+                await axios.delete(`${import.meta.env.VITE_API_URL}/patientRecords/${id}`);
                 alert('Patient record deleted successfully!');
                 navigate('/patient-records'); // Redirect to the list after deletion
             } catch (err) {
@@ -118,7 +118,7 @@ const ViewPatientRecord = () => {
             <h2 className="text-4xl font-extrabold text-center text-blue-900 mb-10">Patient Record Details</h2>
             <div className="flex justify-between items-center mb-6">
                 <Link 
-                    to="/patient-records" 
+                    to="/dashboard/patient-records" 
                     className="px-5 py-2 bg-gray-300 text-gray-800 font-semibold rounded-md shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-200"
                 >
                     ← Back to List

@@ -5,7 +5,7 @@ const forms = [
   { 
     name: "Patient Record Form", 
     newPath: "../record-sheet", 
-    previousPath: "/patient-records",
+    previousPath: "../patient-records",
     progressPath: null // No specific progress path provided
   },
   { 
@@ -17,26 +17,26 @@ const forms = [
   { 
     name: "Sensory Profile", 
     newPath: "../sensory-profile-fill-form", 
-    previousPath: "/sensory-profile/read", 
+    previousPath: "../sensory-profile-view", 
     progressPath: null 
   },
   { 
     name: "Autism Rating Form (CARS)", 
-    newPath: "/forms/carsform", 
-    previousPath: "/carsformprevious-entries", 
-    progressPath: "/cars-progress" 
+    newPath: "../forms/carsform", 
+    previousPath: "../carsformprevious-entries", 
+    progressPath: "../cars-progress" 
   },
   { 
     name: "Mathavam Flowchart", 
-    newPath: "/forms/mathavamflowchart", 
-    previousPath: "/mathavamflowchartprevious-entries", 
+    newPath: "../forms/mathavamflowchart", 
+    previousPath: "../mathavamflowchartprevious-entries", 
     progressPath: null 
   },
   { 
     name: "Behavioral Checklist (BC)", 
-    newPath: "/forms/bc", 
-    previousPath: "/bcprevious-entries", 
-    progressPath: "/bc-progress" 
+    newPath: "../forms/bc", 
+    previousPath: "../bcprevious-entries", 
+    progressPath: "../bc-progress" 
   },
 ];
 

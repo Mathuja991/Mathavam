@@ -12,7 +12,7 @@ const ViewTherapyAssessment = () => {
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/therapyAssessments/${id}`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/therapyAssessments/${id}`);
         setAssessment(response.data);
         setLoading(false);
       } catch (err) {
@@ -28,7 +28,7 @@ const ViewTherapyAssessment = () => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to permanently delete this therapy assessment record?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/therapyAssessments/${id}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/therapyAssessments/${id}`);
         alert("Therapy assessment record deleted successfully!");
         navigate("/therapy-assessments"); // Redirect to the list after deletion
       } catch (err) {

@@ -15,7 +15,7 @@ const BehaviorPrevious = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/bc/");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/bc/`);
         const data = await res.json();
         setEntries(data);
         setFiltered(data);
@@ -54,7 +54,7 @@ const BehaviorPrevious = () => {
     if (!window.confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/bc/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/bc/${id}`, {
         method: "DELETE",
       });
 

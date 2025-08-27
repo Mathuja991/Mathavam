@@ -14,7 +14,7 @@ const TherapyAssessmentList = () => {
 
   const fetchAssessments = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/therapyAssessments");
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/therapyAssessments`);
       setAssessments(response.data);
       setLoading(false);
     } catch (err) {
@@ -27,7 +27,7 @@ const TherapyAssessmentList = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this therapy assessment record?")) {
       try {
-        await axios.delete(`http://localhost:5000/api/therapyAssessments/${id}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/therapyAssessments/${id}`);
         alert("Therapy assessment record deleted successfully!");
         fetchAssessments(); // Refresh the list after deletion
       } catch (err) {

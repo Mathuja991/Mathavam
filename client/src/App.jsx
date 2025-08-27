@@ -50,7 +50,6 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Route for LoginForm - No Dashboard Layout */}
         <Route path="/" element={<LoginForm />} />
 
         {/* Dashboard Layout - All nested routes will render inside the Dashboard's Outlet */}
@@ -64,7 +63,10 @@ function App() {
           <Route path="skill-assessment" element={<SkillAssessmentFlow />} /> {/* This seems like a specific flow, consider if it needs the full layout */}
           <Route path="patient-records" element={<PatientRecordList />} />
           <Route path="patient-records/new" element={<PatientRecordForm />} />
+
           <Route path="patient-records/:id" element={<ViewPatientRecord />} />
+
+          
           <Route path="patient-records/edit/:id" element={<PatientRecordForm />} />
           <Route path="manage-users" element={<ManageUser />} />
           <Route path="manage-users/add" element={<AddNewUser />} />
@@ -75,6 +77,7 @@ function App() {
           <Route path="appointments/session-booking" element={<SessionBookingForm />} /> 
           <Route path="therapy-assessments-list" element={<TherapyAssessmentList />} /> 
           <Route path="therapy-assessments/:id" element={<ViewTherapyAssessment />} /> 
+
 
 
           {/* New Appointment Routes for Specific User Types */}

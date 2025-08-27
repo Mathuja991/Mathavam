@@ -29,7 +29,7 @@ const AllAppointmentsList = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get('http://localhost:5000/api/appointments');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/appointments`);
       setAppointments(response.data.data);
       setLoading(false);
     } catch (err) {
@@ -44,7 +44,7 @@ const AllAppointmentsList = () => {
         return;
     }
     try {
-        await axios.put(`http://localhost:5000/api/appointments/${appointmentId}/status`, { status: newStatus });
+        await axios.put(`${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`, { status: newStatus });
         alert('Appointment status updated successfully!');
         fetchAllAppointments(); // Re-fetch to update list
     } catch (err) {
@@ -58,7 +58,7 @@ const AllAppointmentsList = () => {
         return;
     }
     try {
-        await axios.delete(`http://localhost:5000/api/appointments/${appointmentId}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/appointments/${appointmentId}`);
         alert('Appointment deleted successfully!');
         fetchAllAppointments(); // Re-fetch to update list
     } catch (err) {

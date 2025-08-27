@@ -188,7 +188,7 @@ export default function OralmotorAssessment({ navigateBackToSpeech }) {
 
       console.log("Final Data to Send to Backend:", dataToSendToBackend);
 
-      const response = await fetch("http://localhost:5000/api/therapyAssessments", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/therapyAssessments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

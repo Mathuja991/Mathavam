@@ -109,7 +109,7 @@ function SensoryProfileReadPage() { // <--- This opens a function block
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <Link
-                      to = {`/sensory-profile/edit/${assessment._id}`}
+                      to = {`../sensory-profile/edit/${assessment._id}`}
                       className="text-indigo-600 hover:text-indigo-900 mr-4"
                     >
                       Edit
