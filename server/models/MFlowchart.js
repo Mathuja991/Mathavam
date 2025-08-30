@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
 const sectionSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -16,4 +16,4 @@ const MFlowchartSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-export default mongoose.model("MFlowchart", MFlowchartSchema);
+module.exports = mongoose.model('MFlowchart', MFlowchartSchema);

@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require('mongoose');
 
 const behaviorChecklistSchema = new mongoose.Schema(
   {
@@ -12,16 +12,13 @@ const behaviorChecklistSchema = new mongoose.Schema(
     mood: [String],
     selfRegulation: [String],
     challenging: [String],
-    selfInjury: [String], // ← FIXED: now accepts arrays
+    selfInjury: [String], // accepts arrays
     scores: { type: Object },
     severity: { type: String },
   },
   { timestamps: true }
 );
 
-const BehaviorChecklist = mongoose.model(
-  "BehaviorChecklist",
-  behaviorChecklistSchema
-);
+const BehaviorChecklist = mongoose.model('BehaviorChecklist', behaviorChecklistSchema);
 
-export default BehaviorChecklist;
+module.exports = BehaviorChecklist;

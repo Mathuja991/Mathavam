@@ -1,7 +1,7 @@
-import BehaviorChecklist from "../models/BehaviorChecklist.js";
+const BehaviorChecklist = require('../models/BehaviorChecklist');
 
 // POST handler
-export const submitChecklist = async (req, res) => {
+const submitChecklist = async (req, res) => {
   try {
     console.log("Incoming Data:", req.body);
 
@@ -52,11 +52,8 @@ export const submitChecklist = async (req, res) => {
   }
 };
 
-
-
-
-// (Optional) GET handler if you want to retrieve all entries
-export const getAllEntries = async (req, res) => {
+// GET all entries
+const getAllEntries = async (req, res) => {
   try {
     const entries = await BehaviorChecklist.find();
     res.json(entries);
@@ -65,10 +62,10 @@ export const getAllEntries = async (req, res) => {
   }
 };
 
-export const deleteEntry = async (req, res) => {
+// DELETE entry by ID
+const deleteEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    
 
     const deletedEntry = await BehaviorChecklist.findByIdAndDelete(id);
 
@@ -81,7 +78,9 @@ export const deleteEntry = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-export const updateEntry = async (req, res) => {
+
+// UPDATE entry by ID
+const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const updated = await BehaviorChecklist.findByIdAndUpdate(id, req.body, {
@@ -100,7 +99,8 @@ export const updateEntry = async (req, res) => {
   }
 };
 
-export const getEntryById = async (req, res) => {
+// GET entry by ID
+const getEntryById = async (req, res) => {
   try {
     console.log("Fetching entry with ID:", req.params.id);  // <-- debug log
     const entry = await BehaviorChecklist.findById(req.params.id);
@@ -113,4 +113,13 @@ export const getEntryById = async (req, res) => {
     console.error("Error fetching entry by ID:", err);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// Exporting all functions in CommonJS
+module.exports = {
+  submitChecklist,
+  getAllEntries,
+  deleteEntry,
+  updateEntry,
+  getEntryById,
 };

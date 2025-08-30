@@ -1,7 +1,7 @@
-import MFlowchart from "../models/MFlowchart.js";
+const MFlowchart = require('../models/MFlowchart');
 
 // @desc Submit Mathavam Flowchart
-export const submitMFlowchart = async (req, res) => {
+const submitMFlowchart = async (req, res) => {
   try {
     const { name, childNo, age, gender, date, ...rest } = req.body;
 
@@ -28,7 +28,7 @@ export const submitMFlowchart = async (req, res) => {
 };
 
 // @desc Get all entries
-export const getMFlowchart = async (req, res) => {
+const getMFlowchart = async (req, res) => {
   try {
     const forms = await MFlowchart.find();
     res.json(forms);
@@ -38,7 +38,7 @@ export const getMFlowchart = async (req, res) => {
 };
 
 // @desc Get by ID
-export const getMFlowchartById = async (req, res) => {
+const getMFlowchartById = async (req, res) => {
   try {
     const form = await MFlowchart.findById(req.params.id);
     if (!form) return res.status(404).json({ message: "Form not found" });
@@ -47,10 +47,11 @@ export const getMFlowchartById = async (req, res) => {
     res.status(500).json({ message: "Error fetching form", error: err.message });
   }
 };
-export const deleteEntry = async (req, res) => {
+
+// @desc Delete an entry by ID
+const deleteEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    
 
     const deletedEntry = await MFlowchart.findByIdAndDelete(id);
 
@@ -63,19 +64,41 @@ export const deleteEntry = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-export const updateEntry = async (req, res) => {
+
+const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    const updated = await MFlowchart.findByIdAndUpdate(id, req.body, {
-      new: true, // return the updated document
-      runValidators: true, // enforce schema validation
-    });
+    const { childNo, name, age, gender, date, sections } = req.body;
 
-    if (!updated) {
+    const entry = await MFlowchart.findById(id);
+    if (!entry) {
       return res.status(404).json({ message: 'Entry not found' });
     }
 
-    res.status(200).json(updated);
+    sections.forEach((incomingSection) => {
+      const existingSection = entry.sections.find(
+        (s) => s.name === incomingSection.name
+      );
+
+      if (existingSection) {
+        // ✅ Update specific date by index
+        if (
+          existingSection.dates[incomingSection.index] !== undefined
+        ) {
+          existingSection.dates[incomingSection.index] = incomingSection.newDate;
+        }
+      }
+    });
+
+    entry.childNo = childNo;
+    entry.name = name;
+    entry.age = age;
+    entry.gender = gender;
+    entry.date = date;
+
+    const updatedEntry = await entry.save();
+
+    res.status(200).json(updatedEntry);
   } catch (error) {
     console.error('Update failed:', error);
     res.status(500).json({ message: 'Server error while updating entry' });
@@ -83,10 +106,10 @@ export const updateEntry = async (req, res) => {
 };
 
 
-
-export const getEntryById = async (req, res) => {
+// @desc Get an entry by ID (duplicate handler, keeping for reference)
+const getEntryById = async (req, res) => {
   try {
-    console.log("Fetching entry with ID:", req.params.id);  // <-- debug log
+    console.log("Fetching entry with ID:", req.params.id);
     const entry = await MFlowchart.findById(req.params.id);
     if (!entry) {
       console.log("Entry not found for ID:", req.params.id);
@@ -97,4 +120,14 @@ export const getEntryById = async (req, res) => {
     console.error("Error fetching entry by ID:", err);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// Export all handlers in CommonJS
+module.exports = {
+  submitMFlowchart,
+  getMFlowchart,
+  getMFlowchartById,
+  deleteEntry,
+  updateEntry,
+  getEntryById,
 };

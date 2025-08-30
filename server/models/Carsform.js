@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const CarsformSchema = new mongoose.Schema({
   name: String,
@@ -14,4 +14,5 @@ const CarsformSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const Carsform = mongoose.model('Carsform', CarsformSchema);
-export default Carsform;
+
+module.exports = Carsform;
