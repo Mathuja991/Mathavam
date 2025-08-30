@@ -1,20 +1,18 @@
 // server/controllers/appointmentController.js (updated)
 
 const Appointment = require('../models/Appointment');
-const User = require('../models/User'); // Assuming User model is available to check roles/practitioners
-const Child = require('../models/Child'); // Assuming Child model is available for patients
+const User = require('../models/User'); 
+const Child = require('../models/Child'); // Now this import will be valid
 
 // @desc    Get all appointments (Admin/Super Admin only)
 // @route   GET /api/appointments
 // @access  Private (Admin/Super Admin)
 exports.getAllAppointments = async (req, res) => {
     try {
-        // In a real app, you would have middleware to check user.userType for authorization
-        // For now, assuming this is accessed by authorized personnel.
         const appointments = await Appointment.find()
-            .populate('patient', 'childRegNo firstName lastName') // Populate child details
-            .populate('practitioner', 'firstName lastName userType') // Populate practitioner details
-            .populate('bookedBy', 'username userType') // Populate who booked it
+            .populate('patient', 'childRegNo firstName lastName') 
+            .populate('practitioner', 'firstName lastName userType') 
+            .populate('bookedBy', 'username userType') 
             .sort({ appointmentDate: 1, startTime: 1 });
         res.status(200).json({ success: true, count: appointments.length, data: appointments });
     } catch (error) {
@@ -48,7 +46,10 @@ exports.getAppointmentById = async (req, res) => {
 // @access  Private (Accessible by Parent, Admin, Resource Person)
 exports.createAppointment = async (req, res) => {
     const { patientId, practitionerId, serviceType, appointmentDate, startTime, endTime, notes } = req.body;
-    const bookedBy = req.user.id; // Assuming user ID is available from authentication middleware (req.user)
+    
+    // TEMPORARY FIX: Hardcode a user ID for testing since authentication is not yet implemented.
+    // REPLACE THIS WITH req.user.id ONCE AUTHENTICATION IS IN PLACE.
+    const bookedBy = '686933fb47094ce160d5b128'; 
 
     // Basic validation
     if (!patientId || !practitionerId || !appointmentDate || !startTime || !endTime || !bookedBy) {
@@ -62,7 +63,7 @@ exports.createAppointment = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid practitioner selected.' });
         }
 
-        // Validate patient (child) exists
+        // Validate patient (child) exists - This is where the error occurred
         const patient = await Child.findById(patientId);
         if (!patient) {
             return res.status(400).json({ success: false, message: 'Invalid patient selected.' });
@@ -76,13 +77,13 @@ exports.createAppointment = async (req, res) => {
         const newAppointment = new Appointment({
             patient: patientId,
             practitioner: practitionerId,
-            serviceType: serviceType || null, // Allow null if not specified
+            serviceType: serviceType || null, 
             appointmentDate,
             startTime,
             endTime,
             notes,
             bookedBy,
-            status: 'Pending' // Default status
+            status: 'Pending'
         });
 
         await newAppointment.save();
@@ -105,21 +106,13 @@ exports.updateAppointment = async (req, res) => {
             return res.status(404).json({ success: false, error: 'Appointment not found' });
         }
 
-        // Basic authorization check (e.g., only Admin or the practitioner associated with the appointment can update)
-        // This will be handled more robustly by middleware later.
-        // For now, assuming req.user.id is available and has permissions.
-        // if (req.user.userType !== 'Admin' && appointment.practitioner.toString() !== req.user.id) {
-        //     return res.status(403).json({ success: false, message: 'Not authorized to update this appointment.' });
-        // }
-
         appointment.patient = patientId || appointment.patient;
         appointment.practitioner = practitionerId || appointment.practitioner;
         appointment.serviceType = serviceType !== undefined ? serviceType : appointment.serviceType;
         appointment.appointmentDate = appointmentDate || appointment.appointmentDate;
         appointment.startTime = startTime || appointment.startTime;
         appointment.endTime = endTime || appointment.endTime;
-        appointment.notes = notes !== undefined ? notes : appointment.notes; // Allow notes to be cleared
-        // Status updates should ideally go through updateAppointmentStatus, but included here for full update
+        appointment.notes = notes !== undefined ? notes : appointment.notes;
         appointment.status = status || appointment.status;
 
         await appointment.save();
@@ -140,11 +133,6 @@ exports.deleteAppointment = async (req, res) => {
         if (!appointment) {
             return res.status(404).json({ success: false, error: 'Appointment not found' });
         }
-
-        // Basic authorization check (similar to update)
-        // if (req.user.userType !== 'Admin' && appointment.practitioner.toString() !== req.user.id) {
-        //     return res.status(403).json({ success: false, message: 'Not authorized to delete this appointment.' });
-        // }
 
         await appointment.deleteOne();
         res.status(200).json({ success: true, data: {}, message: 'Appointment deleted successfully!' });
@@ -174,12 +162,6 @@ exports.updateAppointmentStatus = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Invalid status provided.' });
         }
 
-        // Ensure only authorized users (the practitioner or Admin) can update status
-        // This check will be enhanced with proper middleware later.
-        // if (req.user.userType !== 'Admin' && appointment.practitioner.toString() !== req.user.id) {
-        //     return res.status(403).json({ success: false, message: 'Not authorized to update status for this appointment.' });
-        // }
-
         appointment.status = status;
         await appointment.save();
         res.status(200).json({ success: true, data: appointment, message: `Appointment status updated to ${status}!` });
@@ -200,12 +182,6 @@ exports.getPractitionerAppointments = async (req, res) => {
         if (!practitioner || (!['Doctor', 'Therapist'].includes(practitioner.userType))) {
             return res.status(404).json({ success: false, message: 'Practitioner not found or not a Doctor/Therapist.' });
         }
-
-        // In a real application, ensure the logged-in user is either the practitioner themselves
-        // or an Admin/Super Admin to access this route. (Via middleware)
-        // if (req.user.id !== practitionerId && req.user.userType !== 'Admin' && req.user.userType !== 'Super Admin') {
-        //    return res.status(403).json({ success: false, message: 'Not authorized to view this practitioner\'s appointments.' });
-        // }
 
         const appointments = await Appointment.find({ practitioner: practitionerId })
             .populate('patient', 'childRegNo firstName lastName')
@@ -230,14 +206,6 @@ exports.getPatientAppointments = async (req, res) => {
         if (!patient) {
             return res.status(404).json({ success: false, message: 'Patient (child) not found.' });
         }
-
-        // Authorization: Ensure logged-in user is the parent of this child,
-        // an Admin/Super Admin, or a practitioner involved in the appointment.
-        // This will be handled by middleware.
-        // if (req.user.userType === 'Parent' && patient.parentId.toString() !== req.user.id) {
-        //     return res.status(403).json({ success: false, message: 'Not authorized to view these appointments.' });
-        // }
-
 
         const appointments = await Appointment.find({ patient: patientId })
             .populate('patient', 'childRegNo firstName lastName')
