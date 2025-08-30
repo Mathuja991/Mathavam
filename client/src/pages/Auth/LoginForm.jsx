@@ -13,20 +13,6 @@ import {
 } from "lucide-react";
 import logo from "../../assets/mathavam-logo.png";
 
-/**
- * LoginForm (Enhanced)
- * - Tailwind-first styling (remove inline styles & invalid pseudo styles)
- * - Accessible labels, descriptions, aria-* states
- * - Client validation & helpful errors
- * - Password visibility toggle
- * - CapsLock indicator
- * - Remember me (persists username)
- * - Loading state, disabled button, spinner
- * - Show/hide API errors with icons
- * - Optional redirect param support (?redirect=/dashboard)
- * - Keyboard & screen-reader friendly
- * - Dark mode aware
- */
 export default function LoginForm() {
   const navigate = useNavigate();
   const [search] = useSearchParams();
@@ -103,8 +89,12 @@ export default function LoginForm() {
 
       if (!token) throw new Error("Missing token in response");
 
+      // Check if the user is a Super Admin or Admin to manage users
+      const canManageUsers = user.userType === "Super Admin" || user.userType === "Admin";
+
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user || {}));
+      localStorage.setItem("canManageUsers", canManageUsers);
 
       if (remember) {
         localStorage.setItem("remember_username", formData.username);
@@ -229,11 +219,11 @@ export default function LoginForm() {
               {/* Password */}
               <div>
                 <label
-                    htmlFor="password"
-                    className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
-                  >
-                    Password
-                  </label>
+                  htmlFor="password"
+                  className="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200"
+                >
+                  Password
+                </label>
 
                 <div className="relative">
                   <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">

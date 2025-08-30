@@ -1,16 +1,19 @@
-import React, { useEffect, useState, useMemo } from 'react'; 
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import debounce from 'lodash/debounce'; 
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import debounce from "lodash/debounce";
 
 export default function ManageUser() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [message, setMessage] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterUserType, setFilterUserType] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'ascending' });
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterUserType, setFilterUserType] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "firstName",
+    direction: "ascending",
+  });
 
   const navigate = useNavigate();
 
@@ -21,25 +24,25 @@ export default function ManageUser() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      setError('');
-      const response = await axios.get('http://localhost:5000/api/users');
+      setError("");
+      const response = await axios.get("http://localhost:5000/api/users");
       setUsers(response.data);
       setLoading(false);
     } catch (err) {
-      setError('Failed to load users.');
+      setError("Failed to load users.");
       setLoading(false);
     }
   };
 
   const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+    if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        setMessage('');
+        setMessage("");
         await axios.delete(`http://localhost:5000/api/users/${userId}`);
-        setMessage('User deleted successfully.');
+        setMessage("User deleted successfully.");
         fetchUsers();
       } catch (err) {
-        setError('Failed to delete user.');
+        setError("Failed to delete user.");
       }
     }
   };
@@ -49,42 +52,61 @@ export default function ManageUser() {
   };
 
   const handleAddNewUserClick = () => {
-    navigate('/dashboard/manage-users/add');
+    navigate("/dashboard/manage-users/add");
   };
 
-  const userTypeOptions = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
+  const userTypeOptions = [
+    "Super Admin",
+    "Admin",
+    "Doctor",
+    "Therapist",
+    "Resource Person",
+    "Parent",
+  ];
 
-  const handleSearch = debounce((e) => setSearchTerm(e.target.value), 500);
+  // ✅ Fixed search with debounce
+  const debouncedSearch = useCallback(
+    debounce((val) => setSearchTerm(val), 400),
+    []
+  );
+
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value);
+  };
 
   const filteredAndSortedUsers = useMemo(() => {
     let currentUsers = [...users];
 
     if (filterUserType) {
-      currentUsers = currentUsers.filter(user => user.userType === filterUserType);
+      currentUsers = currentUsers.filter(
+        (user) => user.userType === filterUserType
+      );
     }
 
     if (searchTerm) {
-      const lowercasedSearchTerm = searchTerm.toLowerCase();
-      currentUsers = currentUsers.filter(user =>
-        user.firstName.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.lastName.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.idNumber.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.userType.toLowerCase().includes(lowercasedSearchTerm) ||
-        user.username.toLowerCase().includes(lowercasedSearchTerm) ||
-        (user.childRegNo && user.childRegNo.toLowerCase().includes(lowercasedSearchTerm))
+      const lowercased = searchTerm.toLowerCase();
+      currentUsers = currentUsers.filter(
+        (user) =>
+          user.firstName.toLowerCase().includes(lowercased) ||
+          user.lastName.toLowerCase().includes(lowercased) ||
+          user.idNumber.toLowerCase().includes(lowercased) ||
+          user.userType.toLowerCase().includes(lowercased) ||
+          user.username.toLowerCase().includes(lowercased) ||
+          (user.childRegNo &&
+            user.childRegNo.toLowerCase().includes(lowercased))
       );
     }
 
     if (sortConfig.key) {
       currentUsers.sort((a, b) => {
-        const aValue = a[sortConfig.key] || '';
-        const bValue = b[sortConfig.key] || '';
+        const aValue = a[sortConfig.key] || "";
+        const bValue = b[sortConfig.key] || "";
 
         if (aValue < bValue) {
-          return sortConfig.direction === 'ascending' ? -1 : 1;
+          return sortConfig.direction === "ascending" ? -1 : 1;
         }
         if (aValue > bValue) {
-          return sortConfig.direction === 'ascending' ? 1 : -1;
+          return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
       });
@@ -94,283 +116,217 @@ export default function ManageUser() {
   }, [users, searchTerm, filterUserType, sortConfig]);
 
   const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
+    let direction = "ascending";
+    if (sortConfig.key === key && sortConfig.direction === "ascending") {
+      direction = "descending";
     }
     setSortConfig({ key, direction });
   };
 
   const getSortIndicator = (key) => {
     if (sortConfig.key === key) {
-      return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+      return sortConfig.direction === "ascending" ? " ▲" : " ▼";
     }
-    return '';
+    return "";
   };
 
   const resetFilters = () => {
-    setSearchTerm('');
-    setFilterUserType('');
-    setSortConfig({ key: 'firstName', direction: 'ascending' });
+    setSearchTerm("");
+    setFilterUserType("");
+    setSortConfig({ key: "firstName", direction: "ascending" });
   };
 
   if (loading) {
-    return <div style={styles.container}><p>Loading...</p></div>;
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-gray-500 text-lg animate-pulse">Loading users...</p>
+      </div>
+    );
   }
 
   if (error) {
-    return <div style={styles.container}><p style={styles.errorMessage}>{error}</p></div>;
+    return (
+      <div className="max-w-4xl mx-auto mt-10 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700 text-center">
+        {error}
+      </div>
+    );
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.header}>
-        <h1 style={styles.heading}>Users List</h1>
-        <div style={styles.headerActions}>
-          <button onClick={handleAddNewUserClick} style={styles.addButton}>Add New User</button>
-          <button onClick={resetFilters} style={styles.resetButton}>Reset Filters</button>
-        </div>
-      </div>
-      {message && <p style={styles.successMessage}>{message}</p>}
-
-      <div style={styles.filterSortSection}>
-        <div style={styles.filterSortGroup}>
-          <label htmlFor="search" style={styles.label}>Search:</label>
-          <input
-            type="text"
-            id="search"
-            placeholder="Search users..."
-            value={searchTerm}
-            onChange={handleSearch}
-            style={styles.input}
-          />
-        </div>
-
-        <div style={styles.filterSortGroup}>
-          <label htmlFor="filterUserType" style={styles.label}>Filter by User Type:</label>
-          <select
-            id="filterUserType"
-            value={filterUserType}
-            onChange={(e) => setFilterUserType(e.target.value)}
-            style={styles.select}
-          >
-            <option value="">All User Types</option>
-            {userTypeOptions.map((type) => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={styles.filterSortGroup}>
-          <label htmlFor="sortField" style={styles.label}>Sort By:</label>
-          <select
-            id="sortField"
-            value={sortConfig.key}
-            onChange={(e) => requestSort(e.target.value)}
-            style={styles.select}
-          >
-            <option value="firstName">First Name</option>
-            <option value="lastName">Last Name</option>
-            <option value="idNumber">ID Number</option>
-            <option value="userType">User Type</option>
-            <option value="username">Username</option>
-            <option value="childRegNo">Child Reg No.</option>
-          </select>
+    <div className="max-w-7xl mx-auto p-6 bg-white rounded-2xl shadow-lg">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+        <h1 className="text-3xl font-bold text-gray-800">Users Management</h1>
+        <div className="flex gap-3">
           <button
-            onClick={() => setSortConfig(prev => ({ ...prev, direction: prev.direction === 'ascending' ? 'descending' : 'ascending' }))}
-            style={styles.sortDirectionButton}
+            onClick={handleAddNewUserClick}
+            className="px-5 py-2 bg-green-600 text-white rounded-lg shadow hover:scale-105 hover:bg-green-700 transition"
           >
-            {sortConfig.direction === 'ascending' ? 'Asc ▲' : 'Desc ▼'}
+            + Add New User
+          </button>
+          <button
+            onClick={resetFilters}
+            className="px-5 py-2 bg-gray-500 text-white rounded-lg shadow hover:scale-105 hover:bg-gray-600 transition"
+          >
+            Reset Filters
           </button>
         </div>
       </div>
 
-      {filteredAndSortedUsers.length === 0 ? (
-        <p>No users found matching your criteria.</p>
-      ) : (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th} onClick={() => requestSort('firstName')}>First Name {getSortIndicator('firstName')}</th>
-              <th style={styles.th} onClick={() => requestSort('lastName')}>Last Name {getSortIndicator('lastName')}</th>
-              <th style={styles.th} onClick={() => requestSort('idNumber')}>ID Number {getSortIndicator('idNumber')}</th>
-              <th style={styles.th} onClick={() => requestSort('userType')}>User Type {getSortIndicator('userType')}</th>
-              <th style={styles.th} onClick={() => requestSort('username')}>Username {getSortIndicator('username')}</th>
-              <th style={styles.th} onClick={() => requestSort('childRegNo')}>Child Reg No. {getSortIndicator('childRegNo')}</th>
-              <th style={styles.th}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredAndSortedUsers.map((user) => (
-              <tr key={user._id} style={styles.tr}>
-                <td style={styles.td}>{user.firstName}</td>
-                <td style={styles.td}>{user.lastName}</td>
-                <td style={styles.td}>{user.idNumber}</td>
-                <td style={styles.td}>{user.userType}</td>
-                <td style={styles.td}>{user.username}</td>
-                <td style={styles.td}>{user.childRegNo || 'N/A'}</td>
-                <td style={styles.tdActions}>
-                  <button onClick={() => handleEdit(user._id)} style={styles.editButton}>Edit</button>
-                  <button onClick={() => handleDelete(user._id)} style={styles.deleteButton}>Delete</button>
-                </td>
-              </tr>
+      {message && (
+        <div className="mb-5 p-3 text-green-800 bg-green-100 border border-green-300 rounded-md text-center animate-fade-in">
+          {message}
+        </div>
+      )}
+
+      {/* Filter Section */}
+      <div className="grid md:grid-cols-3 gap-5 p-5 mb-6 border rounded-xl bg-gray-50 shadow-sm">
+        <div className="flex flex-col">
+          <label className="mb-2 text-sm font-medium text-gray-700">
+            Search
+          </label>
+          <input
+            type="text"
+            placeholder="Search users..."
+            onChange={handleSearchChange}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+          />
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-2 text-sm font-medium text-gray-700">
+            Filter by User Type
+          </label>
+          <select
+            value={filterUserType}
+            onChange={(e) => setFilterUserType(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+          >
+            <option value="">All User Types</option>
+            {userTypeOptions.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
             ))}
-          </tbody>
-        </table>
+          </select>
+        </div>
+
+        <div className="flex flex-col">
+          <label className="mb-2 text-sm font-medium text-gray-700">
+            Sort By
+          </label>
+          <div className="flex gap-2">
+            <select
+              value={sortConfig.key}
+              onChange={(e) => requestSort(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+              <option value="firstName">First Name</option>
+              <option value="lastName">Last Name</option>
+              <option value="idNumber">ID Number</option>
+              <option value="userType">User Type</option>
+              <option value="username">Username</option>
+              <option value="childRegNo">Child Reg No.</option>
+            </select>
+            <button
+              onClick={() =>
+                setSortConfig((prev) => ({
+                  ...prev,
+                  direction:
+                    prev.direction === "ascending" ? "descending" : "ascending",
+                }))
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:scale-105 hover:bg-blue-700 transition"
+            >
+              {sortConfig.direction === "ascending" ? "Asc ▲" : "Desc ▼"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Advanced Styled Table */}
+      {filteredAndSortedUsers.length === 0 ? (
+        <p className="text-gray-500 text-center py-10">
+          No users found matching your criteria.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl shadow-md">
+          <table className="w-full text-left border-collapse">
+            <thead>
+              <tr className="bg-gradient-to-r from-blue-100 to-blue-200 sticky top-0">
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("firstName")}
+                >
+                  First Name {getSortIndicator("firstName")}
+                </th>
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("lastName")}
+                >
+                  Last Name {getSortIndicator("lastName")}
+                </th>
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("idNumber")}
+                >
+                  ID Number {getSortIndicator("idNumber")}
+                </th>
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("userType")}
+                >
+                  User Type {getSortIndicator("userType")}
+                </th>
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("username")}
+                >
+                  Username {getSortIndicator("username")}
+                </th>
+                <th
+                  className="p-4 font-semibold text-gray-800 cursor-pointer"
+                  onClick={() => requestSort("childRegNo")}
+                >
+                  Child Reg No. {getSortIndicator("childRegNo")}
+                </th>
+                <th className="p-4 font-semibold text-gray-800">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredAndSortedUsers.map((user, idx) => (
+                <tr
+                  key={user._id}
+                  className={`${
+                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+                  } hover:bg-blue-50 transition`}
+                >
+                  <td className="p-4">{user.firstName}</td>
+                  <td className="p-4">{user.lastName}</td>
+                  <td className="p-4">{user.idNumber}</td>
+                  <td className="p-4">{user.userType}</td>
+                  <td className="p-4">{user.username}</td>
+                  <td className="p-4">{user.childRegNo || "N/A"}</td>
+                  <td className="p-4 space-x-2 text-center">
+                    <button
+                      onClick={() => handleEdit(user._id)}
+                      className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:scale-105 hover:bg-yellow-600 transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(user._id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded-md hover:scale-105 hover:bg-red-700 transition"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
 }
-
-const styles = {
-  container: {
-    maxWidth: '1200px',
-    margin: '50px auto',
-    padding: '20px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-    backgroundColor: '#fff',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '20px',
-  },
-  heading: {
-    color: '#333',
-    fontSize: '24px',
-    fontWeight: '600',
-  },
-  headerActions: {
-    display: 'flex',
-    gap: '10px',
-  },
-  addButton: {
-    padding: '10px 15px',
-    backgroundColor: '#28a745',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px',
-  },
-  resetButton: {
-    padding: '10px 15px',
-    backgroundColor: '#6c757d',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px',
-  },
-  filterSortSection: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '20px',
-    marginBottom: '20px',
-    padding: '15px',
-    border: '1px solid #eee',
-    borderRadius: '8px',
-    backgroundColor: '#f9f9f9',
-  },
-  filterSortGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-    minWidth: '200px',
-  },
-  label: {
-    marginBottom: '5px',
-    fontWeight: 'bold',
-    color: '#555',
-  },
-  input: {
-    padding: '8px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-  },
-  select: {
-    padding: '8px',
-    border: '1px solid #ddd',
-    borderRadius: '4px',
-    fontSize: '14px',
-    backgroundColor: '#fff',
-  },
-  sortDirectionButton: {
-    padding: '8px 12px',
-    backgroundColor: '#007bff',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '14px',
-    marginTop: '10px',
-  },
-  table: {
-    width: '100%',
-    borderCollapse: 'collapse',
-    marginTop: '20px',
-  },
-  th: {
-    backgroundColor: '#f2f2f2',
-    border: '1px solid #ddd',
-    padding: '12px',
-    textAlign: 'left',
-    fontWeight: 'bold',
-    color: '#555',
-    cursor: 'pointer',
-  },
-  td: {
-    border: '1px solid #ddd',
-    padding: '10px',
-    textAlign: 'left',
-  },
-  tdActions: {
-    border: '1px solid #ddd',
-    padding: '10px',
-    textAlign: 'center',
-    whiteSpace: 'nowrap',
-  },
-  tr: {
-    '&:nth-child(even)': {
-      backgroundColor: '#f9f9f9',
-    },
-  },
-  editButton: {
-    padding: '8px 12px',
-    backgroundColor: '#ffc107',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    marginRight: '5px',
-  },
-  deleteButton: {
-    padding: '8px 12px',
-    backgroundColor: '#dc3545',
-    color: 'white',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-  },
-  successMessage: {
-    color: 'green',
-    backgroundColor: '#e6ffe6',
-    border: '1px solid green',
-    padding: '10px',
-    borderRadius: '5px',
-    marginBottom: '15px',
-    textAlign: 'center',
-  },
-  errorMessage: {
-    color: 'red',
-    backgroundColor: '#ffe6e6',
-    border: '1px solid red',
-    padding: '10px',
-    borderRadius: '5px',
-    marginBottom: '15px',
-    textAlign: 'center',
-  },
-};
