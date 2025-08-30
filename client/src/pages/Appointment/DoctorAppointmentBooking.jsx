@@ -1,64 +1,94 @@
-// client/src/pages/Appointment/DoctorAppointmentBooking.jsx (updated)
+// client/src/pages/Appointment/DoctorAppointmentBooking.jsx
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import Select from "react-select"; // Import react-select
 
 const DoctorAppointmentBooking = () => {
   const navigate = useNavigate();
+  const today = new Date().toISOString().split("T")[0];
+
   const [formData, setFormData] = useState({
-    patientId: '',        // Holds the _id of the selected child
-    practitionerId: '',   // Holds the _id of the selected Doctor/Therapist
-    appointmentDate: '',
-    startTime: '',        // New: "HH:MM" format
-    endTime: '',          // New: "HH:MM" format
-    notes: '',
-    status: 'Pending',
-    serviceType: 'General Consultation', // Default for doctor appointments
+    patientId: "",
+    practitionerId: "",
+    appointmentDate: "",
+    startTime: "",
+    endTime: "",
+    serviceType: "General Consultation",
+    notes: "",
+    status: "Pending",
   });
-  const [practitioners, setPractitioners] = useState([]); // Doctors and Therapists
-  const [patients, setPatients] = useState([]);         // Registered Children
+
+  const [practitioners, setPractitioners] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
 
+  // Fetch dropdown data
   useEffect(() => {
     const fetchDataForDropdowns = async () => {
       setLoading(true);
       setError(null);
       try {
-        // Fetch all users and filter for Doctors and Therapists
-        // Ideally, you'd have a specific backend endpoint like /api/users/practitioners
-        const usersResponse = await axios.get('http://localhost:5000/api/users');
-        const medicalPersonnel = usersResponse.data.filter(
-          (user) => user.userType === 'Doctor' || user.userType === 'Therapist'
+        const practitionersResponse = await axios.get(
+          "http://localhost:5000/api/users"
         );
-        setPractitioners(medicalPersonnel);
+        const filteredPractitioners = practitionersResponse.data.filter(
+          (user) => user.userType === "Doctor" || user.userType === "Therapist"
+        );
+        // Format data for react-select
+        const formattedPractitioners = filteredPractitioners.map((user) => ({
+          value: user._id,
+          label: `${user.firstName} ${user.lastName} (${user.userType})`,
+        }));
+        setPractitioners(formattedPractitioners);
 
-        // Fetch all registered children (patients)
-        // Assuming a route like /api/child is available to get all children
-        const patientsResponse = await axios.get('http://localhost:5000/api/child'); // Adjust if your child endpoint is different
-        setPatients(patientsResponse.data); // Assuming response.data is an array of child objects
-        
+        const patientsResponse = await axios.get(
+          "http://localhost:5000/api/patientRecords"
+        );
+        // Format data for react-select
+        const formattedPatients = patientsResponse.data.map((patient) => ({
+          value: patient._id,
+          label: `${patient.name} (${patient.childNo})`,
+        }));
+        setPatients(formattedPatients);
+
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching data for dropdowns:', err.response ? err.response.data : err.message);
-        setError('Failed to load practitioners or patients. Please try again.');
+        console.error("Error fetching dropdown data:", err);
+        setError(
+          "Failed to load practitioners or patients. Please try again."
+        );
         setLoading(false);
       }
     };
     fetchDataForDropdowns();
   }, []);
 
+  // Handle form input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
-    setSuccess(false); // Clear success message on change
+    }));
+    setSuccess(false);
+    setError(null);
   };
 
+  // Handle react-select changes
+  const handleSelectChange = (selectedOption, { name }) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: selectedOption ? selectedOption.value : "",
+    }));
+    setSuccess(false);
+    setError(null);
+  };
+
+  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -66,147 +96,221 @@ const DoctorAppointmentBooking = () => {
     setSuccess(false);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/appointments', formData);
+      await axios.post("http://localhost:5000/api/appointments", formData);
       setSuccess(true);
-      setLoading(false);
-      console.log('Appointment created:', response.data);
-      // Optionally reset form or navigate
       setFormData({
-        patientId: '',
-        practitionerId: '',
-        appointmentDate: '',
-        startTime: '',
-        endTime: '',
-        notes: '',
-        status: 'Pending',
-        serviceType: 'General Consultation',
+        patientId: "",
+        practitionerId: "",
+        appointmentDate: "",
+        startTime: "",
+        endTime: "",
+        serviceType: "General Consultation",
+        notes: "",
+        status: "Pending",
       });
-      navigate('/dashboard/appointments/success'); // Or to a list view
     } catch (err) {
-      console.error('Error booking appointment:', err.response ? err.response.data : err.message);
-      setError(err.response?.data?.message || 'Failed to book appointment. Please check your inputs.');
+      console.error(
+        "Appointment booking error:",
+        err.response ? err.response.data : err.message
+      );
+      setError(
+        err.response?.data?.message ||
+        "Failed to book appointment. Please check your inputs."
+      );
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">Book Doctor/Therapist Appointment</h2>
+    <div className="container mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200 my-8 max-w-2xl">
+      <h2 className="text-3xl font-extrabold text-center text-gray-800 mb-6">
+        Book Doctor/Therapist Appointment
+      </h2>
+      <p className="text-center text-gray-600 mb-8">
+        Select the relevant child and practitioner to book an appointment.
+      </p>
 
-      {loading && <p className="text-blue-500 text-center">Loading data...</p>}
-      {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-      {success && <p className="text-green-500 text-center mb-4">Appointment booked successfully!</p>}
+      {loading && (
+        <div className="flex justify-center items-center">
+          <p className="text-blue-500 font-medium">Loading data...</p>
+        </div>
+      )}
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+          role="alert"
+        >
+          <p className="font-bold">Error!</p>
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div
+          className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"
+          role="alert"
+        >
+          <p className="font-bold">Success!</p>
+          <p className="text-sm">Appointment booked successfully.</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Patient Selection */}
+        {/* Patient Selection with Search */}
         <div>
-          <label htmlFor="patientId" className="block text-sm font-medium text-gray-700">Select Patient (Child)</label>
-          <select
+          <label
+            htmlFor="patientId"
+            className="block text-sm font-semibold text-gray-700 mb-1"
+          >
+            Select Patient (Child)
+          </label>
+          <Select
             id="patientId"
             name="patientId"
-            value={formData.patientId}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-          >
-            <option value="">Select a patient</option>
-            {patients.map((patient) => (
-              <option key={patient._id} value={patient._id}>
-                {patient.firstName} {patient.lastName} ({patient.childRegNo})
-              </option>
-            ))}
-          </select>
+            value={patients.find(option => option.value === formData.patientId)}
+            onChange={handleSelectChange}
+            options={patients}
+            isClearable={true}
+            placeholder="Search for a patient..."
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
         </div>
 
-        {/* Practitioner Selection */}
+        {/* Practitioner Selection with Search */}
         <div>
-          <label htmlFor="practitionerId" className="block text-sm font-medium text-gray-700">Select Doctor or Therapist</label>
-          <select
+          <label
+            htmlFor="practitionerId"
+            className="block text-sm font-semibold text-gray-700 mb-1"
+          >
+            Select Doctor or Therapist
+          </label>
+          <Select
             id="practitionerId"
             name="practitionerId"
-            value={formData.practitionerId}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-          >
-            <option value="">Select a practitioner</option>
-            {practitioners.map((practitioner) => (
-              <option key={practitioner._id} value={practitioner._id}>
-                {practitioner.firstName} {practitioner.lastName} ({practitioner.userType})
-              </option>
-            ))}
-          </select>
+            value={practitioners.find(option => option.value === formData.practitionerId)}
+            onChange={handleSelectChange}
+            options={practitioners}
+            isClearable={true}
+            placeholder="Search for a practitioner..."
+            className="react-select-container"
+            classNamePrefix="react-select"
+          />
         </div>
 
         {/* Appointment Date */}
         <div>
-          <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700">Appointment Date</label>
+          <label
+            htmlFor="appointmentDate"
+            className="block text-sm font-semibold text-gray-700 mb-1"
+          >
+            Appointment Date
+          </label>
           <input
             type="date"
             id="appointmentDate"
             name="appointmentDate"
             value={formData.appointmentDate}
             onChange={handleChange}
+            min={today}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+            className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
           />
         </div>
 
-        {/* Start Time */}
-        <div>
-          <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Start Time</label>
-          <input
-            type="time"
-            id="startTime"
-            name="startTime"
-            value={formData.startTime}
-            onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-          />
+        {/* Time Slots */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              htmlFor="startTime"
+              className="block text-sm font-semibold text-gray-700 mb-1"
+            >
+              Start Time
+            </label>
+            <input
+              type="time"
+              id="startTime"
+              name="startTime"
+              value={formData.startTime}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="endTime"
+              className="block text-sm font-semibold text-gray-700 mb-1"
+            >
+              End Time
+            </label>
+            <input
+              type="time"
+              id="endTime"
+              name="endTime"
+              value={formData.endTime}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
+            />
+          </div>
         </div>
 
-        {/* End Time */}
+        {/* Service Type */}
         <div>
-          <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">End Time</label>
-          <input
-            type="time"
-            id="endTime"
-            name="endTime"
-            value={formData.endTime}
+          <label
+            htmlFor="serviceType"
+            className="block text-sm font-semibold text-gray-700 mb-1"
+          >
+            Service Type
+          </label>
+          <select
+            id="serviceType"
+            name="serviceType"
+            value={formData.serviceType}
             onChange={handleChange}
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
-          />
+            className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
+          >
+            <option value="General Consultation">General Consultation</option>
+            <option value="Speech Therapy">Speech Therapy</option>
+            <option value="Occupational Therapy">Occupational Therapy</option>
+          </select>
         </div>
 
         {/* Notes */}
         <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
+          <label
+            htmlFor="notes"
+            className="block text-sm font-semibold text-gray-700 mb-1"
+          >
+            Notes (Optional)
+          </label>
           <textarea
             id="notes"
             name="notes"
             rows="3"
             value={formData.notes}
             onChange={handleChange}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 sm:text-sm"
+            placeholder="Add any special notes..."
+            className="w-full px-4 py-2 border rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500"
           ></textarea>
         </div>
 
-        <div className="flex justify-end space-x-3">
+        {/* Buttons */}
+        <div className="flex justify-end space-x-4 pt-4">
           <button
             type="button"
-            onClick={() => navigate('/dashboard/appointments')}
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+            onClick={() => navigate("/dashboard")}
+            className="px-6 py-2 border rounded-lg text-gray-700 font-medium hover:bg-gray-100"
           >
             Cancel
           </button>
           <button
             type="submit"
-            className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+            className="px-6 py-2 rounded-lg text-white font-medium bg-purple-600 hover:bg-purple-700 focus:ring-2 focus:ring-purple-500"
             disabled={loading}
           >
-            {loading ? 'Booking...' : 'Book Appointment'}
+            {loading ? "Booking..." : "Book Appointment"}
           </button>
         </div>
       </form>

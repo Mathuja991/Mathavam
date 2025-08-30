@@ -1,13 +1,17 @@
-import mongoose from 'mongoose';
+// server/models/Child.js
+
+const mongoose = require('mongoose');
 
 const ChildSchema = new mongoose.Schema({
   childNo: { type: String, required: true, unique: true },
   name: String,
   age: String,
   gender: String,
-  date: String, // You can also use: date: { type: Date }
+  date: String,
 });
 
-const Child = mongoose.model('Child', ChildSchema);
+// The third argument 'patientrecords' specifies the collection name in the database.
+// This is crucial for Mongoose to find the correct data.
+const Child = mongoose.model('Child', ChildSchema, 'patientrecords');
 
-export default Child;
+module.exports = Child;
