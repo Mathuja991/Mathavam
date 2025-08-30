@@ -15,7 +15,7 @@ const ChildProgressBC = () => {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/bc`); // ✅ Behavior Checklist endpoint
+      const res = await fetch("http://localhost:5000/api/bc"); // ✅ Behavior Checklist endpoint
       const data = await res.json();
       const filtered = data.filter(entry => entry.childNo === childNo.trim());
 
@@ -48,7 +48,7 @@ const ChildProgressBC = () => {
   }));
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-4 text-center">Behavior Checklist Progress</h2>
 
       <div className="mb-6 flex gap-4 items-center justify-center">

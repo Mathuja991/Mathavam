@@ -1,11 +1,8 @@
-import Child from '../models/Child.js';
-import Carsform from '../models/Carsform.js'; // You'll need to create this schema
-
-
-
+const Child = require('../models/PatientRecord');
+const Carsform = require('../models/Carsform'); // You'll need to create this schema
 
 // @desc Submit a new CARS form entry
-export const submitForm = async (req, res) => {
+const submitForm = async (req, res) => {
   try {
     const form = new Carsform(req.body);
     const saved = await form.save();
@@ -16,7 +13,7 @@ export const submitForm = async (req, res) => {
 };
 
 // @desc Get all CARS form entries
-export const getAllEntries = async (req, res) => {
+const getAllEntries = async (req, res) => {
   try {
     const entries = await Carsform.find();
     res.json(entries);
@@ -26,7 +23,7 @@ export const getAllEntries = async (req, res) => {
 };
 
 // @desc Get child data by childNo
-export const getChildByChildNo = async (req, res) => {
+const getChildByChildNo = async (req, res) => {
   try {
     const child = await Child.findOne({ childNo: req.params.childNo });
     if (!child) return res.status(404).json({ message: 'Child not found' });
@@ -36,12 +33,10 @@ export const getChildByChildNo = async (req, res) => {
   }
 };
 
-
-
-export const deleteEntry = async (req, res) => {
+// @desc Delete an entry by ID
+const deleteEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    
 
     const deletedEntry = await Carsform.findByIdAndDelete(id);
 
@@ -54,12 +49,14 @@ export const deleteEntry = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-export const updateEntry = async (req, res) => {
+
+// @desc Update an entry by ID
+const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
     const updated = await Carsform.findByIdAndUpdate(id, req.body, {
-      new: true, // return the updated document
-      runValidators: true, // enforce schema validation
+      new: true,
+      runValidators: true,
     });
 
     if (!updated) {
@@ -73,9 +70,10 @@ export const updateEntry = async (req, res) => {
   }
 };
 
-export const getEntryById = async (req, res) => {
+// @desc Get an entry by ID
+const getEntryById = async (req, res) => {
   try {
-    console.log("Fetching entry with ID:", req.params.id);  // <-- debug log
+    console.log("Fetching entry with ID:", req.params.id);
     const entry = await Carsform.findById(req.params.id);
     if (!entry) {
       console.log("Entry not found for ID:", req.params.id);
@@ -86,4 +84,14 @@ export const getEntryById = async (req, res) => {
     console.error("Error fetching entry by ID:", err);
     res.status(500).json({ message: "Server error" });
   }
+};
+
+// Exporting all functions in CommonJS
+module.exports = {
+  submitForm,
+  getAllEntries,
+  getChildByChildNo,
+  deleteEntry,
+  updateEntry,
+  getEntryById,
 };

@@ -20,7 +20,9 @@ const ChildRoutes = require('./routes/ChildRoutes.js');
 const CarsformRoutes = require('./routes/CarsformRoutes.js');
 const MflowchartRoutes = require('./routes/MflowchartRoutes.js');
 const BcRoutes = require('./routes/BcRoutes.js');
+const monthReturnRoutes =require('./routes/monthReturnRoutes.js');
 
+const documentRoutes = require('./routes/documentRoutes.js');
 const authRoutes = require('./routes/authRoutes'); 
 
 
@@ -47,10 +49,16 @@ app.use('/api/auth', authRoutes);  //api/auth/login
 app.use('/api/doctor-appointments', doctorAppointmentsRoute); 
 
 // Mathuja's Routes
-app.use('/api/child', ChildRoutes);
+
 app.use('/api/carsform', CarsformRoutes);
 app.use('/api/mflow', MflowchartRoutes);
 app.use('/api/bc', BcRoutes);
+app.use('/api/monthlyreturns', monthReturnRoutes);
+
+const fileUpload = require('express-fileupload');
+app.use(fileUpload());
+
+app.use('/api/documents', documentRoutes);
 
 
 //Kujinsika's routes

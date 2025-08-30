@@ -119,34 +119,58 @@ const BehaviorChecklist = () => {
 
   const currentSection = sections[step - 1];
 
-  const handleChildNoChange = async (e) => {
-    const value = e.target.value;
-    setFormData((prev) => ({ ...prev, childNo: value }));
+ const handleChildNoChange = async (e) => {
+  const value = e.target.value;
+  setFormData((prev) => ({ ...prev, childNo: value }));
 
-    try {
-      const response = await fetch(`http://localhost:5000/api/child/${value}`);
-      if (!response.ok) throw new Error("Child not found");
+  try {
+    const response = await fetch(`http://localhost:5000/api/patientRecords`);
+    if (!response.ok) throw new Error("Failed to fetch records");
+    const data = await response.json();
 
-      const data = await response.json();
+    // Find the record with matching childNo
+    const matchedRecord = data.find(record => record.childNo === value);
+
+    if (matchedRecord) {
       setFormData((prev) => ({
         ...prev,
-        name: data.name,
-        age: data.age,
-        gender: data.gender,
-        date: data.date || new Date().toISOString().split('T')[0],
+        name: matchedRecord.name || '',
+        age: matchedRecord.age || '',
+        gender: matchedRecord.gender || '',
+        address: matchedRecord.address || '',
+        contactNo: matchedRecord.contactNo || '',
+        dateOfBirth: matchedRecord.dateOfBirth ? new Date(matchedRecord.dateOfBirth).toISOString().split('T')[0] : '',
+        // add other fields similarly as needed
       }));
-    } catch (err) {
+      setErrorMessage('');
+    } else {
+      // No record found
       setFormData((prev) => ({
         ...prev,
         name: '',
         age: '',
         gender: '',
-        date: new Date().toISOString().split('T')[0],
+        address: '',
+        contactNo: '',
+        dateOfBirth: '',
       }));
+      setErrorMessage('Child record not found');
     }
+  } catch (err) {
+    console.error(err);
+    setErrorMessage('Failed to fetch patient records');
+    setFormData((prev) => ({
+      ...prev,
+      name: '',
+      age: '',
+      gender: '',
+      address: '',
+      contactNo: '',
+      dateOfBirth: '',
+    }));
+  }
+};
 
-    setErrorMessage('');
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -220,33 +244,20 @@ const BehaviorChecklist = () => {
   );
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-center">Behavior Checklist</h2>
+    <div className="p-6 max-w-7xl mx-auto bg-white rounded-xl shadow-md">
+      <h2 className="text-2xl font-bold mb-6 ">Behavior Checklist</h2>
 
-      {/* Progress Bar */}
-      <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
-        <div
-          className="bg-blue-600 h-3 rounded-full transition-all"
-          style={{ width: `${(step / totalSteps) * 100}%` }}
-        ></div>
-      </div>
+   
 
       {/* Child Info */}
-      <div className="bg-blue-50 p-6 rounded-xl shadow-sm">
+      <div className="bg-blue-50 p-6 rounded-xl shadow-sm ml-20">
         <ChildInfoInputs formData={formData} handleChildNoChange={handleChildNoChange} />
-        <label className="mb-2 font-semibold text-gray-700" htmlFor="date">Date</label>
-        <input
-          type="text"
-          name="date"
-          placeholder="Date of Test"
-          value={formData.date}
-          readOnly
-          className="border p-2 ml-2 rounded mb-6 mt-6"
-        />
+
+       
       </div>
 
       {/* Instructions */}
-      <div className="text-sm text-gray-600 mb-6 mt-5">
+      <div className="text-sm text-gray-600 mb-6 mt-5 ml-20 text-left">
         <p>On average, how often does your child engage in the following behaviors?</p>
         <ul className="list-disc ml-5 mt-2 space-y-1">
           <li>1 - Almost never (less than 10% of the time)</li>
@@ -256,7 +267,7 @@ const BehaviorChecklist = () => {
           <li>NA - Not Applicable</li>
         </ul>
       </div>
-
+<div className='text-left ml-20'>
       {/* Questions Section */}
       <motion.div
         key={step}
@@ -273,7 +284,13 @@ const BehaviorChecklist = () => {
           </div>
         ))}
       </motion.div>
-
+   {/* Progress Bar */}
+      <div className="w-full bg-gray-200 rounded-full h-3 mb-6">
+        <div
+          className="bg-blue-600 h-3 rounded-full transition-all"
+          style={{ width: `${(step / totalSteps) * 100}%` }}
+        ></div>
+      </div>
       {/* Navigation Buttons */}
       <div className="flex justify-between mt-6">
         {step > 1 && (
@@ -301,6 +318,7 @@ const BehaviorChecklist = () => {
       {/* Messages */}
       {errorMessage && <div className="mt-4 text-red-600 font-semibold">{errorMessage}</div>}
       {isSubmitted && <div className="mt-4 text-green-600 font-semibold">Form submitted successfully!</div>}
+    </div>
     </div>
   );
 };

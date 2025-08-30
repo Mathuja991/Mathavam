@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
 import { exportMFEntriesToPDF } from "../utills/exportMFEntriesToPDF";
+
 const MFPrevious = () => {
   const [entries, setEntries] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -12,13 +12,32 @@ const MFPrevious = () => {
   const itemsPerPage = 5;
   const navigate = useNavigate();
 
+  // Fetch all entries and keep only the latest per childNo
   useEffect(() => {
     const fetchEntries = async () => {
       try {
         const res = await fetch(`http://localhost:5000/api/mflow`);
         const data = await res.json();
-        setEntries(data);
-        setFiltered(data);
+
+        // Keep only the latest entry per childNo
+        const uniqueEntriesMap = new Map();
+
+        data.forEach((entry) => {
+          if (!uniqueEntriesMap.has(entry.childNo)) {
+            uniqueEntriesMap.set(entry.childNo, entry);
+          } else {
+            // Compare dates, keep the latest
+            const existing = uniqueEntriesMap.get(entry.childNo);
+            if (new Date(entry.date) > new Date(existing.date)) {
+              uniqueEntriesMap.set(entry.childNo, entry);
+            }
+          }
+        });
+
+        const uniqueEntries = Array.from(uniqueEntriesMap.values());
+
+        setEntries(uniqueEntries);
+        setFiltered(uniqueEntries);
       } catch (err) {
         console.error("Failed to fetch entries:", err);
       }
@@ -75,9 +94,10 @@ const MFPrevious = () => {
     }
   };
 
-  const handleEdit = (entry) => {
-    navigate(`/editm/${entry._id}`);
-  };
+ const handleEdit = (entry) => {
+  navigate(`/editm/${entry.childNo}`, { state: { entry } });
+};
+
 
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
@@ -85,7 +105,7 @@ const MFPrevious = () => {
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   return (
-    <div className="max-w-5xl mx-auto mt-8 p-6 bg-white rounded shadow">
+    <div className="max-w-7xl mx-auto mt-8 p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-6">Previous Mathavam Flowchart Entries</h2>
 
       {/* Filters */}
@@ -127,60 +147,57 @@ const MFPrevious = () => {
         </div>
       </div>
 
-      {/* Entry List */}
-      {currentItems.map((entry) => (
-        <div key={entry._id} className="mb-4 p-4 border rounded bg-gray-50">
-          <p><strong>Child No:</strong> {entry.childNo}</p>
-          <p><strong>Name:</strong> {entry.name}</p>
-          <p><strong>Age:</strong> {entry.age}</p>
-          <p><strong>Gender:</strong> {entry.gender}</p>
-          <p><strong>Date:</strong> {entry.date}</p>
-
-          <div className="mt-4">
-            <h4 className="font-semibold mb-1">Flowchart Activities:</h4>
-  {Object.entries(entry)
-  .filter(([key]) => !["name", "childNo", "age", "gender", "date", "_id", "__v"].includes(key))
-  .map(([key, values]) => (
-    <div key={key} className="mb-2">
-      <strong>{key}:</strong>
-      {Array.isArray(values) ? (
-        <ul className="list-disc list-inside ml-4">
-          {values.map((item, i) => {
-            if (typeof item === "string") {
-              return <li key={i}>{item}</li>;
-            } else if (typeof item === "object" && item !== null) {
-              return (
-                <li key={i}>
-                  {item.name && <div><strong>{item.name}</strong></div>}
-                  {Array.isArray(item.dates) && (
-                    <ul className="list-disc list-inside ml-4">
-                      {item.dates.map((d, j) => (
-                        <li key={j}>{d}</li>
-                      ))}
-                    </ul>
-                  )}
-                </li>
-              );
-            } else {
-              return <li key={i}>{JSON.stringify(item)}</li>;
-            }
-          })}
-        </ul>
-      ) : (
-        <p className="ml-4 text-gray-600 italic">No data</p>
-      )}
-    </div>
-))}
-
-
-            <button className="text-blue-600 mt-2" onClick={() => handleEdit(entry)}>Edit</button>
-            <button className="text-red-600 mt-2 ml-2" onClick={() => handleDelete(entry._id)}>Delete</button>
-          </div>
-        </div>
-      ))}
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto border">
+          <thead className="bg-gray-200">
+            <tr>
+              <th className="p-3 border">Child No</th>
+              <th className="p-3 border">Name</th>
+              <th className="p-3 border">Age</th>
+              <th className="p-3 border">Gender</th>
+              <th className="p-3 border">Date</th>
+              <th className="p-3 border">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {currentItems.length > 0 ? (
+              currentItems.map((entry) => (
+                <tr key={entry._id} className="text-center">
+                  <td className="p-3 border">{entry.childNo}</td>
+                  <td className="p-3 border">{entry.name}</td>
+                  <td className="p-3 border">{entry.age}</td>
+                  <td className="p-3 border">{entry.gender}</td>
+                  <td className="p-3 border">{entry.date}</td>
+                  <td className="p-3 border flex justify-center gap-2">
+                    <button
+                      onClick={() => handleEdit(entry)}
+                      className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="6" className="p-4 text-center text-gray-500">
+                  No entries found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* PDF Export */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mt-4">
         <button
           onClick={() => exportMFEntriesToPDF(entries)}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
