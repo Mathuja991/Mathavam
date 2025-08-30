@@ -25,10 +25,11 @@ const CarsPrevious = () => {
       } catch (err) {
         console.error("Failed to fetch entries:", err);
       }
+       applyFiltersAndSort();
     };
 
     fetchEntries();
-  }, []);
+  }, [childNoFilter, dateFilter, sortBy, entries]);
 
   const applyFiltersAndSort = () => {
     let results = [...entries];
@@ -109,7 +110,7 @@ const handleEdit = (entry) => {
 };
 
   return (
-    <div className="max-w-4xl mx-auto mt-8 p-6 bg-white rounded shadow">
+    <div className="max-w-7xl mx-auto mt-8 p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-6">Previous Entries</h2>
 
       {/* Filters */}
@@ -154,41 +155,46 @@ const handleEdit = (entry) => {
       </div>
 
       {/* Entry List */}
-      {currentItems.map((entry, index) => (
-        <div key={index} className="mb-4 p-4 border rounded bg-gray-50">
-          <p><strong>Child No:</strong> {entry.childNo}</p>
-          <p><strong>Name:</strong> {entry.name}</p>
-          <p><strong>Age:</strong> {entry.age}</p>
-          <p><strong>Gender:</strong> {entry.gender}</p>
-          <p><strong>Date:</strong> {entry.date}</p>
-          <p className="mt-2"><strong>Severity:</strong></p>
-          <span className={`inline-block mt-1 px-3 py-1 rounded-full ${entry.severity?.color}`}>
+     <table className="w-full table-auto border-collapse border border-gray-300">
+  <thead>
+    <tr className="bg-gray-100">
+      <th className="border border-gray-300 px-4 py-2">Child No</th>
+      <th className="border border-gray-300 px-4 py-2">Name</th>
+      <th className="border border-gray-300 px-4 py-2">Age</th>
+      <th className="border border-gray-300 px-4 py-2">Gender</th>
+      <th className="border border-gray-300 px-4 py-2">Date</th>
+      <th className="border border-gray-300 px-4 py-2">Severity</th>
+      <th className="border border-gray-300 px-4 py-2">Total Score</th>
+      <th className="border border-gray-300 px-4 py-2">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {currentItems.map((entry) => (
+      <tr key={entry._id} className="text-center">
+        <td className="border border-gray-300 px-4 py-2">{entry.childNo}</td>
+        <td className="border border-gray-300 px-4 py-2">{entry.name}</td>
+        <td className="border border-gray-300 px-4 py-2">{entry.age}</td>
+        <td className="border border-gray-300 px-4 py-2">{entry.gender}</td>
+        <td className="border border-gray-300 px-4 py-2">{entry.date}</td>
+        <td className="border border-gray-300 px-4 py-2">
+          <span className={`inline-block px-3 py-1 rounded-full ${entry.severity?.color}`}>
             {entry.severity?.label || "N/A"}
           </span>
-          <div className="mt-4">
-            <p className="font-semibold mb-1">Scores:</p>
-            <ul className="list-disc list-inside">
-              {entry.scores &&
-                Object.entries(entry.scores).map(([category, score]) => (
-                  <li key={category}>
-                    <strong>{category}:</strong> {score}
-                  </li>
-                ))}
-            </ul>
-            <p className="mt-2 font-semibold">Total Score: {getTotalScore(entry.scores).toFixed(1)}</p>
-            <button className="text-blue-600" onClick={() => handleEdit(entry)}>Edit</button>
-            <button className="text-red-600 ml-2" onClick={() => handleDelete(entry._id)}>Delete</button>
-  
-
-    
-          </div>
-        </div>
-      ))}
+        </td>
+        <td className="border border-gray-300 px-4 py-2">{getTotalScore(entry.scores).toFixed(1)}</td>
+        <td className="border border-gray-300 px-4 py-2">
+          <button className="text-blue-600 mr-2" onClick={() => handleEdit(entry)}>Edit</button>
+          <button className="text-red-600" onClick={() => handleDelete(entry._id)}>Delete</button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 
     
        
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 mt-5">
    <button onClick={() => exportEntriesToPDF(entries)}
     className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Export PDF</button>
       </div>

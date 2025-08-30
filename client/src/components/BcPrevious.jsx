@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { exportEntriesToPDF } from "../utills/exportUtills";
 import { useNavigate } from "react-router-dom";
-import sections  from './questionsData';
-import { exportBctopdf } from "../utills/exportBctopdf";
 
-const BehaviorPrevious = () => {
+const BCPrevious = () => {
   const [entries, setEntries] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [childNoFilter, setChildNoFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [sortBy, setSortBy] = useState("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const navigate = useNavigate();
@@ -15,55 +15,63 @@ const BehaviorPrevious = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/bc/`);
+        const res = await fetch("http://localhost:5000/api/bc/");
         const data = await res.json();
         setEntries(data);
         setFiltered(data);
       } catch (err) {
-        console.error("Error fetching behavior form entries:", err);
+        console.error("Failed to fetch entries:", err);
       }
     };
 
     fetchEntries();
   }, []);
 
-  const handleFilter = () => {
-    let filteredData = [...entries];
+  const applyFiltersAndSort = () => {
+    let results = [...entries];
 
     if (childNoFilter) {
-      filteredData = filteredData.filter((entry) =>
-        entry.childNo?.toLowerCase().includes(childNoFilter.toLowerCase())
+      results = results.filter(entry =>
+        entry.childNo.toLowerCase().includes(childNoFilter.toLowerCase())
       );
     }
 
     if (dateFilter) {
-      filteredData = filteredData.filter((entry) => entry.date === dateFilter);
+      results = results.filter(entry => entry.date === dateFilter);
     }
 
-    setFiltered(filteredData);
+    if (sortBy === "date-desc") {
+      results.sort((a, b) => new Date(b.date) - new Date(a.date));
+    } else if (sortBy === "date-asc") {
+      results.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    setFiltered(results);
     setCurrentPage(1);
   };
 
   const handleReset = () => {
     setChildNoFilter("");
     setDateFilter("");
+    setSortBy("date-desc");
     setFiltered(entries);
+    setCurrentPage(1);
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this entry?")) return;
+    if (!confirm("Are you sure you want to delete this entry?")) return;
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/bc/${id}`, {
+      const res = await fetch(`http://localhost:5000/api/bc/${id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        setEntries((prev) => prev.filter((entry) => entry._id !== id));
-        setFiltered((prev) => prev.filter((entry) => entry._id !== id));
+        setEntries(prev => prev.filter(e => e._id !== id));
+        setFiltered(prev => prev.filter(e => e._id !== id));
       } else {
-        const err = await res.json();
-        alert("Delete failed: " + err.message);
+        const error = await res.json();
+        alert(`Delete failed: ${error.message}`);
       }
     } catch (err) {
       console.error("Delete error:", err);
@@ -74,102 +82,113 @@ const BehaviorPrevious = () => {
     navigate(`/editb/${entry._id}`);
   };
 
-  const codeToLabel = (code) => {
-  const map = {
-    "1": "Never",
-    "2": "Rarely",
-    "3": "Sometimes",
-    "4": "Often",
-    "5": "Always",
-    "NA": "Not Applicable"
-  };
-  return map[code] || code;
-    };
-
-
-
-const formatAnswer = (value) => {
-  if (!value) return "";
-  const arr = Array.isArray(value) ? value : value.toString().split("");
-  return arr.map(codeToLabel).join(", ");
-};
-
-
-  // Pagination
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentItems = filtered.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
   return (
-    <div className="max-w-4xl mx-auto mt-10 bg-white p-6 rounded shadow">
-      <h2 className="text-2xl font-bold mb-6">Behavior Checklist - Previous Entries</h2>
+    <div className="max-w-7xl mx-auto mt-8 p-6 bg-white rounded shadow">
+      <h2 className="text-2xl font-bold mb-6">Previous BC Entries</h2>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <input
           type="text"
           placeholder="Search by Child No"
-          className="border p-2 rounded"
           value={childNoFilter}
           onChange={(e) => setChildNoFilter(e.target.value)}
+          className="border px-3 py-2 rounded"
         />
         <input
           type="date"
-          className="border p-2 rounded"
           value={dateFilter}
           onChange={(e) => setDateFilter(e.target.value)}
+          className="border px-3 py-2 rounded"
         />
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value)}
+          className="border px-3 py-2 rounded"
+        >
+          <option value="date-desc">Sort by Date (Newest)</option>
+          <option value="date-asc">Sort by Date (Oldest)</option>
+        </select>
         <div className="flex gap-2">
-          <button onClick={handleFilter} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+          <button
+            onClick={applyFiltersAndSort}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+          >
             Apply
           </button>
-          <button onClick={handleReset} className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">
+          <button
+            onClick={handleReset}
+            className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 w-full"
+          >
             Reset
           </button>
         </div>
       </div>
 
-      {/* Entry List */}
-      {currentItems.map((entry) => (
-       <div key={entry._id} className="border p-4 mb-4 rounded bg-gray-50">
-         <p><strong>Child No:</strong> {entry.childNo}</p>
-  <p><strong>Name:</strong> {entry.name}</p>
-  <p><strong>Age:</strong> {entry.age}</p>
-  <p><strong>Gender:</strong> {entry.gender}</p>
-  <p><strong>Date:</strong> {entry.date}</p>
+      {/* Table */}
+      <table className="w-full table-auto border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-300 px-4 py-2">Child No</th>
+            <th className="border border-gray-300 px-4 py-2">Name</th>
+            <th className="border border-gray-300 px-4 py-2">Age</th>
+            <th className="border border-gray-300 px-4 py-2">Gender</th>
+            <th className="border border-gray-300 px-4 py-2">Date</th>
+            <th className="border border-gray-300 px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentItems.length > 0 ? (
+            currentItems.map((entry) => (
+              <tr key={entry._id} className="text-center">
+                <td className="border border-gray-300 px-4 py-2">{entry.childNo}</td>
+                <td className="border border-gray-300 px-4 py-2">{entry.name}</td>
+                <td className="border border-gray-300 px-4 py-2">{entry.age}</td>
+                <td className="border border-gray-300 px-4 py-2">{entry.gender}</td>
+                <td className="border border-gray-300 px-4 py-2">{entry.date}</td>
+                <td className="border border-gray-300 px-4 py-2">
+                  <button
+                    className="text-blue-600 mr-2"
+                    onClick={() => handleEdit(entry)}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="text-red-600"
+                    onClick={() => handleDelete(entry._id)}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="6" className="p-4 text-center text-gray-500">
+                No entries found.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
-   {sections.map(({ key, questions }) => (
-        <div key={key} className="mb-4">
-          <h4 className="text-lg font-semibold mb-2">{key.toUpperCase()}</h4>
-          {questions.map((question, idx) => {
-            const rawAnswer = entry[key]?.[idx] ?? '';
-            const mappedAnswer = codeToLabel(rawAnswer);
-            return (
-              <div key={idx} className="mb-2">
-                <p><strong>Q:</strong> {question}</p>
-              
-                <p><strong>Mapped Answer:</strong> {mappedAnswer}</p>
-                <hr className="my-2"/>
-              </div>
-            );
-          })}  
-          </div>
-      ))}
+      {/* Export PDF */}
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => exportEntriesToPDF(entries)}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          Export PDF
+        </button>
+      </div>
 
-          <div className="mt-4">
-            <button onClick={() => handleEdit(entry)} className="text-blue-600 mr-4">Edit</button>
-            <button onClick={() => handleDelete(entry._id)} className="text-red-600">Delete</button>
-          </div>
-        </div>
-      ))}
-
-       <div className="flex gap-2 mb-4">
-       <button onClick={() => exportBctopdf(entries)}
-        className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Export PDF</button>
-          </div>
-      {/* Pagination */}
-      <div className="flex justify-center gap-4 mt-6">
+      {/* Pagination Controls */}
+      <div className="flex justify-center gap-2 mt-6">
         <button
           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
           disabled={currentPage === 1}
@@ -177,9 +196,7 @@ const formatAnswer = (value) => {
         >
           Prev
         </button>
-        <span className="px-4 py-2 font-semibold">
-          {currentPage} / {totalPages}
-        </span>
+        <span className="px-4 py-2 font-semibold">{currentPage} / {totalPages}</span>
         <button
           onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
           disabled={currentPage === totalPages}
@@ -192,4 +209,4 @@ const formatAnswer = (value) => {
   );
 };
 
-export default BehaviorPrevious;
+export default BCPrevious;

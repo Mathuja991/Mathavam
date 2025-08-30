@@ -35,33 +35,58 @@ const AutismRatingForm = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [previousEntries, setPreviousEntries] = useState([]);
 
-  const handleChildNoChange = async (e) => {
-    const value = e.target.value;
-    setFormData((prev) => ({ ...prev, childNo: value }));
+ const handleChildNoChange = async (e) => {
+  const value = e.target.value;
+  setFormData((prev) => ({ ...prev, childNo: value }));
 
-    try {
-      const response = await fetch(`http://localhost:5000/api/child/${value}`);
-      if (!response.ok) throw new Error("Child not found");
-      const data = await response.json();
+  try {
+    const response = await fetch(`http://localhost:5000/api/patientRecords`);
+    if (!response.ok) throw new Error("Failed to fetch records");
+    const data = await response.json();
+
+    // Find the record with matching childNo
+    const matchedRecord = data.find(record => record.childNo === value);
+
+    if (matchedRecord) {
       setFormData((prev) => ({
         ...prev,
-        name: data.name,
-        age: data.age,
-        gender: data.gender,
-       
+        name: matchedRecord.name || '',
+        age: matchedRecord.age || '',
+        gender: matchedRecord.gender || '',
+        address: matchedRecord.address || '',
+        contactNo: matchedRecord.contactNo || '',
+        dateOfBirth: matchedRecord.dateOfBirth ? new Date(matchedRecord.dateOfBirth).toISOString().split('T')[0] : '',
+        // add other fields similarly as needed
       }));
-    } catch (err) {
+      setErrorMessage('');
+    } else {
+      // No record found
       setFormData((prev) => ({
         ...prev,
-        name: "",
-        age: "",
-        gender: "",
-        date: "",
+        name: '',
+        age: '',
+        gender: '',
+        address: '',
+        contactNo: '',
+        dateOfBirth: '',
       }));
+      setErrorMessage('Child record not found');
     }
+  } catch (err) {
+    console.error(err);
+    setErrorMessage('Failed to fetch patient records');
+    setFormData((prev) => ({
+      ...prev,
+      name: '',
+      age: '',
+      gender: '',
+      address: '',
+      contactNo: '',
+      dateOfBirth: '',
+    }));
+  }
+};
 
-    setErrorMessage("");
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -82,7 +107,10 @@ const AutismRatingForm = () => {
 
   const totalScore = Object.values(selectedScores).reduce((acc, curr) => acc + curr, 0);
   const allFilled = Object.keys(selectedScores).length === categories.length;
-  const allBasicInfoFilled = Object.values(formData).every((field) => field.trim() !== "");
+  const allBasicInfoFilled = Object.values(formData).every(
+  (field) => typeof field === 'string' ? field.trim() !== '' : field !== undefined && field !== null
+);
+
 
   const getSeverity = () => {
     if (!allFilled) return { label: "Pending", color: "bg-gray-400 text-white" };
@@ -137,103 +165,142 @@ const AutismRatingForm = () => {
 
   return (
     <div>
-    <form onSubmit={handleSubmit} className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-xl space-y-6">
+    <form onSubmit={handleSubmit} className="max-w-7xl mx-auto p-6 bg-white shadow-lg rounded-xl space-y-6">
       <h2 className="text-2xl font-bold text-center">Childhood Autism Rating Scale (CARS)</h2>
       <p className="text-center text-gray-600">Second Edition - Mathavam Centre</p>
 
-      <div className="bg-blue-50 p-6 rounded-xl shadow-sm">
-    
+   <div className="bg-blue-50 p-6 rounded-xl shadow-sm space-y-6">
+  <ChildInfoInputs
+    formData={formData}
+    handleChildNoChange={handleChildNoChange}
+  />
 
-        <ChildInfoInputs
-          formData={formData}
-          handleChildNoChange={handleChildNoChange}
-        />
+ 
+    </div>
 
-         
-       <label className="mb-2  font-semibold text-gray-700" htmlFor="age">
-        Date
-        </label>
-        <input
-          type="text"
-          name="date"
-          placeholder="Date of Test"
-          value={formData.date}
-          readOnly
-          className="border p-2 ml-2 rounded mb-6 mt-6 "
-        />
-      
-      </div>
+<div className="overflow-x-auto rounded-2xl max-h-[400px] overflow-y-auto">
+  <table className="min-w-full border-separate border-spacing-1">
+    <thead className="bg-gray-100 sticky top-0 z-20">
+      <tr>
+        <th
+          rowSpan="2"
+          className="border border-gray-300 p-3 font-semibold text-gray-700 text-center align-middle sticky left-0 bg-gray-100 z-30"
+          style={{ minWidth: '50px' }}
+        >
+          #
+        </th>
+        <th
+          rowSpan="2"
+          className="border border-gray-300 p-3 font-semibold text-gray-700 text-left align-middle sticky left-[50px] bg-gray-100 z-30"
+          style={{ minWidth: '150px' }}
+        >
+          Category
+        </th>
+        <th
+          colSpan="7"
+          className="border border-gray-300 p-3 font-semibold text-gray-700 text-center"
+        >
+          Score
+        </th>
+      </tr>
+      <tr>
+        {scores.map((score, idx) => {
+          const colors = [
+            "bg-green-300", "bg-green-200", "bg-yellow-100",
+            "bg-yellow-200", "bg-orange-200", "bg-red-200", "bg-red-400"
+          ];
+          return (
+            <th
+              key={idx}
+              className={`border border-gray-300 p-3 font-medium text-gray-800 ${colors[idx]}`}
+              style={{ minWidth: '60px' }}
+            >
+              {score.toFixed(1)}
+            </th>
+          );
+        })}
+      </tr>
+    </thead>
+    <tbody>
+      {categories.map((item, idx) => (
+        <tr key={idx} className="hover:bg-blue-50 transition-colors">
+          <td
+            className="border border-gray-300 p-3 text-center sticky left-0 bg-white z-10"
+            style={{ minWidth: '50px' }}
+          >
+            {idx + 1}
+          </td>
+          <td
+            className="border border-gray-300 p-3 text-left sticky left-[50px] bg-white z-10"
+            style={{ minWidth: '150px' }}
+          >
+            {item}
+          </td>
+          {scores.map((score) => (
+            <td
+              key={score}
+              className="border border-gray-300 p-3 text-center"
+              style={{ minWidth: '60px' }}
+            >
+              <input
+                type="radio"
+                name={item}
+                value={score}
+                checked={selectedScores[item] === score}
+                onChange={() => handleRadioChange(item, score)}
+              />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
-      <div className="overflow-x-auto">
-        <table className="table-auto w-full border border-gray-300 text-center">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border p-2">Category</th>
-              <th colSpan="7" className="border p-2">Score</th>
-            </tr>
-            <tr>
-              <th></th>
-              {scores.map((score, idx) => {
-                const colors = [
-                  "bg-green-300", "bg-green-200", "bg-yellow-100",
-                  "bg-yellow-200", "bg-orange-200", "bg-red-200", "bg-red-400"
-                ];
-                return (
-                  <th key={idx} className={`border p-2 ${colors[idx]}`}>
-                    {score.toFixed(1)}
-                  </th>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {categories.map((item, idx) => (
-              <tr key={idx}>
-                <td className="border p-2 text-left">{item}</td>
-                {scores.map((score) => (
-                  <td key={score} className="border p-2">
-                    <input
-                      type="radio"
-                      name={item}
-                      value={score}
-                      checked={selectedScores[item] === score}
-                      onChange={() => handleRadioChange(item, score)}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
 
-      <div className="text-right font-semibold text-lg">
-        Total Score: {totalScore.toFixed(1)}
-      </div>
+     {/* Total Score */}
+<div className="flex justify-end">
+  <div className="text-lg font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg shadow-inner">
+    Total Score: <span className="text-blue-600">{totalScore.toFixed(1)}</span>
+  </div>
+</div>
 
-      <div className="p-4 border rounded bg-gray-50">
-        <p className="font-semibold mb-2">Severity Group:</p>
-        <span className={`inline-block px-4 py-2 rounded-full ${severity.color}`}>
-          {severity.label}
-        </span>
-      </div>
+{/* Severity Group */}
+<div className="p-6 border rounded-xl bg-gray-50 shadow-sm flex items-center space-x-3 mt-4 max-w-3xl">
+  <p className="font-semibold text-gray-700">Severity Group:</p>
+  <span className={`text-base font-medium px-4 py-2 rounded-full ${severity.color} shadow`}>
+    {severity.label}
+  </span>
+</div>
 
-      {errorMessage && (
-        <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-          {errorMessage}
-        </div>
-      )}
+{/* Error Message */}
+{errorMessage && (
+  <div className="flex items-center p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow">
+    <svg
+      className="w-5 h-5 mr-2 text-red-600"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+    </svg>
+    {errorMessage}
+  </div>
+)}
 
-      <button
-        type="submit"
-        className={`mt-4 w-1/3 p-2 rounded transition ${
-          allFilled && allBasicInfoFilled
-            ? "bg-green-600 text-white hover:bg-green-700"
-            : "bg-green-500 text-white"
-        }`}
-      >
-        Submit
-      </button>
+{/* Submit Button */}
+<button
+  type="submit"
+  className={`mt-6 w-1/3 py-3 rounded-xl font-semibold transition-all duration-300 ${
+    allFilled && allBasicInfoFilled
+      ? "bg-green-600 text-white hover:bg-green-700 active:scale-95"
+      : "bg-green-400 text-white cursor-not-allowed"
+  }`}
+  disabled={!(allFilled && allBasicInfoFilled)}
+>
+  Submit
+</button>
 
     </form>
    

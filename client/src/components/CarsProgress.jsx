@@ -43,7 +43,7 @@ const ChildProgress = () => {
   }));
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <h2 className="text-2xl font-bold mb-4">Child Progress Report</h2>
 
       <div className="mb-6 flex gap-4 items-center">
@@ -79,9 +79,9 @@ const ChildProgress = () => {
             <Line type="monotone" dataKey="totalScore" stroke="#8884d8" />
           </LineChart>
 
-          <div className="mt-6">
+          <div className="mt-6 ml-5 text-left">
             <h3 className="text-lg font-semibold mb-2">Severity History</h3>
-            <ul className="list-disc list-inside">
+            <ul className="list-disc list-inside ">
               {entries.map((entry, i) => (
                 <li key={i}>
                   {entry.date}: {entry.severity?.label}

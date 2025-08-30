@@ -23,15 +23,86 @@ const EditBcEntry = () => {
     { label: 'N/A', value: 'NA', color: 'bg-gray-100 border-gray-400' },
   ];
 
-  const sections = [
-    { title: 'I. Social Communication', key: 'social', count: 12 },
-    { title: 'II. Restrictive Behaviors', key: 'restrictive', count: 6 },
-    { title: 'III. Mood and Anxiety', key: 'mood', count: 6 },
-    { title: 'IV. Self-regulation', key: 'selfRegulation', count: 6 },
-    { title: 'V. Challenging Behavior', key: 'challenging', count: 6 },
-    { title: 'VI. Self-injurious Behavior', key: 'selfInjury', count: 6 },
+ const sections = [
+    {
+      title: 'I. Social Communication',
+      key: 'social',
+      questions: [
+        'Shows appropriate affection towards familiar people',
+        'Resists affection from familiar people',
+        'Shows inappropriate affection towards unfamiliar people',
+        'Responds to attempts to initiate social interaction',
+        'Directs facial expression towards other people',
+        'Uses common gestures - waves "hello" and "goodbye"',
+        'Combines gestures with vocalizations to enhance communication',
+        'Looks when he/she is called or praised',
+        'Looks where another person is looking or pointing',
+        'Has difficulty interacting with peers',
+        'Says socially inappropriate things',
+        'Attends to parts of sentences and misinterprets whole',
+      ],
+    },
+    {
+      title: 'II. Restrictive Behaviors',
+      key: 'restrictive',
+      questions: [
+        'Gets upset over small changes in routine',
+        'Resists trying out new things - places, clothes, food, etc.',
+        'Is fixated on certain topics or activities and unable to move on',
+        'Has an unusually narrow range of interests',
+        'Repeats/echoes what others say',
+        'Makes repetitive body movements',
+      ],
+    },
+    {
+      title: 'III. Mood and Anxiety',
+      key: 'mood',
+      questions: [
+        'Cries over minor annoyances and hurts',
+        'Is irritable and whiny',
+        'Clings to adults or is too dependent on them',
+        'Is anxious in social situations',
+        'Is fearful of specific objects or situations',
+        'Has sleep problems',
+      ],
+    },
+    {
+      title: 'IV. Self-regulation',
+      key: 'selfRegulation',
+      questions: [
+        'Has difficulties waiting his/her turn',
+        'Switches quickly from one topic or activity to another',
+        'Has difficulties playing or engaging in leisure activities quietly',
+        'Fidgets',
+        'Has difficulty remaining seated',
+        'Is excessively active',
+      ],
+    },
+    {
+      title: 'V. Challenging Behavior',
+      key: 'challenging',
+      questions: [
+        'Is verbally aggressive towards other children or adults',
+        'Is physically aggressive towards other children or adults',
+        'Throws things inappropriately',
+        'Runs away',
+        'Takes or grabs things that belong to others',
+        'Has temper outbursts or tantrum',
+      ],
+    },
+    {
+      title: 'VI. Self-injurious Behavior',
+      key: 'selfInjury',
+      questions: [
+        'Engages in head-banging',
+        'Engages in arm-biting',
+        'Engages in excessive scratching',
+        'Engages in hair-pulling',
+        'Engages in eye-poking',
+        'Engages in other self-injurious behavior',
+      ],
+    },
   ];
-
   const currentSection = sections[step - 1];
 
   useEffect(() => {
@@ -118,7 +189,7 @@ const EditBcEntry = () => {
   if (!formData) return <div className="p-4">Entry not found.</div>;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white rounded-xl shadow-md">
+    <div className="p-6 max-w-7xl mx-auto bg-white rounded-xl shadow-md">
       <h2 className="text-2xl font-bold mb-6 text-center">Edit Behavior Checklist Entry</h2>
 
       {/* Progress Bar */}
@@ -146,7 +217,7 @@ const EditBcEntry = () => {
       {/* Instructions */}
       <div className="text-sm text-gray-600 mb-6 mt-5">
         <p>On average, how often does your child engage in the following behaviors?</p>
-        <ul className="list-disc ml-5 mt-2 space-y-1">
+        <ul className=" ml-5 mt-2 space-y-1 text-center">
           <li>1 - Almost never (less than 10% of the time)</li>
           <li>2 - Occasionally (around 25% of the time)</li>
           <li>3 - Half the time (around 50% of the time)</li>
@@ -156,21 +227,24 @@ const EditBcEntry = () => {
       </div>
 
       {/* Questions Section */}
-      <motion.div
-        key={step}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.3 }}
-      >
-        <h3 className="text-lg font-semibold mb-4 text-blue-700">{currentSection.title}</h3>
-        {formData[currentSection.key].map((_, idx) => (
-          <div key={idx} className="mb-6">
-            <p className="mb-3">{idx + 1}.</p>
-            {renderCardOptions(currentSection.key, idx)}
-          </div>
-        ))}
-      </motion.div>
+   <div className='text-left ml-20'>
+         {/* Questions Section */}
+         <motion.div
+           key={step}
+           initial={{ opacity: 0, y: 10 }}
+           animate={{ opacity: 1, y: 0 }}
+           exit={{ opacity: 0, y: -10 }}
+           transition={{ duration: 0.3 }}
+         >
+           <h3 className="text-lg font-semibold mb-4 text-blue-700">{currentSection.title}</h3>
+           {currentSection.questions.map((q, idx) => (
+             <div key={idx} className="mb-6">
+               <p className="mb-3">{idx + 1}. {q}</p>
+               {renderCardOptions(currentSection.key, idx)}
+             </div>
+           ))}
+         </motion.div>
+         </div>
 
       {/* Navigation Buttons */}
       <div className="flex justify-between mt-6">

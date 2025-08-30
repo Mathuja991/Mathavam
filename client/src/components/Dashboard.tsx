@@ -77,6 +77,11 @@ function Dashboard() {
   const handleManageUsers = () => navigate("/dashboard/manage-users");
   const handleAddNewUser = () => navigate("manage-users/add");
   const handleRDHS = () => navigate("/dashboard/rdhs"); // ✅ dedicated route
+    const handleParentsReadingResources = () => navigate("/dashboard/adminuploaddocs");
+const handleMonthlyReturns = () => navigate("/dashboard/forms/monreturn");
+const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs");
+
+
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -117,6 +122,9 @@ function Dashboard() {
     if (p.startsWith("/dashboard/rdhs")) return "RDHS";
     if (p.startsWith("/dashboard/reports")) return "Reports";
     if (p.startsWith("/dashboard/documents")) return "Documents";
+     if (p.startsWith("/dashboard/adminuploaddocs")) return "Upload Resources for Patents";
+      if (p.startsWith("/dashboard/viewdocs")) return "View Resources for Patents";
+       if (p.startsWith("/dashboard/forms/monreturn")) return "Upload Monthly Returns ";
     return "Welcome";
   })();
 
@@ -270,6 +278,14 @@ function Dashboard() {
             isActive={isActive("/dashboard/parental-training")}
             color="teal"
           />
+           <NavItem
+            icon={faUserGraduate}
+            label="Resources for Patents"
+            isOpen={isSidebarOpen}
+            onClick={handleViewofParentsReadingResources}
+            isActive={isActive("/dashboard/viewdocs")}
+            color="teal"
+          />
 
           <SectionLabel isOpen={isSidebarOpen} text="Admin" />
           <NavItem
@@ -278,6 +294,22 @@ function Dashboard() {
             isOpen={isSidebarOpen}
             onClick={handleManageUsers}
             isActive={isActive("/dashboard/manage-users")}
+            color="blue"
+          />
+           <NavItem
+            icon={faNotesMedical}
+            label="Upload Reading Resources for Parents "
+            isOpen={isSidebarOpen}
+            onClick={handleParentsReadingResources}
+            isActive={isActive("/dashboard/adminuploaddocs")}
+            color="blue"
+          />
+             <NavItem
+            icon={faNotesMedical}
+            label="Upload Monthly Returns "
+            isOpen={isSidebarOpen}
+            onClick={handleMonthlyReturns}
+            isActive={isActive("/dashboard/forms/monreturn")}
             color="blue"
           />
         </nav>

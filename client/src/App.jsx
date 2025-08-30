@@ -19,12 +19,13 @@ import SensoryProfileEditPage from "./pages/SensoryProfile/SensoryProfileEditPag
 
 
 //Mathuja parts
+
 import AdminDashboard from './components/AdminDashboard';
 import Carsform from './forms/carsform';
 import MathavamFlowchart from './forms/MathavamFlowchart';
 import CarsPrevious from "./components/CarsPrevious";
 import FormHome from "./components/FormHome";
-import AddChild from './components/AddChild';
+import MonthlyReturnForm from './forms/MonthlyReturnForm';
 
 import EditCarEntry from "./components/EditCarEntry";
 import MFPrevious from './components/MFPrevious';
@@ -33,8 +34,12 @@ import BcPrevious from './components/BcPrevious';
 import CarsProgress from './components/CarsProgress';
 import BcProgress from './components/BcProgress';
 import EditBcEntry from './components/EditBcEntry';
-import EditMfEntry from './components/EditMfEntry';
+ import EditMfEntry from './components/EditMfEntry';
 import ViewPatientRecord from './pages/RecordSheet/ViewPatientRecord';
+
+import AdminUploadDocument from './components/doc_parent/AdminUploadDocument';
+import UserViewDocuments from './components/doc_parent/UserViewDocuments';
+
 
 
 
@@ -89,8 +94,8 @@ function App() {
           <Route path="sensory-profile/edit/:id" element={<SensoryProfileEditPage />} />
 
           {/* Mathuja's Parts */}
-          <Route path="admin-dashboard" element={<AdminDashboard />} />
-          <Route path="addchild" element={<AddChild />} />
+        
+         
           <Route path="forms" element={<FormHome />} />
           <Route path="forms/carsform" element={<Carsform />} />
           <Route path="carsformprevious-entries" element={<CarsPrevious />} />
@@ -103,6 +108,11 @@ function App() {
           <Route path="bc-progress" element={<BcProgress />} />
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
+
+          <Route path="forms/monreturn" element={<MonthlyReturnForm/>} />
+        
+          <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
+          <Route path="viewdocs" element={<UserViewDocuments />} />
 
           {/* Catch-all for routes within Dashboard layout (optional, but good for empty states) */}
           <Route path="*" element={
