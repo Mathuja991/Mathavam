@@ -16,13 +16,20 @@ import {
   faCalendarCheck,
   faChartLine,
   faChartBar,
-  faHospital, // ✅ Suitable for RDHS
+  faHospital,
 } from "@fortawesome/free-solid-svg-icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
+// import NavItem and SectionLabel components
+import NavItem from "./NavItem";
+import SectionLabel from "./SectionLabel";
+import IconButton from "./IconButton";
+import StatCard from "./StatCard";
+import QuickAction from "./QuickAction";
 
 function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef(null);
@@ -42,7 +49,6 @@ function Dashboard() {
     }
   }, [navigate]);
 
-  // Keyboard shortcuts: [ toggles sidebar, / focuses search
   useEffect(() => {
     const onKey = (e) => {
       const target = e.target;
@@ -61,6 +67,20 @@ function Dashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  useEffect(() => {
+    if (!showAccountDropdown) return;
+    const handler = (e) => {
+      if (
+        !e.target.closest("#account-dropdown-btn") &&
+        !e.target.closest("#account-dropdown-menu")
+      ) {
+        setShowAccountDropdown(false);
+      }
+    };
+    window.addEventListener("mousedown", handler);
+    return () => window.removeEventListener("mousedown", handler);
+  }, [showAccountDropdown]);
+
   // ---------- Actions ----------
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
@@ -76,12 +96,10 @@ function Dashboard() {
   const handleReports = () => navigate("/dashboard/reports");
   const handleManageUsers = () => navigate("/dashboard/manage-users");
   const handleAddNewUser = () => navigate("manage-users/add");
-  const handleRDHS = () => navigate("/dashboard/rdhs"); // ✅ dedicated route
-    const handleParentsReadingResources = () => navigate("/dashboard/adminuploaddocs");
-const handleMonthlyReturns = () => navigate("/dashboard/forms/monreturn");
-const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs");
-
-
+  const handleRDHS = () => navigate("/dashboard/rdhs");
+  const handleParentsReadingResources = () => navigate("/dashboard/adminuploaddocs");
+  const handleMonthlyReturns = () => navigate("/dashboard/forms/monreturn");
+  const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -122,9 +140,9 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
     if (p.startsWith("/dashboard/rdhs")) return "RDHS";
     if (p.startsWith("/dashboard/reports")) return "Reports";
     if (p.startsWith("/dashboard/documents")) return "Documents";
-     if (p.startsWith("/dashboard/adminuploaddocs")) return "Upload Resources for Patents";
-      if (p.startsWith("/dashboard/viewdocs")) return "View Resources for Patents";
-       if (p.startsWith("/dashboard/forms/monreturn")) return "Upload Monthly Returns ";
+    if (p.startsWith("/dashboard/adminuploaddocs")) return "Upload Resources for Patents";
+    if (p.startsWith("/dashboard/viewdocs")) return "View Resources for Patents";
+    if (p.startsWith("/dashboard/forms/monreturn")) return "Upload Monthly Returns ";
     return "Welcome";
   })();
 
@@ -149,6 +167,10 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
       .replace(/-/g, " ")
       .replace(/\b\w/g, (m) => m.toUpperCase());
   }
+
+  // Check user type for permissions
+  const canAccessPatientInfo = loggedInUser?.userType === "Super Admin" || loggedInUser?.userType === "Admin";
+  const canAccessAdminPanel = loggedInUser?.userType === "Super Admin" || loggedInUser?.userType === "Admin";
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 antialiased overflow-hidden">
@@ -191,24 +213,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
           </button>
         </div>
 
-        {/* Sidebar search */}
-        <div className="px-4 pb-2">
-          <div className="relative">
-            <FontAwesomeIcon
-              icon={faSearch}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-white/60"
-            />
-            <input
-              ref={searchRef}
-              type="text"
-              placeholder="Search… (/)"
-              className="w-full rounded-xl border border-white/20 bg-white/10 text-white
-                         pl-10 pr-3 py-2 text-sm placeholder:text-white/70
-                         focus:ring-2 focus:ring-white/60 focus:border-white/60"
-            />
-          </div>
-        </div>
-
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           <NavItem
             icon={faHome}
@@ -219,14 +223,16 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
             color="blue"
           />
           <SectionLabel isOpen={isSidebarOpen} text="Core" />
-          <NavItem
-            icon={faClipboardList}
-            label="Patient Information"
-            isOpen={isSidebarOpen}
-            onClick={handleRecordingSheet}
-            isActive={isActive("/dashboard/patient-records")}
-            color="sky"
-          />
+          {canAccessPatientInfo && (
+            <NavItem
+              icon={faClipboardList}
+              label="Patient Information"
+              isOpen={isSidebarOpen}
+              onClick={handleRecordingSheet}
+              isActive={isActive("/dashboard/patient-records")}
+              color="sky"
+            />
+          )}
           <NavItem
             icon={faNotesMedical}
             label="Assessment Forms"
@@ -259,8 +265,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
             isActive={isActive("/dashboard/qr-attendance")}
             color="sky"
           />
-
-          {/* ✅ RDHS with a suitable icon */}
           <NavItem
             icon={faHospital}
             label="RDHS"
@@ -269,7 +273,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
             isActive={isActive("/dashboard/rdhs")}
             color="indigo"
           />
-
           <NavItem
             icon={faUserGraduate}
             label="Parental Training"
@@ -278,57 +281,47 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
             isActive={isActive("/dashboard/parental-training")}
             color="teal"
           />
-           <NavItem
+          <NavItem
             icon={faUserGraduate}
-            label="Resources for Patents"
+            label="Resources for Parents"
             isOpen={isSidebarOpen}
             onClick={handleViewofParentsReadingResources}
             isActive={isActive("/dashboard/viewdocs")}
             color="teal"
           />
-
-          <SectionLabel isOpen={isSidebarOpen} text="Admin" />
-          <NavItem
-            icon={faUsers}
-            label="Manage Users"
-            isOpen={isSidebarOpen}
-            onClick={handleManageUsers}
-            isActive={isActive("/dashboard/manage-users")}
-            color="blue"
-          />
-           <NavItem
-            icon={faNotesMedical}
-            label="Upload Reading Resources for Parents "
-            isOpen={isSidebarOpen}
-            onClick={handleParentsReadingResources}
-            isActive={isActive("/dashboard/adminuploaddocs")}
-            color="blue"
-          />
-             <NavItem
-            icon={faNotesMedical}
-            label="Upload Monthly Returns "
-            isOpen={isSidebarOpen}
-            onClick={handleMonthlyReturns}
-            isActive={isActive("/dashboard/forms/monreturn")}
-            color="blue"
-          />
+          {canAccessAdminPanel && (
+            <>
+              <SectionLabel isOpen={isSidebarOpen} text="Admin" />
+              <NavItem
+                icon={faUsers}
+                label="Manage Users"
+                isOpen={isSidebarOpen}
+                onClick={handleManageUsers}
+                isActive={isActive("/dashboard/manage-users")}
+                color="blue"
+              />
+              <NavItem
+                icon={faNotesMedical}
+                label="Upload Reading Resources for Parents "
+                isOpen={isSidebarOpen}
+                onClick={handleParentsReadingResources}
+                isActive={isActive("/dashboard/adminuploaddocs")}
+                color="blue"
+              />
+              <NavItem
+                icon={faNotesMedical}
+                label="Upload Monthly Returns "
+                isOpen={isSidebarOpen}
+                onClick={handleMonthlyReturns}
+                isActive={isActive("/dashboard/forms/monreturn")}
+                color="blue"
+              />
+            </>
+          )}
         </nav>
-
-        <div className="p-3 border-t border-white/15">
-          <NavItem
-            icon={faSignOutAlt}
-            label="Logout"
-            isOpen={isSidebarOpen}
-            onClick={handleLogout}
-            isActive={false}
-            isLogout={true}
-          />
-        </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 flex flex-col bg-white rounded-l-3xl shadow-sm overflow-hidden my-4 ml-4 transition-all duration-300 ease-in-out border border-gray-100">
-        {/* Top Bar */}
         <header className="flex items-center justify-between gap-4 p-5 bg-white border-b-4 border-blue-600 shadow-md sticky top-0 z-10">
           <div className="min-w-0">
             <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500">
@@ -357,8 +350,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
               Quick glance of activity, tasks, and patient pipeline.
             </p>
           </div>
-
-          {/* Right-side controls */}
           <div className="flex items-center gap-2">
             <div className="relative hidden md:block">
               <FontAwesomeIcon
@@ -369,7 +360,7 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
                 type="text"
                 placeholder="Search patients, sessions, docs…"
                 className="w-72 rounded-xl border border-gray-200 pl-10 pr-3 py-2 text-sm
-                           focus:ring-2 focus:ring-blue-300 focus:border-blue-300 placeholder:text-gray-400"
+                                focus:ring-2 focus:ring-blue-300 focus:border-blue-300 placeholder:text-gray-400"
               />
             </div>
 
@@ -377,17 +368,46 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
             <IconButton icon={faCog} title="Settings" />
 
             {loggedInUser ? (
-              <div
-                className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-50 text-blue-700 font-medium text-sm shadow-inner cursor-pointer hover:bg-blue-100 transition-colors"
-                title="Account"
-              >
-                <div className="h-6 w-6 rounded-full bg-blue-200 grid place-items-center text-xs font-bold">
-                  {loggedInUser.firstName?.[0]}
-                  {loggedInUser.lastName?.[0]}
-                </div>
-                <span className="hidden sm:block">
-                  Hi, {loggedInUser.firstName} {loggedInUser.lastName}
-                </span>
+              <div className="relative">
+                <button
+                  id="account-dropdown-btn"
+                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-50 text-blue-700 font-medium text-sm shadow-inner cursor-pointer hover:bg-blue-100 transition-colors"
+                  title="Account"
+                  onClick={() => setShowAccountDropdown((v) => !v)}
+                >
+                  <div className="h-6 w-6 rounded-full bg-blue-200 grid place-items-center text-xs font-bold">
+                    {loggedInUser.firstName?.[0]}
+                    {loggedInUser.lastName?.[0]}
+                  </div>
+                  <span className="hidden sm:block">
+                    Hi, {loggedInUser.firstName} {loggedInUser.lastName}
+                  </span>
+                  <svg
+                    className={`ml-1 w-3 h-3 transition-transform ${
+                      showAccountDropdown ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {showAccountDropdown && (
+                  <div
+                    id="account-dropdown-menu"
+                    className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
+                  >
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl text-sm"
+                    >
+                      <FontAwesomeIcon icon={faSignOutAlt} />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center px-3 py-2 rounded-full bg-gray-100 text-gray-600 text-sm">
@@ -397,10 +417,8 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
           </div>
         </header>
 
-        {/* Dashboard Overview Enhancements */}
         {location.pathname === "/dashboard" && (
           <section className="p-5 space-y-6">
-            {/* Quick stats */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
                 icon={faCalendarCheck}
@@ -427,8 +445,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
                 sub="This week"
               />
             </div>
-
-            {/* Quick actions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <QuickAction
                 title="Record New Patient"
@@ -452,7 +468,6 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
           </section>
         )}
 
-        {/* Dynamic Content */}
         <div className="flex-1 bg-gray-100 overflow-y-auto rounded-br-3xl">
           <Outlet />
         </div>
@@ -460,109 +475,5 @@ const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs"
     </div>
   );
 }
-
-/* ---------- Reusable Components ---------- */
-
-const SectionLabel = ({ isOpen, text }) => (
-  <div
-    className={`${
-      isOpen ? "px-3" : "px-0"
-    } text-[11px] uppercase tracking-wider text-white/70 mt-3 mb-1`}
-  >
-    {isOpen ? text : <span className="sr-only">{text}</span>}
-  </div>
-);
-
-const NavItem = ({
-  icon,
-  label,
-  isOpen,
-  onClick,
-  isActive,
-  isLogout = false,
-  color = "indigo",
-}) => {
-  const activeBg =
-    {
-      indigo: "bg-indigo-500",
-      sky: "bg-sky-500",
-      teal: "bg-teal-500",
-      blue: "bg-blue-600",
-    }[color] || "bg-indigo-500";
-
-  return (
-    <button
-      onClick={onClick}
-      className={`flex items-center w-full py-2.5 px-3 rounded-lg text-left text-sm font-medium 
-        transition-all duration-200 ease-in-out group
-        ${
-          isActive
-            ? `${activeBg} text-white shadow-[0_6px_20px_-8px_rgba(255,255,255,0.6)]`
-            : "text-white/85 hover:bg-white/10 hover:text-white"
-        }
-        ${isLogout ? "text-red-200 hover:bg-red-600/60 hover:text-white" : ""}
-        focus:outline-none focus:ring-2 focus:ring-white/50`}
-      title={label}
-    >
-      <FontAwesomeIcon
-        icon={icon}
-        className={`${isOpen ? "mr-3" : "mr-0"} text-[17px]`}
-      />
-      <span
-        className={`${
-          isOpen ? "opacity-100" : "opacity-0 absolute -left-96"
-        } transition-opacity`}
-      >
-        {label}
-      </span>
-    </button>
-  );
-};
-
-const IconButton = ({ icon, badge = false, title }) => (
-  <button
-    className="relative text-gray-500 hover:text-blue-700 focus:outline-none transition-colors text-xl p-2.5 rounded-full hover:bg-blue-50 focus:ring-2 focus:ring-blue-300 active:scale-95"
-    title={title}
-  >
-    {badge && (
-      <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 bg-red-500 rounded-full ring-2 ring-white"></span>
-    )}
-    <FontAwesomeIcon icon={icon} />
-  </button>
-);
-
-const StatCard = ({ icon, title, value, sub }) => (
-  <div className="group rounded-2xl border border-blue-100 bg-white p-4 hover:shadow-md transition-shadow">
-    <div className="flex items-start justify-between">
-      <div className="rounded-xl bg-blue-50 p-3">
-        <FontAwesomeIcon icon={icon} className="text-blue-700 text-lg" />
-      </div>
-      <FontAwesomeIcon icon={faChartBar} className="text-blue-100" />
-    </div>
-    <div className="mt-3">
-      <p className="text-sm text-gray-500">{title}</p>
-      <p className="text-2xl font-semibold text-gray-800">{value}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
-    </div>
-    <div className="mt-3 h-1 rounded-full bg-gradient-to-r from-blue-200 to-blue-100 group-hover:from-blue-300 group-hover:to-blue-200"></div>
-  </div>
-);
-
-const QuickAction = ({ title, desc, onClick, icon }) => (
-  <button
-    onClick={onClick}
-    className="w-full text-left rounded-2xl border border-blue-100 bg-white p-4 hover:shadow-md active:scale-[0.99] transition-all"
-  >
-    <div className="flex items-center gap-3">
-      <div className="rounded-xl bg-blue-50 p-3">
-        <FontAwesomeIcon icon={icon} className="text-blue-700" />
-      </div>
-      <div>
-        <p className="font-medium text-gray-800">{title}</p>
-        <p className="text-sm text-gray-500">{desc}</p>
-      </div>
-    </div>
-  </button>
-);
 
 export default Dashboard;
