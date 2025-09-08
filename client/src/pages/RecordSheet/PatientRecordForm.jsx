@@ -1,8 +1,6 @@
-// D:\Computer Science - University of Jaffna\3rd Year\Group Project\Mathavam Project\client\src\pages\RecordSheet\PatientRecordForm.jsx
-
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate, useParams } from 'react-router-dom'; // Import useParams
+import { useParams } from 'react-router-dom';
 
 import Part1PatientInfo from './Part1PatientInfo';
 import Part2History from './Part2History';
@@ -10,18 +8,17 @@ import Part3Diagnosis from './Part3Diagnosis';
 import Part4Management from './Part4Management';
 
 const PatientRecordForm = () => {
-    const navigate = useNavigate();
-    const { id } = useParams(); // Get ID from URL for editing
+
+    const { id } = useParams();
     const [step, setStep] = useState(1);
-    const [formData, setFormData] = useState({}); // Initialize as empty, data will be loaded
+    const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
-    const [isEditMode, setIsEditMode] = useState(false); // New state to track edit mode
+    const [isEditMode, setIsEditMode] = useState(false);
 
     useEffect(() => {
         if (id) {
-            // If an ID is present in the URL, we are in edit mode
             setIsEditMode(true);
             setLoading(true);
             const fetchPatientData = async () => {
@@ -37,17 +34,15 @@ const PatientRecordForm = () => {
             };
             fetchPatientData();
         } else {
-            // If no ID, it's a new record, try to load from localStorage
             const savedData = localStorage.getItem('patientRecordFormData');
             if (savedData) {
                 setFormData(JSON.parse(savedData));
             }
             setIsEditMode(false);
         }
-    }, [id]); // Re-run when ID changes
+    }, [id]);
 
     useEffect(() => {
-        // Save to localStorage only if not in edit mode (to prevent overwriting fetched data)
         if (!isEditMode) {
             localStorage.setItem('patientRecordFormData', JSON.stringify(formData));
         }
@@ -104,24 +99,19 @@ const PatientRecordForm = () => {
             let response;
 
             if (isEditMode) {
-                // If in edit mode, send a PUT request to update
                 response = await axios.put(`${backendUrl}/${id}`, formData);
                 console.log('Record updated successfully:', response.data);
                 alert('Patient record updated successfully!');
             } else {
-                // If not in edit mode, send a POST request to create
                 response = await axios.post(backendUrl, formData);
                 console.log('Record saved successfully:', response.data);
                 alert('Patient record submitted successfully!');
             }
             
             setSuccess(true);
-            localStorage.removeItem('patientRecordFormData'); // Clear local storage after successful submission/update
-            setFormData({}); // Clear form data
-            setStep(1); // Go back to the first step
-
-            // Optionally navigate after submission
-            // navigate('/some-confirmation-page');
+            localStorage.removeItem('patientRecordFormData');
+            setFormData({});
+            setStep(1);
 
         } catch (err) {
             console.error('Error submitting form:', err.response ? err.response.data : err.message);
@@ -185,11 +175,10 @@ const PatientRecordForm = () => {
 
     return (
         <div className="patient-record-form-container">
-            <h2>{isEditMode ? 'Edit Patient Record' : 'New Patient Record'} - Step {step} of 4</h2>
-            {error && !isEditMode && <p className="error-message">{error}</p>} {/* Show error for new record if any */}
+            {error && !isEditMode && <p className="error-message">{error}</p>}
             {renderStep()}
             {success && <p className="success-message">Record {isEditMode ? 'Updated' : 'Submitted'} Successfully!</p>}
-            {error && isEditMode && <p className="error-message">{error}</p>} {/* Show error for edit mode if any */}
+            {error && isEditMode && <p className="error-message">{error}</p>}
         </div>
     );
 };

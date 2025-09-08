@@ -1,5 +1,3 @@
-// D:\Computer Science  - University of Jaffna\3rd Year\Group Project\Mathavam Project\client\src\pages\RecordSheet\Part4Management.jsx
-
 import React from 'react';
 
 const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep, handleSubmit, loading, error }) => {
@@ -10,11 +8,15 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
 
     return (
         <div className="p-6 bg-white rounded-lg shadow-xl max-w-4xl mx-auto my-8">
-            <h2 className="text-3xl font-bold text-center text-blue-800 mb-8">Patient Information Form - Part 4</h2>
+            {/* Title */}
+            <h2 className="text-3xl font-extrabold text-center text-blue-800 mb-8">
+                Patient History Form<br />
+                <span className="text-lg font-medium text-blue-600">Part 4: Management</span>
+            </h2>
 
             {/* Management Plan Section */}
-            <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-200">Management Plan</h3>
+            <div className="mb-8 p-6 border border-blue-200 rounded-lg bg-blue-50 shadow-inner">
+                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-300">Management Plan</h3>
                 <div className="flex flex-col">
                     <label htmlFor="managementPlan" className="block text-gray-700 text-sm font-medium mb-1">Management Plan:</label>
                     <textarea
@@ -23,14 +25,14 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                         value={formData.managementPlan || ''}
                         onChange={handleChange}
                         rows="3"
-                        className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y"
+                        className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y transition duration-300"
                     ></textarea>
                 </div>
             </div>
 
             {/* Home Training Recommendations Section */}
-            <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-200">Home Training Recommendations</h3>
+            <div className="mb-8 p-6 border border-blue-200 rounded-lg bg-blue-50 shadow-inner">
+                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-300">Home Training Recommendations</h3>
                 <div className="flex flex-col">
                     <label htmlFor="homeTrainingRecommendations" className="block text-gray-700 text-sm font-medium mb-1">Therapist's Observation on Assessment and Recommendations:</label>
                     <textarea
@@ -39,14 +41,14 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                         value={formData.homeTrainingRecommendations || ''}
                         onChange={handleChange}
                         rows="3"
-                        className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y"
+                        className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y transition duration-300"
                     ></textarea>
                 </div>
             </div>
 
             {/* Summary Section */}
-            <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-200">Summary</h3>
+            <div className="mb-8 p-6 border border-blue-200 rounded-lg bg-blue-50 shadow-inner">
+                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-300">Summary</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col">
                         <label htmlFor="summary" className="block text-gray-700 text-sm font-medium mb-1">Overall Summary:</label>
@@ -56,7 +58,7 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             value={formData.summary || ''}
                             onChange={handleChange}
                             rows="3"
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y transition duration-300"
                         ></textarea>
                     </div>
                     <div className="flex flex-col">
@@ -67,15 +69,15 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             value={formData.presentingComplaintsSummary || ''}
                             onChange={handleChange}
                             rows="3"
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm resize-y transition duration-300"
                         ></textarea>
                     </div>
                 </div>
             </div>
 
             {/* Assessment Scores / Details Section */}
-            <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-200">Assessment Scores / Details</h3>
+            <div className="mb-8 p-6 border border-blue-200 rounded-lg bg-blue-50 shadow-inner">
+                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-300">Assessment Scores / Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col">
                         <label htmlFor="carsScore" className="block text-gray-700 text-sm font-medium mb-1">CARS Score:</label>
@@ -85,7 +87,7 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             name="carsScore"
                             value={formData.carsScore || ''}
                             onChange={handleChange}
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm transition duration-300"
                         />
                     </div>
                     <div className="flex flex-col">
@@ -96,15 +98,15 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             name="vinelandSocialMaturityScale"
                             value={formData.vinelandSocialMaturityScale || ''}
                             onChange={handleChange}
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm transition duration-300"
                         />
                     </div>
                 </div>
             </div>
 
             {/* Plan Section */}
-            <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-200">Plan</h3>
+            <div className="mb-8 p-6 border border-blue-200 rounded-lg bg-blue-50 shadow-inner">
+                <h3 className="text-2xl font-semibold text-blue-700 mb-6 pb-2 border-b border-blue-300">Plan</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <label className="flex items-center text-gray-700">
                         <input
@@ -143,7 +145,7 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             name="dateForHomeVisit"
                             value={getNestedValue(formData, 'assessmentPlan.dateForHomeVisit') ? new Date(getNestedValue(formData, 'assessmentPlan.dateForHomeVisit')).toISOString().substring(0, 10) : ''}
                             onChange={(e) => handleNestedChange('assessmentPlan', e)}
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm transition duration-300"
                         />
                     </div>
                     <div className="flex flex-col">
@@ -154,7 +156,7 @@ const Part4Management = ({ formData, handleChange, handleNestedChange, prevStep,
                             name="commencementOfTherapy"
                             value={getNestedValue(formData, 'assessmentPlan.commencementOfTherapy') ? new Date(getNestedValue(formData, 'assessmentPlan.commencementOfTherapy')).toISOString().substring(0, 10) : ''}
                             onChange={(e) => handleNestedChange('assessmentPlan', e)}
-                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm"
+                            className="p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 shadow-sm transition duration-300"
                         />
                     </div>
                 </div>

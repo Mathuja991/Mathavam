@@ -97,9 +97,11 @@ function Dashboard() {
   const handleManageUsers = () => navigate("/dashboard/manage-users");
   const handleAddNewUser = () => navigate("manage-users/add");
   const handleRDHS = () => navigate("/dashboard/rdhs");
-  const handleParentsReadingResources = () => navigate("/dashboard/adminuploaddocs");
+  const handleParentsReadingResources = () =>
+    navigate("/dashboard/adminuploaddocs");
   const handleMonthlyReturns = () => navigate("/dashboard/forms/monreturn");
-  const handleViewofParentsReadingResources = () => navigate("/dashboard/viewdocs");
+  const handleViewofParentsReadingResources = () =>
+    navigate("/dashboard/viewdocs");
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -130,19 +132,25 @@ function Dashboard() {
     const p = location.pathname;
     if (p === "/dashboard") return "Dashboard Overview";
     if (p.startsWith("/dashboard/forms")) return "Assessment Forms";
-    if (p.startsWith("/dashboard/patient-records")) return "Patient Information";
-    if (p.startsWith("/dashboard/parental-training")) return "Parental Training";
+    if (p.startsWith("/dashboard/patient-records"))
+      return "Patient Information";
+    if (p.startsWith("/dashboard/parental-training"))
+      return "Parental Training";
     if (p.startsWith("/dashboard/qr-attendance")) return "QR Attendance";
     if (p.startsWith("/dashboard/therapy-tracking")) return "Therapy Tracking";
     if (p.startsWith("/dashboard/therapy-sessions")) return "Therapy Sessions";
-    if (p.startsWith("/dashboard/appointments")) return "Appointment Management";
+    if (p.startsWith("/dashboard/appointments"))
+      return "Appointment Management";
     if (p.startsWith("/dashboard/manage-users")) return "Manage Users";
     if (p.startsWith("/dashboard/rdhs")) return "RDHS";
     if (p.startsWith("/dashboard/reports")) return "Reports";
     if (p.startsWith("/dashboard/documents")) return "Documents";
-    if (p.startsWith("/dashboard/adminuploaddocs")) return "Upload Resources for Patents";
-    if (p.startsWith("/dashboard/viewdocs")) return "View Resources for Patents";
-    if (p.startsWith("/dashboard/forms/monreturn")) return "Upload Monthly Returns ";
+    if (p.startsWith("/dashboard/adminuploaddocs"))
+      return "Upload Resources for Patents";
+    if (p.startsWith("/dashboard/viewdocs"))
+      return "View Resources for Patents";
+    if (p.startsWith("/dashboard/forms/monreturn"))
+      return "Upload Monthly Returns ";
     return "Welcome";
   })();
 
@@ -163,14 +171,16 @@ function Dashboard() {
   })();
 
   function prettify(str) {
-    return str
-      .replace(/-/g, " ")
-      .replace(/\b\w/g, (m) => m.toUpperCase());
+    return str.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
   }
 
   // Check user type for permissions
-  const canAccessPatientInfo = loggedInUser?.userType === "Super Admin" || loggedInUser?.userType === "Admin";
-  const canAccessAdminPanel = loggedInUser?.userType === "Super Admin" || loggedInUser?.userType === "Admin";
+  const canAccessPatientInfo =
+    loggedInUser?.userType === "Super Admin" ||
+    loggedInUser?.userType === "Admin";
+  const canAccessAdminPanel =
+    loggedInUser?.userType === "Super Admin" ||
+    loggedInUser?.userType === "Admin";
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 antialiased overflow-hidden">
@@ -190,7 +200,10 @@ function Dashboard() {
                 className="rounded-xl p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
                 title="Dashboard Home"
               >
-                <FontAwesomeIcon icon={faHome} className="text-2xl text-white" />
+                <FontAwesomeIcon
+                  icon={faHome}
+                  className="text-2xl text-white"
+                />
               </button>
             ) : (
               <h1
@@ -339,7 +352,9 @@ function Dashboard() {
               ))}
             </div>
             <div className="flex items-center gap-2 mt-1">
-              <h2 className="text-2xl font-semibold text-gray-800">{currentTitle}</h2>
+              <h2 className="text-2xl font-semibold text-gray-800">
+                {currentTitle}
+              </h2>
               {currentTitle === "Dashboard Overview" && (
                 <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                   Live
@@ -391,7 +406,11 @@ function Dashboard() {
                     strokeWidth={2}
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
                 {showAccountDropdown && (
