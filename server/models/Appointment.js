@@ -2,58 +2,69 @@
 const mongoose = require('mongoose');
 
 const appointmentSchema = new mongoose.Schema({
-    // Link to the patient (child) being seen
+    // Link to the patient (child) being seen. 
     patient: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Child', // Assuming you have a 'Child' model for patients
+        ref: 'Child', // Assuming your patient details are in a 'Child' model/collection
         required: true
     },
+    
     // Link to the Doctor or Therapist conducting the appointment
     practitioner: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User', // Refers to the User model (specifically Doctors/Therapists)
         required: true
     },
-    // For service-based appointments (e.g., Speech Therapy Session)
+    
+    // Appointment details
     serviceType: {
         type: String,
-        required: function() {
-            // This field is required if the practitioner is a 'Therapist'
-            // or if the appointment is specifically a 'service' type booking
-            // We'll enforce this in the controller based on how it's created.
-            // For now, making it generally optional at the schema level if not every appointment has a specific service type
-            return false; // Will be conditionally required by controller
-        },
-        enum: ['General Consultation', 'Speech Therapy', 'Occupational Therapy', 'Physiotherapy', 'Counseling Session', 'Other'], // Example service types
-        default: null
+        required: true, 
+        enum: [
+            'Speech Therapy', 
+            'Occupational Therapy', 
+            'Physiotherapy', 
+            'Counseling Session', 
+            'Other'
+        ],
+        default: 'General Consultation' 
     },
+    
     appointmentDate: {
         type: Date,
         required: true
     },
+    
     startTime: {
         type: String, // e.g., "09:00"
         required: true
     },
+    
     endTime: {
         type: String, // e.g., "10:00"
         required: true
     },
+    
     status: {
         type: String,
         enum: ['Pending', 'Confirmed', 'Completed', 'Cancelled', 'Rescheduled'],
         default: 'Pending'
     },
+    
     notes: {
         type: String,
-        required: false
+        required: false // Optional field
     },
-    // To track who booked the appointment (e.g., Parent, Admin, Resource Person)
+    
+    // --- THIS IS THE FIX ---
+    // bookedBy is now OPTIONAL (required: true was removed)
+    // The system will no longer require this to save.
     bookedBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // User who created this appointment
-        required: true
-    }
-}, { timestamps: true });
+        ref: 'User', 
+        required: false // <-- This was changed from true
+    },
+
+}, { timestamps: true }); // Added timestamps for created/updated tracking
 
 module.exports = mongoose.model('Appointment', appointmentSchema);
