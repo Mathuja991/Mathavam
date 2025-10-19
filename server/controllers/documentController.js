@@ -1,5 +1,8 @@
+// controllers/documentController.js
 const { MongoClient, ObjectId, GridFSBucket } = require('mongodb');
-const client = new MongoClient(process.env.MONGO_URI);
+const mongoose = require('mongoose');
+const Document = require('../models/Document');
+const client = new MongoClient(process.env.MONGO_URI, { useUnifiedTopology: true });
 
 const uploadDocument = async (req, res) => {
   try {
@@ -7,7 +10,9 @@ const uploadDocument = async (req, res) => {
       return res.status(400).send('No file uploaded.');
     }
 
+    const { title } = req.body;
     const file = req.files.file;
+
     await client.connect();
     const db = client.db('testWorkingMathavam');
     const bucket = new GridFSBucket(db, { bucketName: 'documents' });
@@ -15,19 +20,36 @@ const uploadDocument = async (req, res) => {
     const uploadStream = bucket.openUploadStream(file.name);
     uploadStream.end(file.data);
 
-    uploadStream.on('finish', () => {
-      res.status(200).json({ message: 'File uploaded successfully!', fileId: uploadStream.id });
+    uploadStream.on('finish', async () => {
+      // uploadStream.id is the GridFS file id (ObjectId)
+      const gridFsId = uploadStream.id;
+
+      // Store metadata including gridFsId
+      const newDoc = new Document({
+        title,
+        filename: file.name,
+        filepath: `/api/documents/${gridFsId}`, // download URL
+        gridFsId: gridFsId.toString(), // store as string for easy use
+      });
+
+      await newDoc.save();
+      res.status(200).json({
+        message: 'File uploaded successfully!',
+        fileId: gridFsId,
+        document: newDoc,
+      });
     });
 
     uploadStream.on('error', (err) => {
+      console.error('Upload stream error:', err);
       res.status(500).json({ error: err.message });
     });
-
   } catch (error) {
-    console.error(error);
+    console.error('uploadDocument error:', error);
     res.status(500).send('Server error');
   }
 };
+
 
 const getDocuments = async (req, res) => {
   try {
@@ -67,4 +89,43 @@ const downloadDocument = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-module.exports = { uploadDocument, getDocuments, downloadDocument };
+
+const deleteDocument = async (req, res) => {
+  try {
+    const fileId = req.params.id;
+    
+    // Validate ObjectId format
+    if (!ObjectId.isValid(fileId)) {
+      return res.status(400).json({ error: 'Invalid file ID format' });
+    }
+
+    await client.connect();
+    const db = client.db('testWorkingMathavam');
+    const bucket = new GridFSBucket(db, { bucketName: 'documents' });
+
+    // First, check if file exists in GridFS
+    const fileExists = await db.collection('documents.files').findOne({ _id: new ObjectId(fileId) });
+    if (!fileExists) {
+      return res.status(404).json({ error: 'File not found in GridFS' });
+    }
+
+    // Delete from GridFS
+    await bucket.delete(new ObjectId(fileId));
+
+    // Also delete from Document model if it exists
+    try {
+      await Document.deleteOne({ gridFsId: fileId });
+    } catch (dbError) {
+      console.log('No corresponding document found in Document model, continuing...');
+    }
+
+    res.json({ message: 'File deleted successfully!' });
+  } catch (error) {
+    console.error('❌ Delete error:', error.message);
+    if (error.message.includes('FileNotFound')) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    res.status(500).json({ error: 'Server error: ' + error.message });
+  }
+};
+module.exports = { uploadDocument, getDocuments, downloadDocument, deleteDocument};
