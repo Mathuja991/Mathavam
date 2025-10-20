@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // Make sure this is imported
 
-// Reusable Modal Component to replace alert()
+// Simple Modal component (kept for potential future use, e.g., error messages)
 const Modal = ({ isOpen, onClose, title, children }) => {
   if (!isOpen) return null;
 
@@ -14,8 +15,19 @@ const Modal = ({ isOpen, onClose, title, children }) => {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </button>
         </div>
@@ -26,6 +38,9 @@ const Modal = ({ isOpen, onClose, title, children }) => {
 };
 
 const ServiceBookingForm = () => {
+  const navigate = useNavigate(); // Initialize navigate
+  
+  // --- State for the form data ---
   const [formData, setFormData] = useState({
     patientId: '',
     practitionerId: '',
@@ -34,342 +49,435 @@ const ServiceBookingForm = () => {
     startTime: '',
     endTime: '',
     notes: '',
-    status: 'Pending',
+    // 'status' is set by the backend, no need to keep it in frontend state
   });
+
+  // --- State for dropdown options ---
   const [practitioners, setPractitioners] = useState([]);
   const [patients, setPatients] = useState([]);
-  const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(false);
+
+  // --- State for loading, errors, and success messages ---
+  const [loading, setLoading] = useState(false); // Combined loading state
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-  const [currentAppointment, setCurrentAppointment] = useState(null);
 
+  // --- State to verify user session ---
+  const [currentUserId, setCurrentUserId] = useState(null); 
+
+  // --- Available service types ---
   const serviceTypes = [
     'Speech Therapy',
     'Occupational Therapy',
     'Physiotherapy',
     'Counseling Session',
-    'Other'
+    'Other',
   ];
 
-  // Fetch initial data for dropdowns
+  // --- Helper to get authorization token ---
+  const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        // If token is missing early, redirect immediately
+        console.error("Auth token missing, redirecting.");
+        navigate('/?message=no_token');
+        return null; // Indicate failure
+    }
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-auth-token': token,
+      },
+    };
+  };
+
+  // --- useEffect to load initial data (Patients, Practitioners) ---
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+    const fetchInitialData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // setError('Authentication required. Please log in again.');
+        navigate('/?message=no_token'); 
+        return;
+      }
+
+      // Verify user ID from localStorage just for frontend check
       try {
+        const user = JSON.parse(localStorage.getItem('user'));
+        const userId = user ? (user.id || user._id) : null;
+        if (!userId) {
+          setError('User session invalid. Please log in again.');
+          // Optionally redirect immediately if user data is corrupt/missing
+          // localStorage.removeItem('token');
+          // localStorage.removeItem('user');
+          // navigate('/?message=session_invalid');
+          // return;
+        }
+        setCurrentUserId(userId); // Store user ID if found
+      } catch (e) {
+        console.error('Error parsing user from localStorage:', e);
+        setError('Failed to load user session. Please log in again.');
+        // Optionally redirect on parse error
+        // localStorage.removeItem('token');
+        // localStorage.removeItem('user');
+        // navigate('/?message=session_error');
+        // return;
+      }
+
+      setLoading(true);
+      setError(null); // Clear previous errors
+      
+      const config = getAuthConfig();
+      // If getAuthConfig returned null (no token), stop execution
+      if (!config) { 
+          setLoading(false);
+          return; 
+      }
+
+      try {
+        // Fetch only practitioners and patients
         const [usersResponse, patientsResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/users'),
-          axios.get('http://localhost:5000/api/patientRecords')
+          axios.get('http://localhost:5000/api/users', config),
+          axios.get('http://localhost:5000/api/patientRecords', config),
+          // REMOVED: Fetching all appointments is not needed for booking
+          // axios.get('http://localhost:5000/api/appointments', config), 
         ]);
 
         const filteredPractitioners = usersResponse.data.filter(
-          (user) => user.userType === 'Doctor' || user.userType === 'Therapist'
+          (u) => u.userType === 'Doctor' || u.userType === 'Therapist'
         );
         setPractitioners(filteredPractitioners);
-
         setPatients(patientsResponse.data);
+        // REMOVED: setAppointments(...)
 
-        setLoading(false);
       } catch (err) {
-        console.error('Error fetching data:', err.response ? err.response.data : err.message);
-        setError('Failed to load data. Please check the backend server.');
+        if (err.response && err.response.status === 401) {
+          console.error('Session expired during data fetch. Logging out.');
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/?message=session_expired');
+        } else {
+          console.error('Error fetching dropdown data:', err.response ? err.response.data : err.message);
+          setError('Failed to load necessary data. Please check connection or log in again.');
+        }
+      } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
 
+    fetchInitialData();
+  }, [navigate]); // navigate is a dependency
+
+  // --- Handle changes in form inputs ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    // Clear success/error messages when user types again
     setSuccess(false);
     setError(null);
   };
 
+  // --- Handle form submission for booking ---
   const handleBookingSubmit = async (e) => {
     e.preventDefault();
+
+    // Double-check token and user ID before submitting
+    const config = getAuthConfig();
+    if (!config) {
+        setError("Your session has expired or is invalid. Please log in again.");
+        return; // Stop if no token
+    }
+    if (!currentUserId) {
+       setError('User session verification failed. Please log in again.');
+       return;
+    }
+
     setLoading(true);
     setError(null);
     setSuccess(false);
 
-    try {
-      if (!formData.serviceType) {
-        setError('Please select a Service Type.');
+    // Basic frontend validation
+    if (!formData.patientId || !formData.practitionerId || !formData.serviceType || !formData.appointmentDate || !formData.startTime || !formData.endTime) {
+         setError('Please fill in all required fields.');
+         setLoading(false);
+         return;
+    }
+    if (formData.startTime && formData.endTime) {
+      const start = new Date(`2000/01/01 ${formData.startTime}`);
+      const end = new Date(`2000/01/01 ${formData.endTime}`);
+      if (end <= start) {
+        setError('End time must be after start time.');
         setLoading(false);
         return;
       }
+    }
+
+    // Prepare data to send (match backend controller expectations)
+    const dataToSend = {
+      patient: formData.patientId,
+      practitioner: formData.practitionerId,
+      serviceType: formData.serviceType,
+      appointmentDate: formData.appointmentDate,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      notes: formData.notes,
+    };
+
+    try {
+      const response = await axios.post(
+        'http://localhost:5000/api/appointments',
+        dataToSend,
+        config // Send with auth token
+      );
+
+      setSuccess(true); // Show success message
+      // Clear the form after successful booking
+      setFormData({
+        patientId: '',
+        practitionerId: '',
+        serviceType: '',
+        appointmentDate: '',
+        startTime: '',
+        endTime: '',
+        notes: '',
+      });
+      // REMOVED: Adding to local 'appointments' state is not needed here
+
+    } catch (err) {
+      console.error(
+        'Error booking service appointment:',
+        err.response ? err.response.data : err.message
+      );
       
-      // Validation for start and end times
-      if (formData.startTime && formData.endTime) {
-        const start = new Date(`2000/01/01 ${formData.startTime}`);
-        const end = new Date(`2000/01/01 ${formData.endTime}`);
-        if (end <= start) {
-          setError('End time must be after start time.');
-          setLoading(false);
-          return;
-        }
+      // Handle 401 Unauthorized specifically (e.g., token expired mid-session)
+      if (err.response && err.response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/?message=session_expired');
+          // Setting an error message might not be seen if redirect happens fast
+          // setError("Your session expired. Please log in again."); 
+          return; 
       }
 
-      const response = await axios.post('http://localhost:5000/api/appointments', formData);
-      setSuccess(true);
-      setLoading(false);
-      console.log('Service appointment created:', response.data);
-      setAppointments([...appointments, response.data.data]);
-      setFormData({
-        patientId: '', practitionerId: '', serviceType: '', appointmentDate: '',
-        startTime: '', endTime: '', notes: '', status: 'Pending',
-      });
-    } catch (err) {
-      console.error('Error booking service appointment:', err.response ? err.response.data : err.message);
-      setError(err.response?.data?.message || 'Failed to book service appointment. Please check your inputs.');
-      setLoading(false);
+      // Extract a user-friendly error message from the backend response
+      const responseData = err.response?.data;
+      let errorMessage = 'Failed to book service appointment. Please check your inputs or try again later.'; // Default error
+
+      if (responseData) {
+        errorMessage = 
+          responseData.message || // Preferred key
+          responseData.error ||   // Common key for validation errors
+          responseData.msg ||     // Another possible key
+          (typeof responseData === 'string' ? responseData : errorMessage); // If backend just sends a string
+      } else if (err.message) { // Handle network errors etc.
+        errorMessage = `Network Error: ${err.message}`;
+      }
+        
+      setError(errorMessage); // Display the extracted or default error message
+    } finally {
+      setLoading(false); // Stop loading indicator
     }
   };
 
-  const handleCancelAppointment = async (appointmentId) => {
-    try {
-      const updatedAppointments = appointments.map(app =>
-        app._id === appointmentId ? { ...app, status: 'Cancelled' } : app
-      );
-      setAppointments(updatedAppointments);
-      setModalMessage('Appointment cancelled successfully!');
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      setModalMessage('Failed to cancel appointment. Please try again.');
-      setIsModalOpen(true);
-    }
-  };
+  // --- REMOVED: handleCancelAppointment ---
+  // --- REMOVED: handleRebookInitiate ---
+  // --- REMOVED: handleRebookSubmit ---
 
-  const handleRebookInitiate = (appointment) => {
-    setCurrentAppointment(appointment);
-    setIsModalOpen(true);
-  };
-
-  const handleRebookSubmit = async (e) => {
-    e.preventDefault();
-    const newDate = e.target.newDate.value;
-    const newTime = e.target.newTime.value;
-
-    try {
-      const updatedAppointments = appointments.map(app =>
-        app._id === currentAppointment._id ? { ...app, appointmentDate: newDate, startTime: newTime, status: 'Rescheduled' } : app
-      );
-      setAppointments(updatedAppointments);
-      setIsModalOpen(false);
-      setModalMessage('Appointment rescheduled successfully!');
-      setIsModalOpen(true);
-    } catch (error) {
-      console.error('Error rescheduling appointment:', error);
-      setModalMessage('Failed to reschedule appointment. Please try again.');
-      setIsModalOpen(true);
-    }
-  };
-
+  // --- JSX for the form ---
   return (
     <div className="p-6 bg-gray-50 min-h-screen font-sans antialiased">
       <div className="container mx-auto max-w-4xl">
+        {/* --- Page Header --- */}
         <h1 className="text-4xl font-extrabold text-gray-800 mb-2 text-center">
-          Appointment Management
+          Book New Appointment
         </h1>
         <p className="text-gray-600 text-center mb-8">
-          Manage all your child's therapy appointments in one place.
+          Schedule therapy appointments for children.
         </p>
 
-        {loading && <p className="text-blue-500 text-center">දත්ත ලබාගනිමින් පවතී...</p>}
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
-        {success && <p className="text-green-500 text-center mb-4">Booked successfully! A notification will be sent to the parent.</p>}
+        {/* --- Loading / Error / Success Messages --- */}
+        {loading && <p className="text-blue-600 text-center mb-4 animate-pulse">Processing...</p>}
+        {error && <p className="text-red-600 bg-red-50 p-3 rounded-lg text-center mb-4 border border-red-200">{error}</p>}
+        {success && (
+          <p className="text-green-600 bg-green-50 p-3 rounded-lg text-center mb-4 border border-green-200">
+            Appointment booked successfully!
+          </p>
+        )}
 
-        {/* New Booking Form Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        {/* --- Main Booking Form --- */}
+        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+          <h2 className="text-2xl font-bold text-gray-700 mb-6 flex items-center gap-2 border-b pb-3">
+            <svg /* Calendar Icon */ xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h.01M16 11h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            Book a New Appointment
+            Appointment Details
           </h2>
-          <form onSubmit={handleBookingSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Patient Selection */}
+          <form onSubmit={handleBookingSubmit} className="space-y-5"> {/* Increased spacing */}
+            
+            {/* --- Row 1: Patient & Practitioner --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5"> 
               <div>
-                <label htmlFor="patientId" className="block text-sm font-medium text-gray-700">Patient (Child)</label>
-                <select id="patientId" name="patientId" value={formData.patientId} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                  <option value="">Select a patient</option>
-                  {patients.map((patient) => (
-                    <option key={patient._id} value={patient._id}>
-                      {patient.name} ({patient.childNo})
-                    </option>
-                  ))}
+                <label htmlFor="patientId" className="block text-sm font-medium text-gray-700 mb-1">
+                  Patient (Child) <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="patientId"
+                  name="patientId"
+                  value={formData.patientId}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                >
+                  <option value="" disabled>Select a patient</option>
+                  {patients.length > 0 ? (
+                    patients.map((patient) => (
+                      <option key={patient._id} value={patient._id}>
+                        {patient.name} ({patient.childNo || patient.childRegNo || 'No ID'})
+                      </option>
+                    ))
+                  ) : (
+                    <option disabled>Loading patients...</option>
+                  )}
                 </select>
               </div>
 
-              {/* Therapist Selection */}
               <div>
-                <label htmlFor="practitionerId" className="block text-sm font-medium text-gray-700">Therapist</label>
-                <select id="practitionerId" name="practitionerId" value={formData.practitionerId} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                  <option value="">Select a therapist</option>
-                  {practitioners.map((practitioner) => (
-                    <option key={practitioner._id} value={practitioner._id}>
-                      {practitioner.firstName} {practitioner.lastName} ({practitioner.userType})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Service Type Selection */}
-              <div>
-                <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700">Service Type</label>
-                <select id="serviceType" name="serviceType" value={formData.serviceType} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                  <option value="">Select a service type</option>
-                  {serviceTypes.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
-                    </option>
-                  ))}
+                <label htmlFor="practitionerId" className="block text-sm font-medium text-gray-700 mb-1">
+                  Therapist <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="practitionerId"
+                  name="practitionerId"
+                  value={formData.practitionerId}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+                >
+                  <option value="" disabled>Select a therapist</option>
+                  {practitioners.length > 0 ? (
+                     practitioners.map((practitioner) => (
+                      <option key={practitioner._id} value={practitioner._id}>
+                        {practitioner.firstName} {practitioner.lastName} ({practitioner.userType})
+                      </option>
+                    ))
+                  ) : (
+                     <option disabled>Loading therapists...</option>
+                  )}
                 </select>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Appointment Date */}
-              <div>
-                <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700">Appointment Date</label>
-                <input type="date" id="appointmentDate" name="appointmentDate" value={formData.appointmentDate} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
-              </div>
-
-              {/* Start Time */}
-              <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">Start Time</label>
-                <input type="time" id="startTime" name="startTime" value={formData.startTime} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
-              </div>
-
-              {/* End Time */}
-              <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">End Time</label>
-                <input type="time" id="endTime" name="endTime" value={formData.endTime} onChange={handleChange} required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
-              </div>
-            </div>
-
-            {/* Notes */}
+            {/* --- Row 2: Service Type --- */}
             <div>
-              <label htmlFor="notes" className="block text-sm font-medium text-gray-700">Notes (Optional)</label>
-              <textarea id="notes" name="notes" rows="3" value={formData.notes} onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors" />
+              <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700 mb-1">
+                Service Type <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="serviceType"
+                name="serviceType"
+                value={formData.serviceType}
+                onChange={handleChange}
+                required
+                className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
+              >
+                <option value="" disabled>Select a service type</option>
+                {serviceTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
             </div>
 
-            <div className="flex justify-end space-x-3">
-              <button type="submit" disabled={loading}
-                className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 active:scale-95 transition-transform">
-                {loading ? 'Book කරමින්...' : 'Book Appointment'}
+            {/* --- Row 3: Date & Times --- */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <div>
+                <label htmlFor="appointmentDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Appointment Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  id="appointmentDate"
+                  name="appointmentDate"
+                  value={formData.appointmentDate}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Time <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  id="startTime"
+                  name="startTime"
+                  value={formData.startTime}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">
+                  End Time <span className="text-red-500">*</span>
+                </label> 
+                <input
+                  type="time"
+                  id="endTime"
+                  name="endTime"
+                  value={formData.endTime}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* --- Row 4: Notes --- */}
+            <div>
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
+                Notes (Optional)
+              </label>
+              <textarea
+                id="notes"
+                name="notes"
+                rows="3"
+                value={formData.notes}
+                onChange={handleChange}
+                placeholder="Add any relevant notes for the appointment..."
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            {/* --- Submit Button --- */}
+            <div className="flex justify-end pt-3"> {/* Added padding top */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="inline-flex justify-center items-center py-2.5 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Booking...
+                  </>
+                  ) : (
+                   'Book Appointment'
+                  )}
               </button>
             </div>
           </form>
         </div>
 
-        {/* Existing Appointments Section - This part needs to be updated to fetch data for the selected patient */}
-        {/* For now, it will remain empty since the initial appointment fetching was removed to fix the error */}
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-700 mb-4 flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2m-9 11l4-4m0 0l4 4m-4-4v12" />
-            </svg>
-            Your Appointments
-          </h2>
-          {appointments.length === 0 ? (
-            <p className="text-gray-500 text-center py-8">
-              කිසිදු appointment එකක් නොමැත.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {appointments.map((appointment) => (
-                <div key={appointment._id}
-                  className="p-5 border border-gray-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">
-                      {appointment.serviceType}
-                    </h3>
-                    <p className="text-gray-600">
-                      <span className="font-semibold">Therapist:</span>{" "}
-                      {appointment.practitioner?.firstName} {appointment.practitioner?.lastName}
-                    </p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      <span className="font-semibold">Date & Time:</span>{" "}
-                      {new Date(appointment.appointmentDate).toLocaleDateString()} at {appointment.startTime}
-                    </p>
-                    <p className="text-sm font-semibold mt-1" style={{ color: appointment.status === 'Cancelled' ? 'red' : appointment.status === 'Rescheduled' ? 'orange' : 'green' }}>
-                      Status: {appointment.status}
-                    </p>
-                  </div>
-                  <div className="mt-4 sm:mt-0 flex gap-2">
-                    <button onClick={() => handleRebookInitiate(appointment)}
-                      className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors active:scale-95"
-                      title="Reschedule" disabled={appointment.status === 'Cancelled'}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-7-3L18 8m-5 5L18 8m-5 5h7m-7 0v7" />
-                      </svg>
-                    </button>
-                    <button onClick={() => handleCancelAppointment(appointment._id)}
-                      className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors active:scale-95"
-                      title="Cancel" disabled={appointment.status === 'Cancelled'}>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Rebooking Modal */}
-        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Reschedule Appointment">
-          <p className="text-gray-600 mb-4">
-            Reschedule your appointment for
-            <span className="font-semibold"> {currentAppointment?.serviceType}</span>
-            with
-            <span className="font-semibold"> {currentAppointment?.practitioner?.firstName}</span>.
-          </p>
-          <form onSubmit={handleRebookSubmit}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">New Date</label>
-                <input type="date" name="newDate" className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">New Time</label>
-                <input type="time" name="newTime" className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button type="button" onClick={() => setIsModalOpen(false)}
-                className="px-6 py-3 bg-gray-200 text-gray-800 rounded-xl font-semibold hover:bg-gray-300 transition-colors active:scale-95">
-                Cancel
-              </button>
-              <button type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold shadow-lg hover:bg-blue-700 transition-colors active:scale-95">
-                Confirm Reschedule
-              </button>
-            </div>
-          </form>
-        </Modal>
+        {/* --- REMOVED: Reschedule Modal --- */}
+        {/* --- REMOVED: Simple Status Modal (using error/success states instead) --- */}
         
-        {/* Success/Error/Info Modal */}
-        <Modal isOpen={!!modalMessage} onClose={() => setModalMessage('')} title="Status">
-          <p className="text-gray-600">{modalMessage}</p>
-          <div className="mt-4 flex justify-end">
-            <button onClick={() => setModalMessage('')} className="px-4 py-2 bg-blue-500 text-white rounded-lg">OK</button>
-          </div>
-        </Modal>
       </div>
     </div>
   );

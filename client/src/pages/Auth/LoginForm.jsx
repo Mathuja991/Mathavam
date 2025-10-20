@@ -92,7 +92,7 @@ export default function LoginForm() {
       // Check if the user is a Super Admin or Admin to manage users
       const canManageUsers = user.userType === "Super Admin" || user.userType === "Admin";
 
-      localStorage.setItem("token", token);
+      localStorage.setItem("token",token);
       localStorage.setItem("user", JSON.stringify(user || {}));
       localStorage.setItem("canManageUsers", canManageUsers);
 
@@ -147,7 +147,7 @@ export default function LoginForm() {
 
         {/* Right / Form Panel */}
         <div className="flex flex-col justify-center p-8 md:p-12">
-          <div className="mx-auto w-full max-w-md">
+          <div className="mx-auto w-full max-w-sm">
             <div className="mb-6 flex items-center gap-3 md:hidden">
               <img src={logo} alt="Mathavam" className="h-10 w-auto" />
               <span className="text-xl font-semibold dark:text-slate-100">
@@ -204,7 +204,7 @@ export default function LoginForm() {
                     inputMode="email"
                     value={formData.username}
                     onChange={handleChange}
-                    className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-3 py-3 text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="w-full rounded-xl border border-slate-300 bg-white pl-12 pr-3 py-3 text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     aria-invalid={!!errors.username}
                     aria-describedby={errors.username ? "username-error" : undefined}
                   />
@@ -240,7 +240,7 @@ export default function LoginForm() {
                     onKeyUp={onKeyEvent}
                     onKeyDown={onKeyEvent}
                     onFocus={onKeyEvent}
-                    className="w-full rounded-xl border border-slate-300 bg-white pl-9 pr-10 py-3 text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                    className="w-full rounded-xl border border-slate-300 bg-white pl-12 pr-10 py-3 text-slate-900 placeholder:text-slate-400 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                     aria-invalid={!!errors.password}
                     aria-describedby={
                       errors.password || capsLockOn ? "password-hint" : undefined

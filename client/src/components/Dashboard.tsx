@@ -366,19 +366,7 @@ function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative hidden md:block">
-              <FontAwesomeIcon
-                icon={faSearch}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              />
-              <input
-                type="text"
-                placeholder="Search patients, sessions, docs…"
-                className="w-72 rounded-xl border border-gray-200 pl-10 pr-3 py-2 text-sm
-                                focus:ring-2 focus:ring-blue-300 focus:border-blue-300 placeholder:text-gray-400"
-              />
-            </div>
-
+            
             <IconButton icon={faBell} badge title="Notifications" />
             <IconButton icon={faCog} title="Settings" />
 

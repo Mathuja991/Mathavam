@@ -1,7 +1,11 @@
-// routes/userRoutes.js
+// server/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+
+// --- THIS IS THE FIX ---
+// Add the route for logging in
+router.post('/login', userController.loginUser);
 
 // Route to add a new user
 router.post('/add', userController.addUser);
