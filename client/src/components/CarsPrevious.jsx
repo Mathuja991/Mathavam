@@ -10,7 +10,8 @@ const CarsPrevious = () => {
   const [childNoFilter, setChildNoFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
-   const navigate =useNavigate();
+  const navigate = useNavigate();
+  
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -25,11 +26,10 @@ const CarsPrevious = () => {
       } catch (err) {
         console.error("Failed to fetch entries:", err);
       }
-       applyFiltersAndSort();
     };
 
     fetchEntries();
-  }, [childNoFilter, dateFilter, sortBy, entries]);
+  }, []);
 
   const applyFiltersAndSort = () => {
     let results = [...entries];
@@ -70,48 +70,72 @@ const CarsPrevious = () => {
     setCurrentPage(1);
   };
 
+  const handleBack = () => {
+    navigate(`/dashboard/forms`);
+
+  };
+
   // Pagination logic
   const indexOfLast = currentPage * itemsPerPage;
   const indexOfFirst = indexOfLast - itemsPerPage;
   const currentItems = filtered.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
 
+  const handleDelete = async (id) => {
+    if (!confirm("Delete this entry?")) return;
+    console.log("Deleting entry with ID:", id);
 
+    try {
+      const res = await fetch(`http://localhost:5000/api/carsform/${id}`, {
+        method: "DELETE",
+      });
 
-
-
-const handleDelete = async (id) => {
-  if (!confirm("Delete this entry?")) return;
-   console.log("Deleting entry with ID:", id);
-
-  try {
-    const res = await fetch(`http://localhost:5000/api/carsform/${id}`, {
-      method: "DELETE",
-    });
-
-    if (res.ok) {
-      setEntries((prev) => prev.filter((e) => e._id !== id));
-    } else {
-      const error = await res.json();
-      alert(`Delete failed: ${error.message}`);
+      if (res.ok) {
+        setEntries((prev) => prev.filter((e) => e._id !== id));
+        setFiltered((prev) => prev.filter((e) => e._id !== id));
+      } else {
+        const error = await res.json();
+        alert(`Delete failed: ${error.message}`);
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
     }
-  } catch (err) {
-    console.error("Delete error:", err);
-  }
-};
+  };
 
-
-const handleEdit = (entry) => {
-  // You can open a modal or navigate to a form page and pass the entry data
+ const handleEdit = (entry) => {
   console.log("Edit entry:", entry);
-  console.log("Navigating to:", `/edit/${entry._id}`);
+  
+  // Use createdAt timestamp if available, otherwise use date
+  const entryTime = entry.createdAt ? new Date(entry.createdAt) : new Date(entry.date);
+  const currentTime = new Date();
+  const timeDifference = currentTime - entryTime;
+  const hoursDifference = timeDifference / (1000 * 60 * 60);
 
-  navigate(`/editcar/${entry._id}`);
+  if (hoursDifference > 5) {
+    alert("Edit not available. Entries can only be edited within 5 hours of creation.");
+    return;
+  }
+
+  console.log("Navigating to:", `editcar/${entry._id}`);
+  navigate(`/dashboard/editcar/${entry._id}`);
 };
 
   return (
     <div className="max-w-7xl mx-auto mt-8 p-6 bg-white rounded shadow">
-      <h2 className="text-2xl font-bold mb-6">Previous Entries</h2>
+      {/* Header with Back Button and Title */}
+      <div className="flex items-center justify-between mb-6">
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </button>
+        <h2 className="text-2xl font-bold text-center flex-1">Previous CARS Entries</h2>
+        <div className="w-24"></div> {/* Spacer for balance */}
+      </div>
 
       {/* Filters */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -140,64 +164,67 @@ const handleEdit = (entry) => {
         </select>
         <div className="flex gap-2">
           <button
-            onClick={applyFiltersAndSort}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
-          >
-            Apply
-          </button>
-          <button
             onClick={handleReset}
             className="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400 w-full"
           >
             Reset
           </button>
+          <button
+            onClick={applyFiltersAndSort}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 w-full"
+          >
+            Apply
+          </button>
         </div>
       </div>
 
       {/* Entry List */}
-     <table className="w-full table-auto border-collapse border border-gray-300">
-  <thead>
-    <tr className="bg-gray-100">
-      <th className="border border-gray-300 px-4 py-2">Child No</th>
-      <th className="border border-gray-300 px-4 py-2">Name</th>
-      <th className="border border-gray-300 px-4 py-2">Age</th>
-      <th className="border border-gray-300 px-4 py-2">Gender</th>
-      <th className="border border-gray-300 px-4 py-2">Date</th>
-      <th className="border border-gray-300 px-4 py-2">Severity</th>
-      <th className="border border-gray-300 px-4 py-2">Total Score</th>
-      <th className="border border-gray-300 px-4 py-2">Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {currentItems.map((entry) => (
-      <tr key={entry._id} className="text-center">
-        <td className="border border-gray-300 px-4 py-2">{entry.childNo}</td>
-        <td className="border border-gray-300 px-4 py-2">{entry.name}</td>
-        <td className="border border-gray-300 px-4 py-2">{entry.age}</td>
-        <td className="border border-gray-300 px-4 py-2">{entry.gender}</td>
-        <td className="border border-gray-300 px-4 py-2">{entry.date}</td>
-        <td className="border border-gray-300 px-4 py-2">
-          <span className={`inline-block px-3 py-1 rounded-full ${entry.severity?.color}`}>
-            {entry.severity?.label || "N/A"}
-          </span>
-        </td>
-        <td className="border border-gray-300 px-4 py-2">{getTotalScore(entry.scores).toFixed(1)}</td>
-        <td className="border border-gray-300 px-4 py-2">
-          <button className="text-blue-600 mr-2" onClick={() => handleEdit(entry)}>Edit</button>
-          <button className="text-red-600" onClick={() => handleDelete(entry._id)}>Delete</button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+      <table className="w-full table-auto border-collapse border border-gray-300">
+        <thead>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-300 px-4 py-2">Child No</th>
+            <th className="border border-gray-300 px-4 py-2">Name</th>
+            <th className="border border-gray-300 px-4 py-2">Age</th>
+            <th className="border border-gray-300 px-4 py-2">Gender</th>
+            <th className="border border-gray-300 px-4 py-2">Date</th>
+            <th className="border border-gray-300 px-4 py-2">Severity</th>
+            <th className="border border-gray-300 px-4 py-2">Total Score</th>
+            <th className="border border-gray-300 px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {currentItems.map((entry) => (
+            <tr key={entry._id} className="text-center">
+              <td className="border border-gray-300 px-4 py-2">{entry.childNo}</td>
+              <td className="border border-gray-300 px-4 py-2">{entry.name}</td>
+              <td className="border border-gray-300 px-4 py-2">{entry.age}</td>
+              <td className="border border-gray-300 px-4 py-2">{entry.gender}</td>
+              <td className="border border-gray-300 px-4 py-2">{entry.date}</td>
+              <td className="border border-gray-300 px-4 py-2">
+                <span className={`inline-block px-3 py-1 rounded-full ${entry.severity?.color}`}>
+                  {entry.severity?.label || "N/A"}
+                </span>
+              </td>
+              <td className="border border-gray-300 px-4 py-2">{getTotalScore(entry.scores).toFixed(1)}</td>
+              <td className="border border-gray-300 px-4 py-2">
+                <button className="text-blue-600 mr-2 hover:underline" onClick={() => handleEdit(entry)}>Edit</button>
+                <button className="text-red-600 hover:underline" onClick={() => handleDelete(entry._id)}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
-
-    
-       
+      {/* Export Button */}
       <div className="flex gap-2 mb-4 mt-5">
-   <button onClick={() => exportEntriesToPDF(entries)}
-    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Export PDF</button>
+        <button 
+          onClick={() => exportEntriesToPDF(entries)}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          Export PDF
+        </button>
       </div>
+
       {/* Pagination Controls */}
       <div className="flex justify-center gap-2 mt-6">
         <button
@@ -215,9 +242,6 @@ const handleEdit = (entry) => {
         >
           Next
         </button>
-
-        
-
       </div>
     </div>
   );
