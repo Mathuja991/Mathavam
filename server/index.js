@@ -47,6 +47,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/users', userRoutes); 
 app.use('/api/auth', authRoutes);  //api/auth/login
 app.use('/api/doctor-appointments', doctorAppointmentsRoute); 
+app.use('/api/notifications', require('./routes/notificationRoutes'));
 
 // Mathuja's Routes
 

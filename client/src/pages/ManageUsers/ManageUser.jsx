@@ -17,36 +17,100 @@ export default function ManageUser() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  // --- 1. Token එක ලබාගෙන Header එක සෑදීමේ Function එක ---
+  const getAuthConfig = useCallback(() => {
+    const token = localStorage.getItem('token');
+    
+    // --- DEBUG LOG ---
+    console.log("ManageUser - Token from localStorage:", token ? `Token found (length: ${token.length})` : "Token NOT FOUND"); 
+    
+    if (!token) {
+      console.error("ManageUser: Auth token not found in localStorage. Navigating to login.");
+      // Token එක නැත්නම් Login එකට යැවීම
+      navigate('/?message=no_token'); 
+      return null;
+    }
+    // Token එක header එකට දමා return කිරීම
+    return {
+      headers: {
+        'x-auth-token': token, 
+      },
+    };
+  }, [navigate]); 
 
-  const fetchUsers = async () => {
+  // --- 2. Users ලැයිස්තුව ලබාගැනීමේ Function එක ---
+  const fetchUsers = useCallback(async () => { 
+    // මුලින්ම Auth Config එක ලබාගැනීම
+    const config = getAuthConfig(); 
+    // Config එක null නම් (Token නැත්නම්), function එක නතර කිරීම
+    if (!config) { 
+      setLoading(false); 
+      return; 
+    }
+
     try {
-      setLoading(true);
+      setLoading(true); 
       setError("");
-      const response = await axios.get("http://localhost:5000/api/users");
+      // --- axios GET request එකට config එක (Header සහිතව) යැවීම ---
+      const response = await axios.get("http://localhost:5000/api/users", config); 
       setUsers(response.data);
       setLoading(false);
     } catch (err) {
-      setError("Failed to load users.");
+      // 401 Unauthorized error එක handle කිරීම
+      if (err.response && err.response.status === 401) {
+          setError("Your session may have expired. Please log in again.");
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/?message=session_expired');
+      } else {
+         setError("Failed to load users.");
+         console.error("Error fetching users:", err.response ? err.response.data : err.message);
+      }
       setLoading(false);
     }
-  };
+  }, [getAuthConfig, navigate]); 
 
+  // Component එක load වූ විට fetchUsers call කිරීම
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]); 
+
+  // --- 3. User ව Delete කිරීමේ Function එක ---
   const handleDelete = async (userId) => {
+    // Auth Config එක ලබාගැනීම
+    const config = getAuthConfig(); 
+    if (!config) {
+        setError("Authentication required to delete users.");
+        return; 
+    }
+
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
         setMessage("");
-        await axios.delete(`http://localhost:5000/api/users/${userId}`);
+        setError(""); 
+        // --- axios DELETE request එකට config එක (Header සහිතව) යැවීම ---
+        await axios.delete(`http://localhost:5000/api/users/${userId}`, config); 
         setMessage("User deleted successfully.");
-        fetchUsers();
+        // Delete කළ පසු නැවත list එක load කිරීම
+        setTimeout(() => {
+          fetchUsers(); 
+        }, 1500); 
       } catch (err) {
-        setError("Failed to delete user.");
+        // 401 Unauthorized error එක handle කිරීම
+         if (err.response && err.response.status === 401) {
+             setError("Your session may have expired. Please log in again.");
+             localStorage.removeItem('token');
+             localStorage.removeItem('user');
+             navigate('/?message=session_expired');
+         } else {
+             setError("Failed to delete user.");
+             console.error("Error deleting user:", err.response ? err.response.data : err.message);
+         }
       }
     }
   };
 
+  // --- අනෙකුත් Functions (වෙනස් කර නැත) ---
   const handleEdit = (userId) => {
     navigate(`/dashboard/manage-users/edit/${userId}`);
   };
@@ -64,7 +128,6 @@ export default function ManageUser() {
     "Parent",
   ];
 
-  // ✅ Fixed search with debounce
   const debouncedSearch = useCallback(
     debounce((val) => setSearchTerm(val), 400),
     []
@@ -76,13 +139,11 @@ export default function ManageUser() {
 
   const filteredAndSortedUsers = useMemo(() => {
     let currentUsers = [...users];
-
     if (filterUserType) {
       currentUsers = currentUsers.filter(
         (user) => user.userType === filterUserType
       );
     }
-
     if (searchTerm) {
       const lowercased = searchTerm.toLowerCase();
       currentUsers = currentUsers.filter(
@@ -96,12 +157,10 @@ export default function ManageUser() {
             user.childRegNo.toLowerCase().includes(lowercased))
       );
     }
-
     if (sortConfig.key) {
       currentUsers.sort((a, b) => {
         const aValue = a[sortConfig.key] || "";
         const bValue = b[sortConfig.key] || "";
-
         if (aValue < bValue) {
           return sortConfig.direction === "ascending" ? -1 : 1;
         }
@@ -111,7 +170,6 @@ export default function ManageUser() {
         return 0;
       });
     }
-
     return currentUsers;
   }, [users, searchTerm, filterUserType, sortConfig]);
 
@@ -131,12 +189,15 @@ export default function ManageUser() {
   };
 
   const resetFilters = () => {
+    const searchInput = document.querySelector('input[placeholder="Search users..."]');
+    if (searchInput) searchInput.value = ""; 
     setSearchTerm("");
     setFilterUserType("");
     setSortConfig({ key: "firstName", direction: "ascending" });
   };
 
-  if (loading) {
+  // --- Render Logic (වෙනස් කර නැත) ---
+  if (loading && users.length === 0) { 
     return (
       <div className="flex items-center justify-center py-20">
         <p className="text-gray-500 text-lg animate-pulse">Loading users...</p>
@@ -147,7 +208,14 @@ export default function ManageUser() {
   if (error) {
     return (
       <div className="max-w-4xl mx-auto mt-10 p-4 bg-red-100 border border-red-300 rounded-lg text-red-700 text-center">
-        {error}
+        <p className="font-semibold">Error:</p>
+        <p>{error}</p>
+         <button 
+           onClick={() => navigate('/')} 
+           className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+         >
+           Go to Login
+         </button>
       </div>
     );
   }
@@ -173,6 +241,7 @@ export default function ManageUser() {
         </div>
       </div>
 
+      {/* Success Message */}
       {message && (
         <div className="mb-5 p-3 text-green-800 bg-green-100 border border-green-300 rounded-md text-center animate-fade-in">
           {message}
@@ -192,7 +261,6 @@ export default function ManageUser() {
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition"
           />
         </div>
-
         <div className="flex flex-col">
           <label className="mb-2 text-sm font-medium text-gray-700">
             Filter by User Type
@@ -210,7 +278,6 @@ export default function ManageUser() {
             ))}
           </select>
         </div>
-
         <div className="flex flex-col">
           <label className="mb-2 text-sm font-medium text-gray-700">
             Sort By
@@ -244,8 +311,9 @@ export default function ManageUser() {
         </div>
       </div>
 
-      {/* Advanced Styled Table */}
-      {filteredAndSortedUsers.length === 0 ? (
+      {/* Table */}
+      {loading && <p className="text-center text-gray-500 py-4">Updating user list...</p>} 
+      {!loading && filteredAndSortedUsers.length === 0 ? (
         <p className="text-gray-500 text-center py-10">
           No users found matching your criteria.
         </p>
@@ -253,8 +321,8 @@ export default function ManageUser() {
         <div className="overflow-x-auto rounded-xl shadow-md">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gradient-to-r from-blue-100 to-blue-200 sticky top-0">
-                <th
+              <tr className="bg-gradient-to-r from-blue-100 to-blue-200 sticky top-0 z-10"> 
+                 <th
                   className="p-4 font-semibold text-gray-800 cursor-pointer"
                   onClick={() => requestSort("firstName")}
                 >
@@ -290,7 +358,7 @@ export default function ManageUser() {
                 >
                   Child Reg No. {getSortIndicator("childRegNo")}
                 </th>
-                <th className="p-4 font-semibold text-gray-800">Actions</th>
+                <th className="p-4 font-semibold text-gray-800 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -311,12 +379,14 @@ export default function ManageUser() {
                     <button
                       onClick={() => handleEdit(user._id)}
                       className="px-3 py-1 bg-yellow-500 text-white rounded-md hover:scale-105 hover:bg-yellow-600 transition"
+                      aria-label={`Edit user ${user.username}`} 
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => handleDelete(user._id)}
                       className="px-3 py-1 bg-red-600 text-white rounded-md hover:scale-105 hover:bg-red-700 transition"
+                      aria-label={`Delete user ${user.username}`} 
                     >
                       Delete
                     </button>

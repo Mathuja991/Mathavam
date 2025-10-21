@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // useCallback import කිරීම
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // useNavigate import කිරීම
 
 export default function AddNewUser() {
   const [formData, setFormData] = useState({
@@ -18,142 +19,203 @@ export default function AddNewUser() {
   const [availablePatients, setAvailablePatients] = useState([]);
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
   const [fetchError, setFetchError] = useState('');
-
-  // State for username availability check
   const [allUsers, setAllUsers] = useState([]);
-  const [usernameStatus, setUsernameStatus] = useState('idle'); // idle, checking, available, taken
+  const [usernameStatus, setUsernameStatus] = useState('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for submit button
+
+  const navigate = useNavigate(); // useNavigate hook එක initialize කිරීම
 
   const userTypes = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
 
-  useEffect(() => {
-    const fetchAndFilterData = async () => {
-      setIsLoadingPatients(true);
-      setFetchError('');
-      try {
-        const [usersResponse, patientsResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/users'),
-          axios.get('http://localhost:5000/api/patientRecords')
-        ]);
-
-        const allUsersData = usersResponse.data;
-        const allPatients = patientsResponse.data;
-
-        setAllUsers(allUsersData); // Store all users for username check
-
-        const assignedChildNos = new Set(
-          allUsersData
-            .filter(user => user.userType === 'Parent' && user.childRegNo)
-            .map(user => user.childRegNo)
-        );
-
-        const filteredPatients = allPatients.filter(patient => !assignedChildNos.has(patient.childNo));
-
-        setAvailablePatients(filteredPatients);
-      } catch (err) {
-        setFetchError('Failed to load patient list. Please check the connection.');
-      } finally {
-        setIsLoadingPatients(false);
-      }
+  // --- 1. Token එක ලබාගැනීමේ Helper Function එක ---
+  const getAuthConfig = useCallback(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error("AddNewUser: Auth token not found. Redirecting to login.");
+      // Redirect immediately if no token
+      navigate('/?message=no_token');
+      return null;
+    }
+    return {
+      headers: {
+        'x-auth-token': token,
+      },
     };
+  }, [navigate]); // navigate dependency එකක්
 
+  // --- 2. Users සහ Patients ලබාගැනීමේ Function එක ---
+  const fetchAndFilterData = useCallback(async () => {
+    // Auth config එක ලබාගැනීම
+    const config = getAuthConfig();
+    if (!config) {
+        // getAuthConfig එක null return කළොත් (navigate වුණොත්) මෙතනින් නතර වේ
+        return;
+    }
+
+    setIsLoadingPatients(true);
+    setFetchError('');
+    try {
+      // --- axios GET requests වලට config එක pass කිරීම ---
+      const [usersResponse, patientsResponse] = await Promise.all([
+        axios.get('http://localhost:5000/api/users', config), // Token එක යැවීම
+        axios.get('http://localhost:5000/api/patientRecords', config) // Token එක යැවීම
+      ]);
+
+      const allUsersData = usersResponse.data;
+      const allPatients = patientsResponse.data.data || patientsResponse.data; // Adjust based on patientRecords response structure
+
+      setAllUsers(allUsersData); // Username check සඳහා
+
+      // දැනටමත් Parent කෙනෙකුට assign කර ඇති childRegNo list එකක් සෑදීම
+      const assignedChildNos = new Set(
+        allUsersData
+          .filter(user => user.userType === 'Parent' && user.childRegNo)
+          .map(user => user.childRegNo)
+      );
+
+      // Assign කර නැති Patients ල පමණක් filter කිරීම (childNo හෝ childRegNo අනුව)
+      const filteredPatients = allPatients.filter(patient => {
+         const regNo = patient.childNo || patient.childRegNo;
+         return regNo && !assignedChildNos.has(regNo);
+      });
+
+      setAvailablePatients(filteredPatients);
+    } catch (err) {
+      // 401 Error එක handle කිරීම
+      if (err.response && err.response.status === 401) {
+          setError("Session expired. Please log in again.");
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/?message=session_expired');
+      } else {
+        console.error("Error fetching initial data:", err.response ? err.response.data : err.message);
+        setFetchError('Failed to load user or patient list. Please check connection or log in again.');
+      }
+      setError(fetchError || 'Failed to load initial data.'); // Set general error as well
+    } finally {
+      setIsLoadingPatients(false);
+    }
+  }, [getAuthConfig, navigate, fetchError]); // Dependencies
+
+  // --- 3. useEffect එක fetchAndFilterData මත රඳා පැවතීම ---
+  useEffect(() => {
     fetchAndFilterData();
-  }, []);
+  }, [fetchAndFilterData]); // fetchAndFilterData දැන් dependency එකක්
 
-  // useEffect for debounced username check
+  // Username check (වෙනසක් නැත)
   useEffect(() => {
     if (!formData.username) {
       setUsernameStatus('idle');
       return;
     }
-
     setUsernameStatus('checking');
     const timer = setTimeout(() => {
       const isTaken = allUsers.some(
         (user) => user.username.toLowerCase() === formData.username.toLowerCase()
       );
       setUsernameStatus(isTaken ? 'taken' : 'available');
-    }, 500); // 500ms debounce delay
-
-    return () => clearTimeout(timer); // Cleanup timer on re-render
+    }, 500);
+    return () => clearTimeout(timer);
   }, [formData.username, allUsers]);
 
-
+  // Form input change handler (වෙනසක් නැත)
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
-
     if (name === 'userType' && value !== 'Parent') {
       setFormData(prev => ({ ...prev, childRegNo: '' }));
     }
+    // Clear messages on change
+    setError('');
+    setMessage('');
   };
 
+  // --- 4. Form Submit Handler එක ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
     setError('');
 
+    // Validation checks (වෙනසක් නැත)
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+      setError('Passwords do not match.'); return;
+    }
+    if (usernameStatus === 'taken') {
+      setError('This username is already taken.'); return;
+    }
+    if (!formData.firstName || !formData.lastName || !formData.idNumber || !formData.userType || !formData.username || !formData.password || !formData.confirmPassword) {
+      setError('Please fill in all required fields.'); return;
+    }
+    if (formData.userType === 'Parent' && !formData.childRegNo) {
+      setError('Please select a Patient for the Parent user type.'); return;
     }
 
-    // New check for username availability before submitting
-    if (usernameStatus === 'taken') {
-        setError('This username is already taken. Please choose another.');
+    // Auth config එක ලබාගැනීම (Submit කිරීමටත් Token එක අවශ්‍ය විය හැක)
+    const config = getAuthConfig();
+    if (!config) {
+        setError("Authentication required to add user.");
         return;
     }
 
-    if (!formData.firstName || !formData.lastName || !formData.idNumber || !formData.userType || !formData.username || !formData.password || !formData.confirmPassword) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
-    if (formData.userType === 'Parent' && !formData.childRegNo) {
-      setError('Please select a Patient for the Parent user type.');
-      return;
-    }
+    setIsSubmitting(true); // Start loading
 
     try {
-      const response = await axios.post('http://localhost:5000/api/users/add', formData);
-      setMessage(response.data.message);
+      // --- axios POST request එකට config එක pass කිරීම ---
+      // (/api/users/add route එක backend එකේ public වුවත්, token යැවීම ගැටළුවක් නැත)
+      const response = await axios.post('http://localhost:5000/api/users/add', formData, config);
+      setMessage(response.data.message || 'User added successfully!'); // Use message from response
+      // Form එක clear කිරීම
       setFormData({
-        firstName: '',
-        lastName: '',
-        idNumber: '',
-        userType: '',
-        username: '',
-        password: '',
-        confirmPassword: '',
-        childRegNo: ''
+        firstName: '', lastName: '', idNumber: '', userType: '', username: '',
+        password: '', confirmPassword: '', childRegNo: ''
       });
-      setUsernameStatus('idle'); // Reset username status on success
+      setUsernameStatus('idle');
+      // Fetch data again to update the available patients list
+      fetchAndFilterData();
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong. Please try again.');
+      // 401 Error handle කිරීම
+       if (err.response && err.response.status === 401) {
+          setError("Session expired. Please log in again.");
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          navigate('/?message=session_expired');
+      } else {
+        setError(err.response?.data?.message || 'Something went wrong adding the user.');
+        console.error("Error adding user:", err.response ? err.response.data : err.message);
+      }
+    } finally {
+        setIsSubmitting(false); // Stop loading
     }
   };
 
+  // Username status render function (වෙනසක් නැත)
   const renderUsernameStatus = () => {
     switch (usernameStatus) {
       case 'checking':
         return <p style={{...styles.statusText, ...styles.statusChecking}}>Checking...</p>;
       case 'available':
-        return <p style={{...styles.statusText, ...styles.statusAvailable}}>✔️ Good to use </p>;
+        return <p style={{...styles.statusText, ...styles.statusAvailable}}>✔️ Available</p>; // Updated text
       case 'taken':
-        return <p style={{...styles.statusText, ...styles.statusTaken}}>❌ Already taken</p>;
-      default:
-        return null; // 'idle' state
+        return <p style={{...styles.statusText, ...styles.statusTaken}}>❌ Taken</p>; // Updated text
+      default: return null;
     }
   };
 
+  // --- JSX (Render) ---
   return (
     <div style={styles.pageContainer}>
         <div style={styles.container}>
             <h1 style={styles.heading}>Create a New User Account</h1>
-            
+
+            {/* Messages */}
             {message && <p style={styles.successMessage}>{message}</p>}
             {error && <p style={styles.errorMessage}>{error}</p>}
+            {/* Show fetch error separately if it occurs during initial load */}
+            {fetchError && !isLoadingPatients && <p style={styles.errorMessage}>{fetchError}</p>}
+
 
             <form onSubmit={handleSubmit} style={styles.form}>
+                {/* First Name & Last Name */}
                 <div style={styles.gridContainer}>
                     <div style={styles.formGroup}>
                         <label htmlFor="firstName" style={styles.label}>First Name</label>
@@ -165,6 +227,7 @@ export default function AddNewUser() {
                     </div>
                 </div>
 
+                {/* ID Number & User Type */}
                 <div style={styles.gridContainer}>
                     <div style={styles.formGroup}>
                         <label htmlFor="idNumber" style={styles.label}>ID Number</label>
@@ -181,31 +244,31 @@ export default function AddNewUser() {
                     </div>
                 </div>
 
+                {/* Patient Dropdown (Conditional) */}
                 {formData.userType === 'Parent' && (
                     <div style={styles.formGroup}>
-                        <label htmlFor="childRegNo" style={styles.label}>Patient Name (Child No)</label>
+                        <label htmlFor="childRegNo" style={styles.label}>Assign Patient (Child No)</label>
                         {isLoadingPatients ? (
                             <p style={styles.loadingText}>Loading available patients...</p>
-                        ) : fetchError ? (
-                            <p style={styles.errorMessage}>{fetchError}</p>
+                        ) : availablePatients.length === 0 ? (
+                           <p style={styles.errorMessage}>
+                             {fetchError ? fetchError : 'No unassigned patients found or failed to load.'}
+                           </p>
                         ) : (
                             <select id="childRegNo" name="childRegNo" value={formData.childRegNo} onChange={handleChange} required={formData.userType === 'Parent'} style={styles.select}>
                                 <option value="">Select a Patient...</option>
-                                {availablePatients.length > 0 ? (
-                                    availablePatients.map((patient) => (
-                                        <option key={patient.childNo} value={patient.childNo}>
-                                            {patient.name} ({patient.childNo})
-                                        </option>
-                                    ))
-                                ) : (
-                                    <option value="" disabled>No unassigned patients found</option>
-                                )}
+                                {availablePatients.map((patient) => (
+                                    // Use childNo OR childRegNo as the value
+                                    <option key={patient._id} value={patient.childNo || patient.childRegNo}>
+                                        {patient.name} ({patient.childNo || patient.childRegNo})
+                                    </option>
+                                ))}
                             </select>
                         )}
                     </div>
                 )}
 
-                {/* Username with real-time availability check */}
+                {/* Username with availability check */}
                 <div style={styles.usernameCheckContainer}>
                     <div style={styles.formGroup}>
                         <label htmlFor="username" style={styles.label}>Username</label>
@@ -216,6 +279,7 @@ export default function AddNewUser() {
                     </div>
                 </div>
 
+                {/* Password Fields */}
                 <div style={styles.gridContainer}>
                     <div style={styles.formGroup}>
                         <label htmlFor="password" style={styles.label}>Password</label>
@@ -227,139 +291,40 @@ export default function AddNewUser() {
                     </div>
                 </div>
 
-                <button type="submit" style={styles.button}>Add New User</button>
+                {/* Submit Button */}
+                <button type="submit" style={styles.button} disabled={isSubmitting || usernameStatus === 'checking' || usernameStatus === 'taken'}>
+                    {isSubmitting ? 'Adding User...' : 'Add New User'}
+                </button>
             </form>
         </div>
     </div>
   );
 }
 
-// Modern Styling Object
+// --- Styles (වෙනසක් නැත) ---
 const styles = {
-  pageContainer: {
-    background: 'linear-gradient(135deg, #2a88e6 0%, #17a2b8 100%)',
-    minHeight: '100vh',
-    padding: '40px 20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'Arial, sans-serif',
-  },
-  container: {
-    maxWidth: '700px',
-    width: '100%',
-    margin: '0 auto',
-    padding: '30px 40px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-  },
-  heading: {
-    textAlign: 'center',
-    marginBottom: '25px',
-    color: '#343a40',
-    fontSize: '28px',
-    fontWeight: 'bold',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  formGroup: {
-    marginBottom: '20px',
-    // Remove bottom margin when inside a grid for alignment
-    gridColumn: 'span 1',
-  },
-  label: {
-    display: 'block',
-    fontWeight: '600',
-    color: '#495057',
-    marginBottom: '8px',
-    fontSize: '14px',
-  },
-  input: {
-    width: '100%',
-    padding: '12px 15px',
-    border: '1px solid #ced4da',
-    borderRadius: '8px',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-    backgroundColor: '#f8f9fa',
-  },
-  select: {
-    width: '100%',
-    padding: '12px 15px',
-    border: '1px solid #ced4da',
-    borderRadius: '8px',
-    fontSize: '16px',
-    boxSizing: 'border-box',
-    backgroundColor: '#f8f9fa',
-    cursor: 'pointer',
-  },
-  button: {
-    padding: '15px 20px',
-    background: 'linear-gradient(to right, #0ba360, #3cba92)',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    marginTop: '10px',
-    transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-    width: '100%',
-  },
-  successMessage: {
-    color: '#155724',
-    backgroundColor: '#d4edda',
-    border: '1px solid #c3e6cb',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    textAlign: 'center',
-  },
-  errorMessage: {
-    color: '#721c24',
-    backgroundColor: '#f8d7da',
-    border: '1px solid #f5c6cb',
-    padding: '12px',
-    borderRadius: '8px',
-    marginBottom: '20px',
-    textAlign: 'center',
-  },
-  gridContainer: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '20px',
-  },
-  usernameCheckContainer: {
-    display: 'grid',
-    gridTemplateColumns: '2fr 1fr', // Give more space to input
-    gap: '20px',
-    alignItems: 'flex-end', // Align items to the bottom
-  },
-  statusMessageContainer: {
-    paddingBottom: '20px', // Match the margin of formGroup
-    textAlign: 'left',
-  },
-  statusText: {
-    margin: '0',
-    fontSize: '14px',
-    fontWeight: '600',
-  },
-  statusAvailable: {
-    color: '#28a745', // Green
-  },
-  statusTaken: {
-    color: '#dc3545', // Red
-  },
-  statusChecking: {
-    color: '#6c757d', // Grey
-  },
-  loadingText: {
-      color: '#495057',
-      fontStyle: 'italic',
-  }
+ pageContainer: { /*...*/ background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', minHeight: '100vh', padding: '40px 20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, sans-serif' },
+ container: { /*...*/ maxWidth: '700px', width: '100%', margin: '0 auto', padding: '30px 40px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' },
+ heading: { /*...*/ textAlign: 'center', marginBottom: '25px', color: '#343a40', fontSize: '28px', fontWeight: 'bold' },
+ form: { /*...*/ display: 'flex', flexDirection: 'column' },
+ formGroup: { /*...*/ marginBottom: '20px', gridColumn: 'span 1' },
+ label: { /*...*/ display: 'block', fontWeight: '600', color: '#495057', marginBottom: '8px', fontSize: '14px' },
+ input: { /*...*/ width: '100%', padding: '12px 15px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', transition: 'border-color 0.2s ease, box-shadow 0.2s ease', backgroundColor: '#f8f9fa' },
+ select: { /*...*/ width: '100%', padding: '12px 15px', border: '1px solid #ced4da', borderRadius: '8px', fontSize: '16px', boxSizing: 'border-box', backgroundColor: '#f8f9fa', cursor: 'pointer' },
+ button: { /*...*/ padding: '15px 20px', background: 'linear-gradient(to right, #007bff, #0056b3)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '18px', fontWeight: 'bold', marginTop: '10px', transition: 'transform 0.2s ease, box-shadow 0.2s ease', width: '100%', opacity: 1 }, // Added opacity
+ // Style for disabled button
+ button_disabled: { /*...*/ opacity: 0.6, cursor: 'not-allowed' },
+ successMessage: { /*...*/ color: '#155724', backgroundColor: '#d4edda', border: '1px solid #c3e6cb', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' },
+ errorMessage: { /*...*/ color: '#721c24', backgroundColor: '#f8d7da', border: '1px solid #f5c6cb', padding: '12px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' },
+ gridContainer: { /*...*/ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
+ usernameCheckContainer: { /*...*/ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', alignItems: 'flex-end' },
+ statusMessageContainer: { /*...*/ paddingBottom: '20px', textAlign: 'left' },
+ statusText: { /*...*/ margin: '0', fontSize: '14px', fontWeight: '600' },
+ statusAvailable: { /*...*/ color: '#28a745' },
+ statusTaken: { /*...*/ color: '#dc3545' },
+ statusChecking: { /*...*/ color: '#6c757d' },
+ loadingText: { /*...*/ color: '#495057', fontStyle: 'italic', paddingTop: '10px' } // Added padding top
 };
 
+// Add disabled style to button directly (simpler)
+styles.button[':disabled'] = styles.button_disabled;

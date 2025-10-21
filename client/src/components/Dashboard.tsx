@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useState, useEffect, useRef } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
   faBars,
-  faBell,
+  faBell, 
   faCog,
   faSignOutAlt,
   faUsers,
@@ -17,151 +17,160 @@ import {
   faChartLine,
   faChartBar,
   faHospital,
-} from "@fortawesome/free-solid-svg-icons";
-import { Outlet, useNavigate, useLocation } from "react-router-dom";
-// import NavItem and SectionLabel components
-import NavItem from "./NavItem";
-import SectionLabel from "./SectionLabel";
-import IconButton from "./IconButton";
-import StatCard from "./StatCard";
-import QuickAction from "./QuickAction";
+} from '@fortawesome/free-solid-svg-icons';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+// Import components
+import NavItem from './NavItem';
+import SectionLabel from './SectionLabel';
+import IconButton from './IconButton';
+import StatCard from './StatCard';
+import QuickAction from './QuickAction';
+import NotificationBell from './NotificationBell'; // Notification component
 
 function Dashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [loggedInUser, setLoggedInUser] = useState(null);
+  const [loggedInUser, setLoggedInUser] = useState(null); // State for logged-in user data
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const searchRef = useRef(null);
 
-  // ---------- Effects ----------
+  // --- Effect to load user from localStorage ---
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setLoggedInUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        setLoggedInUser(parsedUser); // Set the state *after* parsing
+        // console.log("Dashboard: User loaded from localStorage", parsedUser); // Optional debug log
       } catch (error) {
-        console.error("Error parsing user data from localStorage:", error);
-        handleLogout();
+        console.error('Error parsing user data from localStorage:', error);
+        handleLogout(); // Log out if data is corrupted
       }
     } else {
-      navigate("/");
+      // If no user data, redirect to login
+      navigate('/');
     }
-  }, [navigate]);
+  }, [navigate]); // Dependency on navigate
 
+  // ... (other useEffect hooks for keydown and dropdown remain the same) ...
   useEffect(() => {
     const onKey = (e) => {
       const target = e.target;
       const typingInField =
-        target.tagName === "INPUT" || target.tagName === "TEXTAREA";
-      if (e.key === "[" && !typingInField) {
+        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+      if (e.key === '[' && !typingInField) {
         e.preventDefault();
         setIsSidebarOpen((s) => !s);
       }
-      if (e.key === "/" && !typingInField) {
+      if (e.key === '/' && !typingInField) {
         e.preventDefault();
         searchRef.current?.focus();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
   }, []);
 
   useEffect(() => {
     if (!showAccountDropdown) return;
     const handler = (e) => {
+      // Use optional chaining for safety
       if (
-        !e.target.closest("#account-dropdown-btn") &&
-        !e.target.closest("#account-dropdown-menu")
+        !e.target?.closest('#account-dropdown-btn') &&
+        !e.target?.closest('#account-dropdown-menu')
       ) {
         setShowAccountDropdown(false);
       }
     };
-    window.addEventListener("mousedown", handler);
-    return () => window.removeEventListener("mousedown", handler);
+    window.addEventListener('mousedown', handler);
+    return () => window.removeEventListener('mousedown', handler);
   }, [showAccountDropdown]);
 
-  // ---------- Actions ----------
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  const handleHome = () => navigate("/dashboard");
-  const handleSkillAssessmentForms = () => navigate("/dashboard/forms");
-  const handleRecordingSheet = () => navigate("/dashboard/patient-records");
-  const handleAppointmentManagement = () => navigate("/dashboard/appointments");
-  const handleParentalTraining = () => navigate("/dashboard/parental-training");
-  const handleQRAttendance = () => navigate("/dashboard/qr-attendance");
-  const handleTherapyTracking = () => navigate("/dashboard/therapy-tracking");
-  const handleDocuments = () => navigate("/dashboard/documents");
-  const handleTherapySessions = () => navigate("/dashboard/therapy-sessions");
-  const handleReports = () => navigate("/dashboard/reports");
-  const handleManageUsers = () => navigate("/dashboard/manage-users");
-  const handleAddNewUser = () => navigate("manage-users/add");
-  const handleRDHS = () => navigate("/dashboard/rdhs");
+  // --- Actions ---
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const handleHome = () => navigate('/dashboard');
+  const handleSkillAssessmentForms = () => navigate('/dashboard/forms');
+  const handleRecordingSheet = () => navigate('/dashboard/patient-records');
+  const handleAppointmentManagement = () => navigate('/dashboard/appointments');
+  const handleParentalTraining = () => navigate('/dashboard/parental-training');
+  const handleQRAttendance = () => navigate('/dashboard/qr-attendance');
+  const handleTherapyTracking = () => navigate('/dashboard/therapy-tracking');
+  const handleDocuments = () => navigate('/dashboard/documents');
+  const handleTherapySessions = () => navigate('/dashboard/therapy-sessions');
+  const handleReports = () => navigate('/dashboard/reports');
+  const handleManageUsers = () => navigate('/dashboard/manage-users');
+  const handleAddNewUser = () => navigate('manage-users/add');
+  const handleRDHS = () => navigate('/dashboard/rdhs');
   const handleParentsReadingResources = () =>
-    navigate("/dashboard/adminuploaddocs");
-  const handleMonthlyReturns = () => navigate("/dashboard/forms/monreturn");
+    navigate('/dashboard/adminuploaddocs');
+  const handleMonthlyReturns = () => navigate('/dashboard/forms/monreturn');
   const handleViewofParentsReadingResources = () =>
-    navigate("/dashboard/viewdocs");
+    navigate('/dashboard/viewdocs');
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setLoggedInUser(null);
-    navigate("/");
+    navigate('/');
   };
 
-  // ---------- Helpers ----------
+  // --- Helpers ---
   const isActive = (path) => {
-    if (path === "/dashboard/skill-assessment") {
+    // ... (isActive logic remains the same) ...
+    if (path === '/dashboard/skill-assessment') {
       return (
-        location.pathname === "/dashboard/skill-assessment" ||
-        location.pathname === "/dashboard/prerequisite-skill" ||
-        location.pathname === "/dashboard/communication" ||
-        location.pathname === "/dashboard/language" ||
-        location.pathname === "/dashboard/speech" ||
-        location.pathname === "/dashboard/oralmotor-assessment"
+        location.pathname === '/dashboard/skill-assessment' ||
+        location.pathname === '/dashboard/prerequisite-skill' ||
+        location.pathname === '/dashboard/communication' ||
+        location.pathname === '/dashboard/language' ||
+        location.pathname === '/dashboard/speech' ||
+        location.pathname === '/dashboard/oralmotor-assessment'
       );
     }
-    if (path === "/dashboard") {
-      return location.pathname === "/dashboard";
+    if (path === '/dashboard') {
+      return location.pathname === '/dashboard';
     }
     return location.pathname.startsWith(path);
   };
 
   const currentTitle = (() => {
+    // ... (currentTitle logic remains the same) ...
     const p = location.pathname;
-    if (p === "/dashboard") return "Dashboard Overview";
-    if (p.startsWith("/dashboard/forms")) return "Assessment Forms";
-    if (p.startsWith("/dashboard/patient-records"))
-      return "Patient Information";
-    if (p.startsWith("/dashboard/parental-training"))
-      return "Parental Training";
-    if (p.startsWith("/dashboard/qr-attendance")) return "QR Attendance";
-    if (p.startsWith("/dashboard/therapy-tracking")) return "Therapy Tracking";
-    if (p.startsWith("/dashboard/therapy-sessions")) return "Therapy Sessions";
-    if (p.startsWith("/dashboard/appointments"))
-      return "Appointment Management";
-    if (p.startsWith("/dashboard/manage-users")) return "Manage Users";
-    if (p.startsWith("/dashboard/rdhs")) return "RDHS";
-    if (p.startsWith("/dashboard/reports")) return "Reports";
-    if (p.startsWith("/dashboard/documents")) return "Documents";
-    if (p.startsWith("/dashboard/adminuploaddocs"))
-      return "Upload Resources for Patents";
-    if (p.startsWith("/dashboard/viewdocs"))
-      return "View Resources for Patents";
-    if (p.startsWith("/dashboard/forms/monreturn"))
-      return "Upload Monthly Returns ";
-    return "Welcome";
+    if (p === '/dashboard') return 'Dashboard Overview';
+    if (p.startsWith('/dashboard/forms')) return 'Assessment Forms';
+    if (p.startsWith('/dashboard/patient-records'))
+      return 'Patient Information';
+    if (p.startsWith('/dashboard/parental-training'))
+      return 'Parental Training';
+    if (p.startsWith('/dashboard/qr-attendance')) return 'QR Attendance';
+    if (p.startsWith('/dashboard/therapy-tracking')) return 'Therapy Tracking';
+    if (p.startsWith('/dashboard/therapy-sessions')) return 'Therapy Sessions';
+    if (p.startsWith('/dashboard/appointments'))
+      return 'Appointment Management';
+    if (p.startsWith('/dashboard/manage-users')) return 'Manage Users';
+    if (p.startsWith('/dashboard/rdhs')) return 'RDHS';
+    if (p.startsWith('/dashboard/reports')) return 'Reports';
+    if (p.startsWith('/dashboard/documents')) return 'Documents';
+    if (p.startsWith('/dashboard/adminuploaddocs'))
+      return 'Upload Resources for Patents';
+    if (p.startsWith('/dashboard/viewdocs'))
+      return 'View Resources for Patents';
+    if (p.startsWith('/dashboard/forms/monreturn'))
+      return 'Upload Monthly Returns ';
+    return 'Welcome';
   })();
 
   const breadcrumb = (() => {
-    const base = [{ label: "Dashboard", onClick: handleHome }];
+    // ... (breadcrumb logic remains the same) ...
+    const base = [{ label: 'Dashboard', onClick: handleHome }];
     const parts = location.pathname
-      .replace("/dashboard", "")
-      .split("/")
+      .replace('/dashboard', '')
+      .split('/')
       .filter(Boolean);
     const crumbs = parts.map((seg, idx) => {
-      const href = "/dashboard/" + parts.slice(0, idx + 1).join("/");
+      const href = '/dashboard/' + parts.slice(0, idx + 1).join('/');
       return {
         label: prettify(seg),
         onClick: () => navigate(href),
@@ -171,28 +180,29 @@ function Dashboard() {
   })();
 
   function prettify(str) {
-    return str.replace(/-/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+    return str.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
   }
 
-  // Check user type for permissions
+  // --- Check user type (using optional chaining for safety) ---
   const canAccessPatientInfo =
-    loggedInUser?.userType === "Super Admin" ||
-    loggedInUser?.userType === "Admin";
+    loggedInUser?.userType === 'Super Admin' ||
+    loggedInUser?.userType === 'Admin';
   const canAccessAdminPanel =
-    loggedInUser?.userType === "Super Admin" ||
-    loggedInUser?.userType === "Admin";
+    loggedInUser?.userType === 'Super Admin' ||
+    loggedInUser?.userType === 'Admin';
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-800 antialiased overflow-hidden">
-      {/* Sidebar */}
+      {/* Sidebar ... (no changes needed) ... */}
       <aside
         className={`bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 text-white
           transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? "w-80" : "w-20"
+            isSidebarOpen ? 'w-80' : 'w-20'
           } flex flex-col shadow-2xl relative z-20`}
         aria-label="Sidebar Navigation"
       >
-        <div className="flex items-center justify-between h-20 px-4">
+        {/* ... (sidebar content) ... */}
+         <div className="flex items-center justify-between h-20 px-4">
           <div className="flex items-center gap-3">
             {!isSidebarOpen ? (
               <button
@@ -232,7 +242,7 @@ function Dashboard() {
             label="Dashboard Home"
             isOpen={isSidebarOpen}
             onClick={handleHome}
-            isActive={isActive("/dashboard")}
+            isActive={isActive('/dashboard')}
             color="blue"
           />
           <SectionLabel isOpen={isSidebarOpen} text="Core" />
@@ -242,7 +252,7 @@ function Dashboard() {
               label="Patient Information"
               isOpen={isSidebarOpen}
               onClick={handleRecordingSheet}
-              isActive={isActive("/dashboard/patient-records")}
+              isActive={isActive('/dashboard/patient-records')}
               color="sky"
             />
           )}
@@ -251,7 +261,7 @@ function Dashboard() {
             label="Assessment Forms"
             isOpen={isSidebarOpen}
             onClick={handleSkillAssessmentForms}
-            isActive={isActive("/dashboard/forms")}
+            isActive={isActive('/dashboard/forms')}
             color="teal"
           />
           <NavItem
@@ -259,7 +269,7 @@ function Dashboard() {
             label="Therapy Tracking"
             isOpen={isSidebarOpen}
             onClick={handleTherapyTracking}
-            isActive={isActive("/dashboard/therapy-tracking")}
+            isActive={isActive('/dashboard/therapy-tracking')}
             color="indigo"
           />
           <NavItem
@@ -267,7 +277,7 @@ function Dashboard() {
             label="Appointment Management"
             isOpen={isSidebarOpen}
             onClick={handleAppointmentManagement}
-            isActive={isActive("/dashboard/appointments")}
+            isActive={isActive('/dashboard/appointments')}
             color="blue"
           />
           <NavItem
@@ -275,7 +285,7 @@ function Dashboard() {
             label="QR Attendance"
             isOpen={isSidebarOpen}
             onClick={handleQRAttendance}
-            isActive={isActive("/dashboard/qr-attendance")}
+            isActive={isActive('/dashboard/qr-attendance')}
             color="sky"
           />
           <NavItem
@@ -283,7 +293,7 @@ function Dashboard() {
             label="RDHS"
             isOpen={isSidebarOpen}
             onClick={handleRDHS}
-            isActive={isActive("/dashboard/rdhs")}
+            isActive={isActive('/dashboard/rdhs')}
             color="indigo"
           />
           <NavItem
@@ -291,7 +301,7 @@ function Dashboard() {
             label="Parental Training"
             isOpen={isSidebarOpen}
             onClick={handleParentalTraining}
-            isActive={isActive("/dashboard/parental-training")}
+            isActive={isActive('/dashboard/parental-training')}
             color="teal"
           />
           <NavItem
@@ -299,7 +309,7 @@ function Dashboard() {
             label="Resources for Parents"
             isOpen={isSidebarOpen}
             onClick={handleViewofParentsReadingResources}
-            isActive={isActive("/dashboard/viewdocs")}
+            isActive={isActive('/dashboard/viewdocs')}
             color="teal"
           />
           {canAccessAdminPanel && (
@@ -310,7 +320,7 @@ function Dashboard() {
                 label="Manage Users"
                 isOpen={isSidebarOpen}
                 onClick={handleManageUsers}
-                isActive={isActive("/dashboard/manage-users")}
+                isActive={isActive('/dashboard/manage-users')}
                 color="blue"
               />
               <NavItem
@@ -318,7 +328,7 @@ function Dashboard() {
                 label="Upload Reading Resources for Parents "
                 isOpen={isSidebarOpen}
                 onClick={handleParentsReadingResources}
-                isActive={isActive("/dashboard/adminuploaddocs")}
+                isActive={isActive('/dashboard/adminuploaddocs')}
                 color="blue"
               />
               <NavItem
@@ -326,7 +336,7 @@ function Dashboard() {
                 label="Upload Monthly Returns "
                 isOpen={isSidebarOpen}
                 onClick={handleMonthlyReturns}
-                isActive={isActive("/dashboard/forms/monreturn")}
+                isActive={isActive('/dashboard/forms/monreturn')}
                 color="blue"
               />
             </>
@@ -336,8 +346,9 @@ function Dashboard() {
 
       <main className="flex-1 flex flex-col bg-white rounded-l-3xl shadow-sm overflow-hidden my-4 ml-4 transition-all duration-300 ease-in-out border border-gray-100">
         <header className="flex items-center justify-between gap-4 p-5 bg-white border-b-4 border-blue-600 shadow-md sticky top-0 z-10">
+          {/* ... (Breadcrumb) ... */}
           <div className="min-w-0">
-            <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500">
+             <div className="flex items-center flex-wrap gap-2 text-sm text-gray-500">
               {breadcrumb.map((c, i) => (
                 <React.Fragment key={i}>
                   {i > 0 && <span className="text-gray-300">/</span>}
@@ -355,7 +366,7 @@ function Dashboard() {
               <h2 className="text-2xl font-semibold text-gray-800">
                 {currentTitle}
               </h2>
-              {currentTitle === "Dashboard Overview" && (
+              {currentTitle === 'Dashboard Overview' && (
                 <span className="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                   Live
                 </span>
@@ -365,14 +376,21 @@ function Dashboard() {
               Quick glance of activity, tasks, and patient pipeline.
             </p>
           </div>
+
+          {/* --- Header Icons --- */}
           <div className="flex items-center gap-2">
-            
-            <IconButton icon={faBell} badge title="Notifications" />
+
+            {/* --- THE FIX: Conditionally render NotificationBell --- */}
+            {/* Render NotificationBell only if loggedInUser is not null */}
+            {loggedInUser && <NotificationBell user={loggedInUser} />}
+
             <IconButton icon={faCog} title="Settings" />
 
+            {/* User Account Dropdown */}
             {loggedInUser ? (
               <div className="relative">
-                <button
+                {/* ... (Dropdown button and menu code remains the same) ... */}
+                 <button
                   id="account-dropdown-btn"
                   className="flex items-center gap-2 px-3 py-2 rounded-full bg-blue-50 text-blue-700 font-medium text-sm shadow-inner cursor-pointer hover:bg-blue-100 transition-colors"
                   title="Account"
@@ -387,7 +405,7 @@ function Dashboard() {
                   </span>
                   <svg
                     className={`ml-1 w-3 h-3 transition-transform ${
-                      showAccountDropdown ? "rotate-180" : ""
+                      showAccountDropdown ? 'rotate-180' : ''
                     }`}
                     fill="none"
                     stroke="currentColor"
@@ -417,14 +435,16 @@ function Dashboard() {
                 )}
               </div>
             ) : (
-              <div className="flex items-center px-3 py-2 rounded-full bg-gray-100 text-gray-600 text-sm">
+              // Show loading state while user is being fetched
+              <div className="flex items-center px-3 py-2 rounded-full bg-gray-100 text-gray-600 text-sm animate-pulse">
                 Loading User…
               </div>
             )}
           </div>
         </header>
 
-        {location.pathname === "/dashboard" && (
+        {/* ... (Dashboard content sections remain the same) ... */}
+         {location.pathname === '/dashboard' && (
           <section className="p-5 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard
