@@ -10,12 +10,10 @@ import {
   faEyeSlash,
 } from '@fortawesome/free-solid-svg-icons';
 
-// Token එක අරගන්න helper function එක
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
     console.error('Auth token not found');
-    // Handle redirect to login?
     return { headers: {} };
   }
   return {
@@ -25,19 +23,14 @@ const getAuthConfig = () => {
   };
 };
 
-// Message එකක් පෙන්වන පොඩි component එකක්
-const AlertMessage = ({
-  message,
-  type,
-}) => {
+const AlertMessage = ({ message, type }) => {
   if (!message) return null;
-  const a = 'a';
   return (
     <div
-      className={`p-3 rounded-md text-sm mb-4 ${
+      className={`p-3 rounded-lg border text-sm mb-4 font-medium ${
         type === 'success'
-          ? 'bg-green-100 border border-green-300 text-green-800'
-          : 'bg-red-100 border border-red-300 text-red-800'
+          ? 'bg-green-50 border-green-300 text-green-800'
+          : 'bg-red-50 border-red-300 text-red-800'
       }`}
     >
       {message}
@@ -45,19 +38,12 @@ const AlertMessage = ({
   );
 };
 
-const AccountSettingsModal = ({
-  isOpen,
-  onClose,
-  user,
-  onUserUpdate,
-}) => {
-  // Username state
+const AccountSettingsModal = ({ isOpen, onClose, user, onUserUpdate }) => {
   const [username, setUsername] = useState(user?.username || '');
   const [usernameLoading, setUsernameLoading] = useState(false);
   const [usernameError, setUsernameError] = useState('');
   const [usernameSuccess, setUsernameSuccess] = useState('');
 
-  // Password state
   const [passData, setPassData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -68,14 +54,12 @@ const AccountSettingsModal = ({
   const [passSuccess, setPassSuccess] = useState('');
   const [showPass, setShowPass] = useState(false);
 
-  // User prop එක වෙනස් වුණොත් username field එක update කරන්න
   useEffect(() => {
     if (user?.username) {
       setUsername(user.username);
     }
   }, [user]);
 
-  // Modal එක close කරද්දී messages clear කරන්න
   useEffect(() => {
     if (!isOpen) {
       setUsernameError('');
@@ -90,20 +74,16 @@ const AccountSettingsModal = ({
     }
   }, [isOpen]);
 
-  // --- Handlers ---
-
   const handleUsernameSubmit = async (e) => {
     e.preventDefault();
     setUsernameLoading(true);
     setUsernameError('');
     setUsernameSuccess('');
-
     if (username === user.username) {
       setUsernameError('This is already your current username.');
       setUsernameLoading(false);
       return;
     }
-
     try {
       const res = await axios.put(
         '/api/users/update-username',
@@ -111,7 +91,6 @@ const AccountSettingsModal = ({
         getAuthConfig()
       );
       setUsernameSuccess(res.data.msg);
-      // Parent component එකේ state සහ localStorage එක update කරන්න
       onUserUpdate(res.data.user);
     } catch (err) {
       setUsernameError(err.response?.data?.msg || 'An error occurred');
@@ -125,7 +104,6 @@ const AccountSettingsModal = ({
     setPassLoading(true);
     setPassError('');
     setPassSuccess('');
-
     try {
       const res = await axios.put(
         '/api/users/update-password',
@@ -133,7 +111,6 @@ const AccountSettingsModal = ({
         getAuthConfig()
       );
       setPassSuccess(res.data.msg);
-      // සාර්ථක වුණොත් form එක clear කරන්න
       setPassData({
         currentPassword: '',
         newPassword: '',
@@ -153,69 +130,79 @@ const AccountSettingsModal = ({
     });
   };
 
-  // Modal එක පේන්නෙ නැත්නම් මොකුත් render කරන්න එපා
   if (!isOpen) {
     return null;
   }
 
   return (
-    // Modal Overlay
+    // --- STYLE UPDATE: Added subtle animation ---
     <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
-      onClick={onClose} // Overlay එක click කරාම close වෙන්න
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 
+                 animate-[fadeIn_0.2s_ease-out]"
+      onClick={onClose}
     >
-      {/* Modal Content */}
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()} // Content එක click කරාම close නොවී ඉන්න
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto
+                   animate-[slideIn_0.3s_ease-out]"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800">
+        {/* --- STYLE UPDATE: Improved header padding and typography --- */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-200">
+          <h3 className="text-lg font-semibold text-slate-900">
             Account Settings
           </h3>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-700 p-2 rounded-full hover:bg-gray-100"
+            className="text-slate-400 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors"
             aria-label="Close"
           >
             <FontAwesomeIcon icon={faTimes} className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Body */}
-        <div className="p-6 space-y-8">
+        {/* --- STYLE UPDATE: Improved padding and spacing --- */}
+        <div className="p-6 space-y-6">
           {/* 1. Change Username Form */}
           <form onSubmit={handleUsernameSubmit} className="space-y-4">
-            <h4 className="font-semibold text-gray-700">Change Username</h4>
+            <h4 className="font-semibold text-slate-800">Change Username</h4>
             <AlertMessage message={usernameError} type="error" />
             <AlertMessage message={usernameSuccess} type="success" />
             <div>
               <label
                 htmlFor="username"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-medium text-slate-600 mb-1.5"
               >
                 New Username
               </label>
               <div className="relative">
                 <FontAwesomeIcon
                   icon={faUser}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
+                {/* --- STYLE UPDATE: Modern input styling --- */}
                 <input
                   type="text"
                   id="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg 
+                             bg-slate-50 text-slate-900
+                             focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                             transition-all duration-150"
                   required
                 />
               </div>
             </div>
+            {/* --- STYLE UPDATE: Advanced interactive button style --- */}
             <button
               type="submit"
               disabled={usernameLoading}
-              className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
+              className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white 
+                         font-semibold rounded-lg shadow-md shadow-blue-500/20 
+                         hover:bg-blue-700 hover:-translate-y-0.5 
+                         active:translate-y-0 active:bg-blue-800
+                         disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none
+                         transition-all duration-150"
             >
               {usernameLoading ? (
                 <FontAwesomeIcon icon={faSpinner} spin />
@@ -225,27 +212,27 @@ const AccountSettingsModal = ({
             </button>
           </form>
 
-          {/* Divider */}
-          <hr />
+          {/* --- STYLE UPDATE: Thinner divider --- */}
+          <hr className="border-slate-200" />
 
           {/* 2. Change Password Form */}
           <form onSubmit={handlePasswordSubmit} className="space-y-4">
-            <h4 className="font-semibold text-gray-700">Change Password</h4>
+            <h4 className="font-semibold text-slate-800">Change Password</h4>
             <AlertMessage message={passError} type="error" />
             <AlertMessage message={passSuccess} type="success" />
 
-            {/* Current Password */}
+            {/* --- STYLE UPDATE: Applied new input styles to all fields --- */}
             <div>
               <label
                 htmlFor="currentPassword"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-medium text-slate-600 mb-1.5"
               >
                 Current Password
               </label>
               <div className="relative">
                 <FontAwesomeIcon
                   icon={faLock}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -253,24 +240,26 @@ const AccountSettingsModal = ({
                   name="currentPassword"
                   value={passData.currentPassword}
                   onChange={handlePassChange}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg 
+                             bg-slate-50 text-slate-900
+                             focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                             transition-all duration-150"
                   required
                 />
               </div>
             </div>
 
-            {/* New Password */}
             <div>
               <label
                 htmlFor="newPassword"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-medium text-slate-600 mb-1.5"
               >
                 New Password
               </label>
               <div className="relative">
                 <FontAwesomeIcon
                   icon={faLock}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -278,24 +267,26 @@ const AccountSettingsModal = ({
                   name="newPassword"
                   value={passData.newPassword}
                   onChange={handlePassChange}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg 
+                             bg-slate-50 text-slate-900
+                             focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                             transition-all duration-150"
                   required
                 />
               </div>
             </div>
 
-            {/* Confirm New Password */}
             <div>
               <label
                 htmlFor="confirmNewPassword"
-                className="block text-sm font-medium text-gray-600 mb-1"
+                className="block text-sm font-medium text-slate-600 mb-1.5"
               >
                 Confirm New Password
               </label>
               <div className="relative">
                 <FontAwesomeIcon
                   icon={faLock}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
                 />
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -303,33 +294,42 @@ const AccountSettingsModal = ({
                   name="confirmNewPassword"
                   value={passData.confirmNewPassword}
                   onChange={handlePassChange}
-                  className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full pl-10 pr-10 py-2.5 border border-slate-300 rounded-lg 
+                             bg-slate-50 text-slate-900
+                             focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                             transition-all duration-150"
                   required
                 />
               </div>
             </div>
 
-            {/* Show Password Toggle */}
+            {/* --- STYLE UPDATE: Improved checkbox styling --- */}
             <div className="flex items-center">
               <input
                 type="checkbox"
                 id="showPass"
                 checked={showPass}
                 onChange={() => setShowPass(!showPass)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
               />
               <label
                 htmlFor="showPass"
-                className="ml-2 block text-sm text-gray-700"
+                className="ml-2 block text-sm text-slate-700"
               >
                 Show Passwords
               </label>
             </div>
 
+            {/* --- STYLE UPDATE: Applied advanced button style --- */}
             <button
               type="submit"
               disabled={passLoading}
-              className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg shadow hover:bg-blue-700 transition disabled:opacity-50"
+              className="w-full flex justify-center items-center gap-2 px-4 py-2.5 bg-blue-600 text-white 
+                         font-semibold rounded-lg shadow-md shadow-blue-500/20 
+                         hover:bg-blue-700 hover:-translate-y-0.5 
+                         active:translate-y-0 active:bg-blue-800
+                         disabled:opacity-50 disabled:hover:translate-y-0 disabled:shadow-none
+                         transition-all duration-150"
             >
               {passLoading ? (
                 <FontAwesomeIcon icon={faSpinner} spin />
@@ -340,6 +340,19 @@ const AccountSettingsModal = ({
           </form>
         </div>
       </div>
+      {/* --- CSS එකතු කිරීම (Animations සඳහා) --- */}
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { transform: translateY(-20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        .animate-\\[fadeIn_0\\.2s_ease-out\\] { animation: fadeIn 0.2s ease-out; }
+        .animate-\\[slideIn_0\\.3s_ease-out\\] { animation: slideIn 0.3s ease-out; }
+      `}</style>
     </div>
   );
 };
