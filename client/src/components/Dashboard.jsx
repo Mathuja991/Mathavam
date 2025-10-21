@@ -32,8 +32,8 @@ function Dashboard() {
 
   // --- Keyboard shortcut effect ---
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
+    const onKey = (e) => {
+      const target = e.target;
       const typingInField =
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
       if (e.key === '[' && !typingInField) {
@@ -42,7 +42,7 @@ function Dashboard() {
       }
       if (e.key === '/' && !typingInField) {
         e.preventDefault();
-        (searchRef.current as HTMLInputElement)?.focus();
+        searchRef.current?.focus();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -60,7 +60,7 @@ function Dashboard() {
   };
 
   // --- New function to update user state from modal ---
-  const handleUserUpdate = (updatedUser: any) => {
+  const handleUserUpdate = (updatedUser) => {
     setLoggedInUser(updatedUser);
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };

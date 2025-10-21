@@ -7,16 +7,13 @@ import NotificationBell from '../NotificationBell';
 // Import the new modal
 import AccountSettingsModal from './AccountSettingsModal';
 
-// Define props interface
-interface DashboardHeaderProps {
-  loggedInUser: any; // You can define a specific User type
-  handleLogout: () => void;
-  onUserUpdate: (newUser: any) => void; // Add this prop
-}
+// Import SweetAlert
+import Swal from 'sweetalert2';
+import 'sweetalert2/dist/sweetalert2.min.css'; // Import styles
 
-const DashboardHeader: React.FC<DashboardHeaderProps> = ({
+const DashboardHeader = ({
   loggedInUser,
-  handleLogout,
+  handleLogout, // This is the original logout function from Dashboard.tsx
   onUserUpdate, // Get the new prop
 }) => {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
@@ -28,9 +25,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   // Effect to close dropdown
   useEffect(() => {
     if (!showAccountDropdown) return;
-    const handler = (e: MouseEvent) => {
+    const handler = (e) => {
       // Use optional chaining for safety
-      const target = e.target as HTMLElement;
+      const target = e.target;
       if (
         !target?.closest('#account-dropdown-btn') &&
         !target?.closest('#account-dropdown-menu')
@@ -42,10 +39,29 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     return () => window.removeEventListener('mousedown', handler);
   }, [showAccountDropdown]);
 
+  // --- New Logout Confirmation Function ---
+  const confirmLogout = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'You are about to logout.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#3085d6',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, logout!',
+      cancelButtonText: 'No, stay',
+    }).then((result) => {
+      // If user clicks "Yes"
+      if (result.isConfirmed) {
+        handleLogout(); // Call the original logout function
+      }
+    });
+  };
+
   // --- Helpers (Title, Breadcrumb) ---
   const handleHome = () => navigate('/dashboard');
 
-  function prettify(str: string) {
+  function prettify(str) {
     return str.replace(/-/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
   }
 
@@ -174,8 +190,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   id="account-dropdown-menu"
                   className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-gray-100 z-50"
                 >
+                  {/* Change onClick to use confirmLogout */}
                   <button
-                    onClick={handleLogout}
+                    onClick={confirmLogout}
                     className="w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-xl text-sm"
                   >
                     <FontAwesomeIcon icon={faSignOutAlt} />
@@ -193,7 +210,9 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
         </div>
       </header>
 
-      {/* Render the modal (it will only show when isSettingsModalOpen is true) */}
+      {/* === FIX HERE ===
+        The AccountSettingsModal component tag is now correctly self-closed with "/>"
+      */}
       {isSettingsModalOpen && (
         <AccountSettingsModal
           isOpen={isSettingsModalOpen}

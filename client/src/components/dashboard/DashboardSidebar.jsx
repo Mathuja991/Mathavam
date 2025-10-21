@@ -16,14 +16,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import NavItem from '../NavItem';
 import SectionLabel from '../SectionLabel';
 
-// Props type එක නිර්වචනය කිරීම
-interface DashboardSidebarProps {
-  isSidebarOpen: boolean;
-  toggleSidebar: () => void;
-  loggedInUser: any; // ඔබට අවශ්‍ය නම් මෙතනට නියමිත User type එක යොදන්න
-}
-
-const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
+const DashboardSidebar = ({
   isSidebarOpen,
   toggleSidebar,
   loggedInUser,
@@ -52,7 +45,7 @@ const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
     navigate('/dashboard/viewdocs');
 
   // --- Helpers ---
-  const isActive = (path: string) => {
+  const isActive = (path) => {
     if (path === '/dashboard/skill-assessment') {
       return (
         location.pathname === '/dashboard/skill-assessment' ||

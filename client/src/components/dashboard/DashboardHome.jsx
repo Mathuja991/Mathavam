@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import StatCard from '../StatCard';
 import QuickAction from '../QuickAction';
 
-const DashboardHome: React.FC = () => {
+const DashboardHome = () => {
   const navigate = useNavigate();
 
   // --- Handlers for QuickActions ---

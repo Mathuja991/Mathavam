@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -9,14 +9,6 @@ import {
   faEye,
   faEyeSlash,
 } from '@fortawesome/free-solid-svg-icons';
-
-// Props type එක
-interface AccountSettingsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  user: any; // නියමිත User type එක යොදන්න
-  onUserUpdate: (newUser: any) => void; // User තොරතුරු update වුණාම parent එකට කියන්න
-}
 
 // Token එක අරගන්න helper function එක
 const getAuthConfig = () => {
@@ -34,7 +26,7 @@ const getAuthConfig = () => {
 };
 
 // Message එකක් පෙන්වන පොඩි component එකක්
-const AlertMessage: React.FC<{ message: string; type: 'success' | 'error' }> = ({
+const AlertMessage = ({
   message,
   type,
 }) => {
@@ -53,7 +45,7 @@ const AlertMessage: React.FC<{ message: string; type: 'success' | 'error' }> = (
   );
 };
 
-const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
+const AccountSettingsModal = ({
   isOpen,
   onClose,
   user,
@@ -100,7 +92,7 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
 
   // --- Handlers ---
 
-  const handleUsernameSubmit = async (e: React.FormEvent) => {
+  const handleUsernameSubmit = async (e) => {
     e.preventDefault();
     setUsernameLoading(true);
     setUsernameError('');
@@ -121,14 +113,14 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
       setUsernameSuccess(res.data.msg);
       // Parent component එකේ state සහ localStorage එක update කරන්න
       onUserUpdate(res.data.user);
-    } catch (err: any) {
+    } catch (err) {
       setUsernameError(err.response?.data?.msg || 'An error occurred');
     } finally {
       setUsernameLoading(false);
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setPassLoading(true);
     setPassError('');
@@ -147,14 +139,14 @@ const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({
         newPassword: '',
         confirmNewPassword: '',
       });
-    } catch (err: any) {
+    } catch (err) {
       setPassError(err.response?.data?.msg || 'An error occurred');
     } finally {
       setPassLoading(false);
     }
   };
 
-  const handlePassChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePassChange = (e) => {
     setPassData({
       ...passData,
       [e.target.name]: e.target.value,
