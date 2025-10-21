@@ -162,3 +162,96 @@ exports.loginUser = async (req, res) => {
         res.status(500).send('Server error during login.');
     }
 };
+
+
+// @desc    Update user's username
+// @route   PUT /api/users/update-username
+// @access  Private
+exports.updateUsername = async (req, res) => {
+    const { newUsername } = req.body;
+    const userId = req.user.id; // authMiddleware එකෙන් එන user ID එක
+
+    if (!newUsername) {
+        return res.status(400).json({ msg: 'New username is required' });
+    }
+
+    try {
+        // 1. අලුත් username එක දැනටමත් වෙන කෙනෙක් පාවිච්චි කරනවද බලන්න
+        const existingUser = await User.findOne({ username: newUsername.toLowerCase() });
+        if (existingUser && existingUser._id.toString() !== userId) {
+            return res.status(400).json({ msg: 'Username is already taken' });
+        }
+
+        // 2. User ව හොයාගෙන update කරන්න
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        user.username = newUsername.toLowerCase();
+        await user.save();
+
+        // 3. Frontend එකට update කරපු user ගේ තොරතුරු ටික (localStorage එක update කිරීමට) යවන්න
+        res.json({
+            msg: 'Username updated successfully',
+            user: {
+                id: user.id,
+                _id: user._id,
+                username: user.username,
+                userType: user.userType,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                childRegNo: user.childRegNo
+            }
+        });
+
+    } catch (err) {
+        console.error('Update Username Error:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+// @desc    Update user's password
+// @route   PUT /api/users/update-password
+// @access  Private
+exports.updatePassword = async (req, res) => {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    const userId = req.user.id;
+
+    // 1. Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({ msg: 'Please fill all password fields' });
+    }
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ msg: 'New passwords do not match' });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+    }
+
+    try {
+        // 2. User ව හොයාගන්න (password එකත් එක්කම)
+        // .select('+password') යොදන්නේ login වෙද්දී වගේ password එක select කරගන්න
+        const user = await User.findById(userId).select('+password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // 3. දැනට තියෙන password එක හරිද බලන්න
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Incorrect current password' });
+        }
+
+        // 4. අලුත් password එක hash කරලා save කරන්න
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Password updated successfully' });
+
+    } catch (err) {
+        console.error('Update Password Error:', err.message);
+        res.status(500).send('Server error');
+    }
+};
