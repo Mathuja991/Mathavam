@@ -1,250 +1,257 @@
-// controllers/userController.js (updated)
+// controllers/userController.js
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); // Import jsonwebtoken
+const jwt = require('jsonwebtoken');
+require('dotenv').config(); // Ensure dotenv is configured
 
 // @desc    Add a new user
 // @route   POST /api/users/add
-// @access  Public (for now, will add authentication later)
+// @access  Public
 exports.addUser = async (req, res) => {
-    // Add this console.log to inspect the incoming request body
-    console.log('Received request body in addUser:', req.body);
-
-    // Add childRegNo to the destructuring
+    // console.log('Received request body in addUser:', req.body); // Uncomment if needed
     const { firstName, lastName, idNumber, userType, username, password, confirmPassword, childRegNo } = req.body;
 
-    // 1. Basic Validation
+    // Validation
     if (!firstName || !lastName || !idNumber || !userType || !username || !password || !confirmPassword) {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
-
     if (password !== confirmPassword) {
         return res.status(400).json({ message: 'Passwords do not match' });
     }
-
-    // Conditional validation for childRegNo if userType is 'Parent'
+    // Ensure childRegNo is provided *only* if userType is Parent
     if (userType === 'Parent' && !childRegNo) {
         return res.status(400).json({ message: 'Please enter Child Registration Number for Parent user type.' });
     }
+    if (userType !== 'Parent' && childRegNo) {
+         // Prevent assigning childRegNo to non-parent users if desired
+         // console.warn(`Attempted to assign childRegNo to non-parent user type: ${userType}`);
+         // Or return an error: return res.status(400).json({ message: 'Child Registration Number is only applicable for Parent user type.' });
+    }
+
 
     try {
-        // 2. Check if user already exists (by ID Number or Username)
+        // Check if user exists
         let userById = await User.findOne({ idNumber });
         if (userById) {
             return res.status(400).json({ message: 'User with this ID Number already exists' });
         }
-
-        let userByUsername = await User.findOne({ username });
+        let userByUsername = await User.findOne({ username: username.toLowerCase() });
         if (userByUsername) {
-            return res.status(400).json({ message: 'Username already exists' });
+            return res.status(400).json({ message: 'Username is already taken' });
         }
 
-        // 3. Hash Password
+        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // 4. Create new user instance
+        // Create new user
         const newUser = new User({
             firstName,
             lastName,
             idNumber,
             userType,
-            username,
-            password: hashedPassword, // Store hashed password
-            childRegNo: userType === 'Parent' ? childRegNo : null // Store childRegNo only if userType is 'Parent', otherwise null
+            username: username.toLowerCase(),
+            password: hashedPassword,
+            // Assign childRegNo ONLY if userType is Parent
+            childRegNo: userType === 'Parent' ? childRegNo : null,
         });
 
-        // 5. Save user to database
+        // Save user
         const savedUser = await newUser.save();
-        res.status(201).json({ message: 'User added successfully', user: savedUser });
 
-    } catch (error) {
-        console.error('Error adding user:', error);
-        // Check for Mongoose validation errors (e.g., enum validation, required fields from schema)
-        if (error.name === 'ValidationError') {
-            const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: messages.join(', ') });
+        const userToReturn = { ...savedUser._doc };
+        delete userToReturn.password;
+
+        res.status(201).json({
+            message: 'User added successfully',
+            user: userToReturn
+        });
+
+    } catch (err) {
+        console.error('Error in addUser:', err.message);
+        // Provide more specific error if validation failed
+        if (err.name === 'ValidationError') {
+             const messages = Object.values(err.errors).map(val => val.message);
+             return res.status(400).json({ message: messages.join('. ') });
         }
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error adding user. Please try again.' });
     }
 };
+
 
 // @desc    Get all users
 // @route   GET /api/users
-// @access  Public (for now, will add authentication later)
+// @access  Private (Requires valid token via authMiddleware)
 exports.getAllUsers = async (req, res) => {
     try {
-        const users = await User.find().select('-password'); // Exclude password field from response
-        res.status(200).json(users);
-    } catch (error) {
-        console.error('Error fetching users:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// @desc    Get a single user by ID
-// @route   GET /api/users/:id
-// @access  Public (for now)
-exports.getUserById = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id).select('-password');
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-        res.status(200).json(user);
-    } catch (error) {
-        console.error('Error fetching user by ID:', error);
-        // Check for invalid ID format (e.g., if not a valid ObjectId)
-        if (error.kind === 'ObjectId') {
-            return res.status(400).json({ message: 'Invalid User ID format' });
-        }
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-// @desc    Update a user by ID
-// @route   PUT /api/users/:id
-// @access  Public (for now)
-exports.updateUser = async (req, res) => {
-    // Add childRegNo to the destructuring for updates
-    const { firstName, lastName, idNumber, userType, username, password, confirmPassword, childRegNo } = req.body;
-
-    // You can add validation here for updates as well
-    if (password && password !== confirmPassword) {
-        return res.status(400).json({ message: 'Passwords do not match for update' });
-    }
-
-    // Conditional validation for childRegNo during update
-    if (userType === 'Parent' && !childRegNo) {
-        return res.status(400).json({ message: 'Please enter Child Registration Number for Parent user type.' });
-    }
-    // If userType changes from 'Parent' to something else, childRegNo should be removed or set to null
-    if (userType !== 'Parent' && childRegNo) {
-        // Option 1: Set to null explicitly
-        req.body.childRegNo = null;
-        // Option 2: Delete the property from req.body if you want it to be truly absent
-        // delete req.body.childRegNo;
-    }
-
-
-    try {
-        let user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Check if ID Number or Username is being changed to an already existing one (excluding self)
-        if (idNumber && idNumber !== user.idNumber) {
-            const existingIdUser = await User.findOne({ idNumber });
-            if (existingIdUser && existingIdUser._id.toString() !== req.params.id) {
-                return res.status(400).json({ message: 'ID Number already in use by another user' });
-            }
-        }
-        if (username && username !== user.username) {
-            const existingUsernameUser = await User.findOne({ username });
-            if (existingUsernameUser && existingUsernameUser._id.toString() !== req.params.id) {
-                return res.status(400).json({ message: 'Username already in use by another user' });
-            }
-        }
-
-        // Update fields
-        user.firstName = firstName || user.firstName;
-        user.lastName = lastName || user.lastName;
-        user.idNumber = idNumber || user.idNumber;
-        user.userType = userType || user.userType;
-        user.username = username || user.username;
-        user.childRegNo = childRegNo; // <--- Update childRegNo field
-
-        if (password) {
-            const salt = await bcrypt.genSalt(10);
-            user.password = await bcrypt.hash(password, salt);
-        }
-
-        const updatedUser = await user.save();
-        // Exclude password and confirmPassword from the response
-        const { password: _, confirmPassword: __, ...userResponse } = updatedUser.toObject();
-        res.status(200).json({ message: 'User updated successfully', user: userResponse });
-    } catch (error) {
-        console.error('Error updating user:', error);
-        if (error.kind === 'ObjectId') {
-            return res.status(400).json({ message: 'Invalid User ID format' });
-        }
-        // Check for Mongoose validation errors during update
-        if (error.name === 'ValidationError') {
-            const messages = Object.values(error.errors).map(val => val.message);
-            return res.status(400).json({ message: messages.join(', ') });
-        }
-        res.status(500).json({ message: 'Server error' });
-    }
-};
-
-
-// @desc    Delete a user by ID
-// @route   DELETE /api/users/:id
-// @access  Public (for now)
-exports.deleteUser = async (req, res) => {
-    try {
-        const user = await User.findById(req.params.id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        await User.deleteOne({ _id: req.params.id }); // Use deleteOne on the model directly
-        res.status(200).json({ message: 'User deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting user:', error);
-        if (error.kind === 'ObjectId') {
-            return res.status(400).json({ message: 'Invalid User ID format' });
-        }
-        res.status(500).json({ message: 'Server error' });
+        // req.user should be attached by authMiddleware
+        // console.log("getAllUsers requested by user:", req.user.id);
+        const users = await User.find().select('-password'); // Exclude passwords
+        res.json(users);
+    } catch (err) {
+        console.error('Error in getAllUsers:', err.message);
+        res.status(500).send('Server Error fetching users.');
     }
 };
 
 // @desc    Authenticate user & get token
-// @route   POST /api/auth/login
+// @route   POST /api/users/login
 // @access  Public
 exports.loginUser = async (req, res) => {
     const { username, password } = req.body;
 
-    // Check if username and password are provided
     if (!username || !password) {
-        return res.status(400).json({ message: 'Please enter both username and password' });
+        return res.status(400).json({ msg: 'Please enter both username and password' });
     }
 
     try {
-        // Check if user exists
-        const user = await User.findOne({ username });
+        // 1. Find user (case-insensitive username)
+        const user = await User.findOne({ username: username.toLowerCase() });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
-        // Check password
+        // 2. Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ msg: 'Invalid credentials' });
         }
 
-        // Generate JWT Token
+        // 3. Create JWT Payload (using userId from DB)
+        // Ensure user.id (Mongoose virtual for _id) exists
+         if (!user.id) {
+            console.error(`CRITICAL ERROR: User found but missing .id! User: ${user.username}`);
+            return res.status(500).json({ msg: 'Server error generating token' });
+        }
         const payload = {
-            user: {
-                id: user.id, // MongoDB's _id
-                userType: user.userType, // Include userType in token for role-based access
-                username: user.username
-            }
+             // Use 'userId' to match the authMiddleware expectation
+            userId: user.id
+            // You can add userType here if needed by middleware later
+            // userType: user.userType
         };
 
+        // 4. Sign the token
         jwt.sign(
             payload,
-            process.env.JWT_SECRET, // Your secret key from .env
-            { expiresIn: '1h' }, // Token expires in 1 hour
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }, // Token expiration (e.g., 7 days)
             (err, token) => {
-                if (err) throw err;
-                res.json({ token, user: { id: user.id, username: user.username, userType: user.userType } });
+                if (err) {
+                     console.error('JWT Signing Error:', err);
+                     return res.status(500).json({ msg: 'Error generating token' });
+                }
+
+                // --- 5. THE FIX: Ensure childRegNo is included in the response USER object ---
+                // Send back the token AND the user object (including childRegNo) for localStorage
+                res.json({
+                    token,
+                    user: { // This object goes into localStorage on the frontend
+                        id: user.id, // Use .id virtual
+                        _id: user._id, // Include _id as well if needed elsewhere
+                        username: user.username,
+                        userType: user.userType,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        childRegNo: user.childRegNo // Include childRegNo here!
+                    }
+                });
             }
         );
+    } catch (err) {
+        console.error('Login Error:', err.message);
+        res.status(500).send('Server error during login.');
+    }
+};
 
-    } catch (error) {
-        console.error('Error during login:', error);
-        res.status(500).json({ message: 'Server error' });
+
+// @desc    Update user's username
+// @route   PUT /api/users/update-username
+// @access  Private
+exports.updateUsername = async (req, res) => {
+    const { newUsername } = req.body;
+    const userId = req.user.id; // authMiddleware එකෙන් එන user ID එක
+
+    if (!newUsername) {
+        return res.status(400).json({ msg: 'New username is required' });
+    }
+
+    try {
+        // 1. අලුත් username එක දැනටමත් වෙන කෙනෙක් පාවිච්චි කරනවද බලන්න
+        const existingUser = await User.findOne({ username: newUsername.toLowerCase() });
+        if (existingUser && existingUser._id.toString() !== userId) {
+            return res.status(400).json({ msg: 'Username is already taken' });
+        }
+
+        // 2. User ව හොයාගෙන update කරන්න
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        user.username = newUsername.toLowerCase();
+        await user.save();
+
+        // 3. Frontend එකට update කරපු user ගේ තොරතුරු ටික (localStorage එක update කිරීමට) යවන්න
+        res.json({
+            msg: 'Username updated successfully',
+            user: {
+                id: user.id,
+                _id: user._id,
+                username: user.username,
+                userType: user.userType,
+                firstName: user.firstName,
+                lastName: user.lastName,
+                childRegNo: user.childRegNo
+            }
+        });
+
+    } catch (err) {
+        console.error('Update Username Error:', err.message);
+        res.status(500).send('Server error');
+    }
+};
+
+// @desc    Update user's password
+// @route   PUT /api/users/update-password
+// @access  Private
+exports.updatePassword = async (req, res) => {
+    const { currentPassword, newPassword, confirmNewPassword } = req.body;
+    const userId = req.user.id;
+
+    // 1. Validation
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({ msg: 'Please fill all password fields' });
+    }
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ msg: 'New passwords do not match' });
+    }
+    if (newPassword.length < 6) {
+        return res.status(400).json({ msg: 'Password must be at least 6 characters' });
+    }
+
+    try {
+        // 2. User ව හොයාගන්න (password එකත් එක්කම)
+        // .select('+password') යොදන්නේ login වෙද්දී වගේ password එක select කරගන්න
+        const user = await User.findById(userId).select('+password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+
+        // 3. දැනට තියෙන password එක හරිද බලන්න
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ msg: 'Incorrect current password' });
+        }
+
+        // 4. අලුත් password එක hash කරලා save කරන්න
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        res.json({ msg: 'Password updated successfully' });
+
+    } catch (err) {
+        console.error('Update Password Error:', err.message);
+        res.status(500).send('Server error');
     }
 };
