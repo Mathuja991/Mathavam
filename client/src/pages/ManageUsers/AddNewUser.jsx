@@ -57,8 +57,8 @@ export default function AddNewUser() {
     try {
       // --- axios GET requests වලට config එක pass කිරීම ---
       const [usersResponse, patientsResponse] = await Promise.all([
-        axios.get('http://localhost:5000/api/users', config), // Token එක යැවීම
-        axios.get('http://localhost:5000/api/patientRecords', config) // Token එක යැවීම
+        axios.get(`${import.meta.env.VITE_API_URL}/users`, config), // Token එක යැවීම
+        axios.get(`${import.meta.env.VITE_API_URL}/patientRecords`, config) // Token එක යැවීම
       ]);
 
       const allUsersData = usersResponse.data;
@@ -162,7 +162,7 @@ export default function AddNewUser() {
     try {
       // --- axios POST request එකට config එක pass කිරීම ---
       // (/api/users/add route එක backend එකේ public වුවත්, token යැවීම ගැටළුවක් නැත)
-      const response = await axios.post('http://localhost:5000/api/users/add', formData, config);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/users/add`, formData, config);
       setMessage(response.data.message || 'User added successfully!'); // Use message from response
       // Form එක clear කිරීම
       setFormData({

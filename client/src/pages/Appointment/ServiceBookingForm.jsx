@@ -136,8 +136,8 @@ const ServiceBookingForm = () => {
       try {
         // Fetch only practitioners and patients
         const [usersResponse, patientsResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/users', config),
-          axios.get('http://localhost:5000/api/patientRecords', config),
+          axios.get(`${import.meta.env.VITE_API_URL}/users`, config),
+          axios.get(`${import.meta.env.VITE_API_URL}/patientRecords`, config),
           // REMOVED: Fetching all appointments is not needed for booking
           // axios.get('http://localhost:5000/api/appointments', config), 
         ]);
@@ -224,7 +224,7 @@ const ServiceBookingForm = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/appointments',
+        `${import.meta.env.VITE_API_URL}/appointments`,
         dataToSend,
         config // Send with auth token
       );

@@ -11,6 +11,7 @@ import {
   faClipboardList,
   faCalendarCheck,
   faHospital,
+  faTimes,
 } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, useLocation } from 'react-router-dom';
 import NavItem from '../NavItem';
@@ -25,24 +26,27 @@ const DashboardSidebar = ({
   const location = useLocation();
 
   // --- Actions (Navigation handlers) ---
-  const handleHome = () => navigate('/dashboard');
-  const handleSkillAssessmentForms = () => navigate('/dashboard/forms');
-  const handleRecordingSheet = () => navigate('/dashboard/patient-records');
-  const handleAppointmentManagement = () => navigate('/dashboard/appointments');
-  const handleParentalTraining = () => navigate('/dashboard/parental-training');
-  const handleQRAttendance = () => navigate('/dashboard/qr-attendance');
-  const handleTherapyTracking = () => navigate('/dashboard/therapy-tracking');
-  const handleDocuments = () => navigate('/dashboard/documents');
-  const handleTherapySessions = () => navigate('/dashboard/therapy-sessions');
-  const handleReports = () => navigate('/dashboard/reports');
-  const handleManageUsers = () => navigate('/dashboard/manage-users');
-  const handleAddNewUser = () => navigate('manage-users/add');
-  const handleRDHS = () => navigate('/dashboard/rdhs');
-  const handleParentsReadingResources = () =>
-    navigate('/dashboard/adminuploaddocs');
-  const handleMonthlyReturns = () => navigate('/dashboard/forms/monreturn');
-  const handleViewofParentsReadingResources = () =>
-    navigate('/dashboard/viewdocs');
+  const handleNavigation = (path) => {
+    navigate(path);
+    // Mobile එකේදී sidebar එක close කරන්න
+    if (window.innerWidth < 768) {
+      toggleSidebar();
+    }
+  };
+
+  const handleHome = () => handleNavigation('/dashboard');
+  const handleSkillAssessmentForms = () => handleNavigation('/dashboard/forms');
+  const handleRecordingSheet = () => handleNavigation('/dashboard/patient-records');
+  const handleAppointmentManagement = () => handleNavigation('/dashboard/appointments');
+  const handleParentalTraining = () => handleNavigation('/dashboard/parental-training');
+  const handleQRAttendance = () => handleNavigation('/dashboard/qr-attendance');
+  const handleTherapyTracking = () => handleNavigation('/dashboard/therapy-tracking');
+  const handleRDHS = () => handleNavigation('/dashboard/rdhs');
+  const handleViewofParentsReadingResources = () => handleNavigation('/dashboard/viewdocs');
+  const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
+  const handleParentsReadingResources = () => handleNavigation('/dashboard/adminuploaddocs');
+  const handleMonthlyReturns = () => handleNavigation('/dashboard/forms/monreturn');
+
 
   // --- Helpers ---
   const isActive = (path) => {
@@ -62,7 +66,7 @@ const DashboardSidebar = ({
     return location.pathname.startsWith(path);
   };
 
-  // --- Check user type (using optional chaining for safety) ---
+  // --- Check user type ---
   const canAccessPatientInfo =
     loggedInUser?.userType === 'Super Admin' ||
     loggedInUser?.userType === 'Admin';
@@ -72,30 +76,44 @@ const DashboardSidebar = ({
 
   return (
     <aside
+      // FIX: md:top-3 සහ md:bottom-3 ඉවත් කරනවා. 
+      // Desktop එකේදී මුළු උස පුරාම (full height) විහිදෙනවා.
+      // md:rounded-r-3xl ඉවත් කරනවා. මුළු Sidebar එකම full height වන නිසා corner round කිරීම අවශ්‍ය නැත.
       className={`bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 text-white
-          transition-all duration-300 ease-in-out ${
-            isSidebarOpen ? 'w-80' : 'w-20'
-          } flex flex-col shadow-2xl relative z-20`}
+          transition-all duration-300 ease-in-out shadow-2xl z-40 h-full flex-shrink-0 
+          
+          // Default (Mobile) styles: Fixed, Full Height, 64w. Slide In/Out via transform.
+          fixed top-0 bottom-0 left-0 w-64 flex flex-col
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+          
+          // Desktop/Tablet (md) styles: Overwrite mobile positioning. Use absolute width, keep fixed positioning
+          // md:top-3, md:bottom-3, md:rounded-r-3xl ඉවත් කර ඇත
+          md:translate-x-0 md:flex md:flex-col
+          ${isSidebarOpen ? 'md:w-80' : 'md:w-20'} 
+          
+          `} 
       aria-label="Sidebar Navigation"
     >
-      <div className="flex items-center justify-between h-20 px-4">
+      <div className="flex items-center justify-between h-20 px-4 flex-shrink-0">
         <div className="flex items-center gap-3">
-          {!isSidebarOpen ? (
-            <button
-              onClick={handleHome}
-              className="rounded-xl p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40"
-              title="Dashboard Home"
-            >
-              <FontAwesomeIcon icon={faHome} className="text-2xl text-white" />
-            </button>
-          ) : (
+          {/* Mathavam Title: Sidebar Open නම් පමණක් පෙන්වන්න (Mobile/Desktop දෙකේදීම) */}
+          {isSidebarOpen ? (
             <h1
               onClick={handleHome}
-              className="text-2xl font-extrabold tracking-tight text-white cursor-pointer drop-shadow-sm"
+              className={`text-2xl font-extrabold tracking-tight text-white cursor-pointer drop-shadow-sm`}
               title="Go Home"
             >
               Mathavam
             </h1>
+          ) : (
+            /* Small Icon: Sidebar Closed නම් පමණක් පෙන්වන්න (Desktop/Tablet) */
+            <button
+              onClick={handleHome}
+              className="rounded-xl p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/40 hidden md:block"
+              title="Dashboard Home"
+            >
+              <FontAwesomeIcon icon={faHome} className="text-2xl text-white" />
+            </button>
           )}
         </div>
 
@@ -103,9 +121,14 @@ const DashboardSidebar = ({
           onClick={toggleSidebar}
           className="ml-2 bg-white/15 backdrop-blur text-white p-2 rounded-xl shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/50 active:scale-95"
           aria-label="Toggle Sidebar"
-          title="Toggle Sidebar ([)"
+          title={isSidebarOpen ? "Close Menu" : "Open Menu"}
         >
-          <FontAwesomeIcon icon={faBars} />
+          {/* Mobile Overlay එකේදී close icon එක (X) පෙන්වන්න */}
+          {isSidebarOpen && window.innerWidth < 768 ? (
+            <FontAwesomeIcon icon={faTimes} />
+          ) : (
+            <FontAwesomeIcon icon={faBars} />
+          )}
         </button>
       </div>
 

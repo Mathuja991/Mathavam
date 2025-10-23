@@ -7,14 +7,16 @@ const AppointmentManagement = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const navigate = useNavigate();
 
+  // --- 1. Load User Data ---
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user.userType) {
       setCurrentUserType(user.userType);
       setCurrentUserId(user.id); 
     }
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount.
 
+  // --- 2. Navigation Logic ---
   const handleTypeSelect = (type) => {
     setSelectedType(type);
     switch (type) {
@@ -38,111 +40,147 @@ const AppointmentManagement = () => {
     }
   };
 
-  const isPractitioner = currentUserType === 'Doctor' || currentUserType === 'Therapist';
-  const isAdmin = currentUserType === 'Admin' || currentUserType === 'Super Admin';
+  // --- 3. User Type Check ---
+  const isPractitioner = ['Doctor', 'Therapist'].includes(currentUserType);
+  const isAdmin = ['Admin', 'Super Admin'].includes(currentUserType);
   const isParent = currentUserType === 'Parent';
   const isResourcePerson = currentUserType === 'Resource Person';
 
+  // --- 4. Card Component for Reusability and Styling ---
+  const AppointmentCard = ({ type, icon, title, description, allowed }) => {
+    if (!allowed) return null;
+
+    // Define Color Theme based on type
+    const colorClasses = {
+      doctor: {
+        bg: 'from-pink-100 to-rose-200',
+        border: selectedType === 'doctor' ? 'border-rose-600 ring-4 ring-rose-300' : 'border-rose-300',
+        text: 'text-rose-700',
+        icon: 'text-rose-600',
+      },
+      service: {
+        bg: 'from-emerald-100 to-teal-200',
+        border: selectedType === 'service' ? 'border-teal-600 ring-4 ring-teal-300' : 'border-teal-300',
+        text: 'text-teal-800',
+        icon: 'text-teal-600',
+      },
+      session: {
+        bg: 'from-blue-100 to-sky-200',
+        border: selectedType === 'session' ? 'border-sky-600 ring-4 ring-sky-300' : 'border-sky-300',
+        text: 'text-sky-800',
+        icon: 'text-sky-600',
+      },
+      'my-schedule': {
+        bg: 'from-indigo-100 to-violet-200',
+        border: selectedType === 'my-schedule' ? 'border-violet-600 ring-4 ring-violet-300' : 'border-violet-300',
+        text: 'text-violet-800',
+        icon: 'text-violet-600',
+      },
+      'all-appointments': {
+        bg: 'from-amber-100 to-yellow-200',
+        border: selectedType === 'all-appointments' ? 'border-yellow-600 ring-4 ring-yellow-300' : 'border-yellow-300',
+        text: 'text-yellow-800',
+        icon: 'text-yellow-600',
+      },
+    };
+
+    const colors = colorClasses[type] || {};
+
+    return (
+      <div
+        className={`bg-gradient-to-br ${colors.bg} border-2 ${colors.border} rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer 
+          hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 ease-in-out transform`}
+        onClick={() => handleTypeSelect(type)}
+      >
+        {/* Icon Area */}
+        <div className={`text-6xl mb-5 ${colors.icon} drop-shadow-md`}>
+          <i className={icon}></i>
+        </div>
+        {/* Title */}
+        <h3 className={`text-2xl font-extrabold ${colors.text} mb-2 text-center`}>
+          {title}
+        </h3>
+        {/* Description */}
+        <p className="text-gray-600 text-center font-medium">
+          {description}
+        </p>
+      </div>
+    );
+  };
+
+  // --- 5. Render Logic ---
   return (
-    <div className="container mx-auto p-8 bg-gradient-to-r from-indigo-100 to-blue-200 rounded-xl shadow-xl">
-      <h2 className="text-4xl font-bold text-gray-900 mb-8 text-center">Appointment Management</h2>
+    <div className="container mx-auto p-10 max-w-6xl bg-white rounded-3xl shadow-2xl font-['Inter',_sans-serif] min-h-[80vh]">
+      {/* Header: Bold title and separation line */}
+      <h2 className="text-4xl sm:text-5xl font-extrabold text-indigo-900 mb-10 text-center tracking-tight border-b-4 border-indigo-200 pb-4">
+        📅 Appointment Hub
+      </h2>
 
       {/* Quick Access for Practitioners */}
       {isPractitioner && (
-        <div className="mb-8 p-6 bg-gradient-to-r from-blue-100 to-blue-300 rounded-lg shadow-md flex justify-between items-center transition duration-300 ease-in-out hover:shadow-2xl">
-          <p className="text-blue-800 text-lg font-medium">Quickly view your upcoming appointments:</p>
+        <div className="mb-10 p-5 bg-gradient-to-r from-indigo-500 to-indigo-700 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-center transition duration-300 ease-in-out hover:shadow-indigo-400/50">
+          <p className="text-white text-lg font-semibold mb-3 sm:mb-0">
+            View your personalized schedule & manage appointments.
+          </p>
           <button
             onClick={() => navigate('/dashboard/appointments/my-schedule')}
-            className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md shadow-lg hover:bg-blue-700 transition-all"
+            className="inline-flex items-center px-6 py-2 bg-white text-indigo-700 font-bold rounded-xl shadow-xl hover:bg-gray-100 hover:scale-105 transition-all"
           >
-            <i className="fas fa-calendar-check mr-2"></i> View My Schedule
+            <i className="fas fa-calendar-alt mr-2"></i> Go to My Schedule
           </button>
         </div>
       )}
 
+      {/* Appointment Card Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {/* Doctor Appointment Card (for Parents/Admins) */}
-        {(isParent || isAdmin) && (
-          <div
-            className={`bg-gradient-to-r from-purple-50 to-purple-100 border-2 ${
-              selectedType === 'doctor' ? 'border-purple-600' : 'border-purple-200'
-            } rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300`}
-            onClick={() => handleTypeSelect('doctor')}
-          >
-            <div className="text-5xl mb-4 text-purple-700">
-              <i className="fas fa-user-md"></i>
-            </div>
-            <h3 className="text-xl font-semibold text-purple-800 mb-2">Book Doctor Appointment</h3>
-            <p className="text-gray-600 text-center">Schedule appointments with doctors.</p>
-          </div>
-        )}
+        {/* Doctor Appointment Card */}
+        <AppointmentCard
+          type="doctor"
+          icon="fas fa-user-md"
+          title="Book Doctor Appointment"
+          description="Schedule consultations with medical doctors or specialists."
+          allowed={isParent || isAdmin}
+        />
 
-        {/* Service Booking Card (for Parents/Admins/Therapists) */}
-        {(isParent || isAdmin || isPractitioner) && (
-          <div
-            className={`bg-gradient-to-r from-green-50 to-green-100 border-2 ${
-              selectedType === 'service' ? 'border-green-600' : 'border-green-200'
-            } rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300`}
-            onClick={() => handleTypeSelect('service')}
-          >
-            <div className="text-5xl mb-4 text-green-700">
-              <i className="fas fa-briefcase-medical"></i>
-            </div>
-            <h3 className="text-xl font-semibold text-green-800 mb-2">Book Service Appointment</h3>
-            <p className="text-gray-600 text-center">Schedule appointments for various therapy services.</p>
-          </div>
-        )}
+        {/* Service Booking Card */}
+        <AppointmentCard
+          type="service"
+          icon="fas fa-briefcase-medical"
+          title="Book Therapy / Service"
+          description="Schedule appointments for various therapy and support services."
+          allowed={isParent || isAdmin || isPractitioner}
+        />
 
-        {/* Session Booking Card (Re-enabled and updated) - for Parents, Admins, Resource Person, Practitioners */}
-        {(isParent || isAdmin || isResourcePerson || isPractitioner) && (
-          <div
-            className={`bg-gradient-to-r from-indigo-50 to-indigo-100 border-2 ${
-              selectedType === 'session' ? 'border-indigo-600' : 'border-indigo-200'
-            } rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300`}
-            onClick={() => handleTypeSelect('session')}
-          >
-            <div className="text-5xl mb-4 text-indigo-700">
-              <i className="fas fa-users"></i>
-            </div>
-            <h3 className="text-xl font-semibold text-indigo-800 mb-2">Book Session</h3>
-            <p className="text-gray-600 text-center">Schedule group or specific topic sessions.</p>
-          </div>
-        )}
+        {/* Session Booking Card */}
+        <AppointmentCard
+          type="session"
+          icon="fas fa-users"
+          title="Book Group Session"
+          description="Schedule participation in group sessions or specific topic workshops."
+          allowed={isParent || isAdmin || isResourcePerson || isPractitioner}
+        />
 
-        {/* Practitioner's Personal Schedule (for Doctors/Therapists) */}
-        {isPractitioner && (
-          <div
-            className={`bg-gradient-to-r from-blue-50 to-blue-100 border-2 ${
-              selectedType === 'my-schedule' ? 'border-blue-600' : 'border-blue-200'
-            } rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300`}
-            onClick={() => handleTypeSelect('my-schedule')}
-          >
-            <div className="text-5xl mb-4 text-blue-700">
-              <i className="fas fa-calendar-alt"></i>
-            </div>
-            <h3 className="text-xl font-semibold text-blue-800 mb-2">My Schedule</h3>
-            <p className="text-gray-600 text-center">View and manage your upcoming appointments.</p>
-          </div>
-        )}
+        {/* Practitioner's Personal Schedule */}
+        <AppointmentCard
+          type="my-schedule"
+          icon="fas fa-calendar-check"
+          title="My Work Schedule"
+          description="View and manage your upcoming schedule and availability."
+          allowed={isPractitioner}
+        />
 
-        {/* Admin/Super Admin All Appointments View (for Admins) */}
-        {isAdmin && (
-          <div
-            className={`bg-gradient-to-r from-orange-50 to-orange-100 border-2 ${
-              selectedType === 'all-appointments' ? 'border-orange-600' : 'border-orange-200'
-            } rounded-lg p-6 flex flex-col items-center justify-center cursor-pointer hover:scale-105 hover:shadow-xl transition-all duration-300`}
-            onClick={() => handleTypeSelect('all-appointments')}
-          >
-            <div className="text-5xl mb-4 text-orange-700">
-              <i className="fas fa-list-alt"></i>
-            </div>
-            <h3 className="text-xl font-semibold text-orange-800 mb-2">View All Appointments</h3>
-            <p className="text-gray-600 text-center">Oversee and manage all system appointments.</p>
-          </div>
-        )}
+        {/* Admin All Appointments View */}
+        <AppointmentCard
+          type="all-appointments"
+          icon="fas fa-list-alt"
+          title="All Appointments"
+          description="Oversee, filter, and manage all system appointments and bookings."
+          allowed={isAdmin}
+        />
       </div>
     </div>
   );
 };
 
 export default AppointmentManagement;
+

@@ -1,7 +1,7 @@
 // client/src/services/therapyAssessmentService.js
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api/therapyAssessments/'; // Ensure this matches your backend route
+const API_URL = `${import.meta.env.VITE_API_URL}/therapyAssessments/`; // Ensure this matches your backend route
 
 // Function to create a new therapy assessment
 const createAssessment = async (assessmentData) => {

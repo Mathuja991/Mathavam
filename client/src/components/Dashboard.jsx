@@ -24,14 +24,28 @@ function Dashboard() {
     } else {
       navigate('/');
     }
-  }, [navigate]);
 
+    // FIX: Initial state for mobile screens
+    const handleInitialSidebarState = () => {
+      // Mobile (sm/md) වලදී Sidebar එක default false කරන්න.
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      } else {
+        // Desktop වලදී පෙර තිබූ state එක තබා ගන්න.
+        setIsSidebarOpen(true);
+      }
+    };
+
+    handleInitialSidebarState(); 
+  }, [navigate]);
+  
   useEffect(() => {
     const onKey = (e) => {
       const target = e.target;
       const typingInField =
         target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-      if (e.key === '[' && !typingInField) {
+      // Desktop/Tablet වලට [ key එක එබූ විට Sidebar toggle කිරීම
+      if (e.key === '[' && !typingInField && window.innerWidth >= 768) {
         e.preventDefault();
         setIsSidebarOpen((s) => !s);
       }
@@ -59,7 +73,7 @@ function Dashboard() {
   };
 
   return (
-    // --- STYLE UPDATE: Changed background to a softer slate color ---
+    // Dashboard එකේ මුළු Layout එක. h-screen
     <div className="flex h-screen bg-slate-100 text-slate-900 antialiased">
       <DashboardSidebar
         isSidebarOpen={isSidebarOpen}
@@ -67,22 +81,36 @@ function Dashboard() {
         loggedInUser={loggedInUser}
       />
 
-      {/* --- STYLE UPDATE: Enhanced shadow and border for a 'floating' panel effect --- */}
-      <main className="flex-1 flex flex-col bg-white rounded-l-3xl shadow-2xl shadow-slate-300/40 
-                       overflow-hidden my-3 ml-3 transition-all duration-300 ease-in-out border border-slate-200/80">
+      {/* Mobile Overlay (Backdrop): Sidebar open නම් overlay එක පෙන්වන්න, Desktop වලදී සඟවන්න (md:hidden) */}
+      {isSidebarOpen && window.innerWidth < 768 && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-30 transition-opacity duration-200"
+          onClick={toggleSidebar}
+          aria-hidden="true"
+        ></div>
+      )}
+
+      {/* main content: h-full මගින් උස (height) නිවැරදිව පවත්වා ගනී */}
+      <main className={`flex-1 flex flex-col h-full bg-white shadow-2xl shadow-slate-300/40 
+                       overflow-hidden 
+                       transition-all duration-300 ease-in-out border border-slate-200/80
+                       min-w-0
+                       
+                       // Desktop/Tablet: Sidebar Open/Close මත margin එක පාලනය කිරීම
+                       ${isSidebarOpen ? 'md:ml-80' : 'md:ml-20'} 
+                       ml-0 rounded-none`}>
+
         <DashboardHeader
           loggedInUser={loggedInUser}
           handleLogout={handleLogout}
           onUserUpdate={handleUserUpdate}
+          toggleSidebar={toggleSidebar} 
         />
 
-        {location.pathname === '/dashboard' && <DashboardHome />}
-
-        {/* --- STYLE UPDATE: Changed background color to match the main bg --- */}
-        <div className="flex-1 bg-slate-50/50 overflow-y-auto rounded-br-3xl">
-          {/* --- STYLE UPDATE: Added padding to the outlet container --- */}
+        {/* මෙම div එක flex-1 සහ overflow-y-auto ලෙස සකසා ඇති නිසා, මෙයට ඇතුළත් වන content scroll වේ */}
+        <div className="flex-1 bg-slate-50/50 overflow-y-auto rounded-br-none">
           <div className="p-4 md:p-6">
-            <Outlet />
+            {location.pathname === '/dashboard' ? <DashboardHome /> : <Outlet />}
           </div>
         </div>
       </main>
