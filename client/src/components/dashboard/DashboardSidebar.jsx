@@ -45,7 +45,7 @@ const DashboardSidebar = ({
   const handleViewofParentsReadingResources = () => handleNavigation('/dashboard/viewdocs');
   const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
   const handleParentsReadingResources = () => handleNavigation('/dashboard/adminuploaddocs');
-  const handleMonthlyReturns = () => handleNavigation('/dashboard/forms/monreturn');
+  const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
 
 
   // --- Helpers ---

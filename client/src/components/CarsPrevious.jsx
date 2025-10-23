@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { exportEntriesToPDF } from "../utills/exportUtills"; 
+import {exportSingleEntryToPDF } from "../utills/exportUtillsfoecar"; 
 import "jspdf-autotable";
 import { saveAs } from "file-saver";
 import { useNavigate } from "react-router-dom";
@@ -72,7 +72,6 @@ const CarsPrevious = () => {
 
   const handleBack = () => {
     navigate(`/dashboard/forms`);
-
   };
 
   // Pagination logic
@@ -102,23 +101,28 @@ const CarsPrevious = () => {
     }
   };
 
- const handleEdit = (entry) => {
-  console.log("Edit entry:", entry);
-  
-  // Use createdAt timestamp if available, otherwise use date
-  const entryTime = entry.createdAt ? new Date(entry.createdAt) : new Date(entry.date);
-  const currentTime = new Date();
-  const timeDifference = currentTime - entryTime;
-  const hoursDifference = timeDifference / (1000 * 60 * 60);
+  const handleEdit = (entry) => {
+    console.log("Edit entry:", entry);
+    
+    // Use createdAt timestamp if available, otherwise use date
+    const entryTime = entry.createdAt ? new Date(entry.createdAt) : new Date(entry.date);
+    const currentTime = new Date();
+    const timeDifference = currentTime - entryTime;
+    const hoursDifference = timeDifference / (1000 * 60 * 60);
 
-  if (hoursDifference > 5) {
-    alert("Edit not available. Entries can only be edited within 5 hours of creation.");
-    return;
-  }
+    if (hoursDifference > 5) {
+      alert("Edit not available. Entries can only be edited within 5 hours of creation.");
+      return;
+    }
 
-  console.log("Navigating to:", `editcar/${entry._id}`);
-  navigate(`/dashboard/editcar/${entry._id}`);
-};
+    console.log("Navigating to:", `editcar/${entry._id}`);
+    navigate(`/dashboard/editcar/${entry._id}`);
+  };
+
+  // Function to export single entry
+  const handleExportSingle = (entry) => {
+    exportSingleEntryToPDF(entry);
+  };
 
   return (
     <div className="max-w-7xl mx-auto mt-8 p-6 bg-white rounded shadow">
@@ -206,24 +210,33 @@ const CarsPrevious = () => {
                 </span>
               </td>
               <td className="border border-gray-300 px-4 py-2">{getTotalScore(entry.scores).toFixed(1)}</td>
-              <td className="border border-gray-300 px-4 py-2">
-                <button className="text-blue-600 mr-2 hover:underline" onClick={() => handleEdit(entry)}>Edit</button>
-                <button className="text-red-600 hover:underline" onClick={() => handleDelete(entry._id)}>Delete</button>
+              <td className="border border-gray-300 px-4 py-2 space-x-2">
+                <button 
+                  className="text-blue-600 hover:underline" 
+                  onClick={() => handleEdit(entry)}
+                >
+                  Edit
+                </button>
+              
+                <button 
+                  className="text-red-600 hover:underline" 
+                  onClick={() => handleDelete(entry._id)}
+                >
+                  Delete
+                </button>
+                  <button 
+                  className="text-green-600 hover:underline" 
+                  onClick={() => handleExportSingle(entry)}
+                >
+                  Export
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Export Button */}
-      <div className="flex gap-2 mb-4 mt-5">
-        <button 
-          onClick={() => exportEntriesToPDF(entries)}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
-        >
-          Export PDF
-        </button>
-      </div>
+    
 
       {/* Pagination Controls */}
       <div className="flex justify-center gap-2 mt-6">

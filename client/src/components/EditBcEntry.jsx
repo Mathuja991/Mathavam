@@ -160,7 +160,7 @@ const EditBcEntry = () => {
       if (!response.ok) throw new Error('Update failed');
 
       alert('Entry updated successfully!');
-      navigate('/bcprevious-entries');
+      navigate('/dashboard/bcprevious-entries');
     } catch (err) {
       console.error('Update error:', err);
       setErrorMessage('🚨 Update failed. Please try again.');

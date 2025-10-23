@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid,
   ResponsiveContainer, BarChart, Bar
@@ -10,7 +11,8 @@ const ChildProgress = () => {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("progress");
-
+  const navigate = useNavigate();
+  
   const fetchChildEntries = async () => {
     if (!childNo.trim()) {
       setError("Please enter a Child No");
@@ -71,14 +73,28 @@ const ChildProgress = () => {
     const latestScore = getTotalScore(latestEntry.scores);
     return ((firstScore - latestScore) / firstScore * 100).toFixed(1);
   };
+  const handleBack = () => {
+    navigate(`/dashboard/forms`);
 
+  };
   const improvement = calculateImprovement();
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+    
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
+           <button
+          onClick={handleBack}
+          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </button>
+       
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             Child Progress Tracking
           </h1>
@@ -97,7 +113,7 @@ const ChildProgress = () => {
               <div className="flex gap-3">
                 <input
                   type="text"
-                  placeholder="e.g., C001, CH2024, etc."
+                  placeholder="e.g., 001"
                   value={childNo}
                   onChange={(e) => setChildNo(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && fetchChildEntries()}
@@ -265,19 +281,7 @@ const ChildProgress = () => {
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Additional Bar Chart */}
-                    <div className="h-64">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                          <XAxis dataKey="date" />
-                          <YAxis domain={[0, 60]} />
-                          <Tooltip />
-                          <Legend />
-                          <Bar dataKey="totalScore" fill="#10b981" name="Assessment Score" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
+                    
                   </div>
                 )}
 
