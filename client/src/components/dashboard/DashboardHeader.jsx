@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
+import { faCog, faSignOutAlt, faBars } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate, useLocation } from 'react-router-dom';
-import IconButton from '../IconButton'; // (I cannot style this component)
-import NotificationBell from '../NotificationBell'; // (I cannot style this component)
+import IconButton from '../IconButton';
+import NotificationBell from '../NotificationBell';
 import AccountSettingsModal from './AccountSettingsModal';
 
 import Swal from 'sweetalert2';
@@ -13,6 +13,7 @@ const DashboardHeader = ({
   loggedInUser,
   handleLogout,
   onUserUpdate,
+  toggleSidebar, // Sidebar toggle function එක
 }) => {
   const [showAccountDropdown, setShowAccountDropdown] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
@@ -40,12 +41,12 @@ const DashboardHeader = ({
       text: 'You are about to logout.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#3B82F6', // --- STYLE UPDATE: Matched blue color
-      cancelButtonColor: '#EF4444', // --- STYLE UPDATE: Matched red color
+      confirmButtonColor: '#3B82F6',
+      cancelButtonColor: '#EF4444',
       confirmButtonText: 'Yes, logout!',
       cancelButtonText: 'No, stay',
       customClass: {
-        popup: 'font-sans rounded-lg', // Use new font
+        popup: 'font-sans rounded-lg',
         title: 'text-slate-900',
         htmlContainer: 'text-slate-600',
       }
@@ -68,7 +69,22 @@ const DashboardHeader = ({
     if (p.startsWith('/dashboard/forms')) return 'Assessment Forms';
     if (p.startsWith('/dashboard/patient-records'))
       return 'Patient Information';
-    // ... (rest of the titles)
+    if (p.startsWith('/dashboard/therapy-tracking'))
+      return 'Therapy Tracking';
+    if (p.startsWith('/dashboard/appointments'))
+      return 'Appointment Management';
+    if (p.startsWith('/dashboard/qr-attendance'))
+      return 'QR Attendance';
+    if (p.startsWith('/dashboard/rdhs'))
+      return 'RDHS';
+    if (p.startsWith('/dashboard/parental-training'))
+      return 'Parental Training';
+    if (p.startsWith('/dashboard/viewdocs'))
+      return 'Resources for Parents';
+    if (p.startsWith('/dashboard/manage-users'))
+      return 'Manage Users';
+    if (p.startsWith('/dashboard/adminuploaddocs'))
+      return 'Upload Reading Resources for Parents';
     if (p.startsWith('/dashboard/forms/monreturn'))
       return 'Upload Monthly Returns ';
     return 'Welcome';
@@ -92,13 +108,22 @@ const DashboardHeader = ({
 
   return (
     <>
-      {/* --- STYLE UPDATE: Removed thick blue border, added subtle bottom border and shadow --- */}
-      <header className="flex items-center justify-between gap-4 p-5 bg-white 
+      <header className="flex items-center justify-between gap-4 p-4 md:p-5 bg-white 
                        border-b border-slate-200/80 shadow-sm sticky top-0 z-10">
-        {/* Breadcrumb */}
-        <div className="min-w-0">
-          {/* --- STYLE UPDATE: Updated breadcrumb colors and transitions --- */}
-          <div className="flex items-center flex-wrap gap-2 text-sm text-slate-500 font-medium">
+        
+        {/* Mobile Sidebar Toggle Button (Only visible on mobile - md:hidden) */}
+        <button 
+            onClick={toggleSidebar}
+            className="md:hidden p-2 rounded-full text-slate-500 hover:text-blue-600 hover:bg-slate-100 transition-colors"
+            title="Open Menu"
+        >
+            <FontAwesomeIcon icon={faBars} className="w-5 h-5" />
+        </button>
+
+        {/* Breadcrumb and Title */}
+        <div className="min-w-0 flex-1">
+          {/* Breadcrumb: Hidden on Mobile, Visible on Tablet/Desktop */}
+          <div className="hidden md:flex items-center flex-wrap gap-2 text-sm text-slate-500 font-medium">
             {breadcrumb.map((c, i) => (
               <React.Fragment key={i}>
                 {i > 0 && <span className="text-slate-300">/</span>}
@@ -113,17 +138,18 @@ const DashboardHeader = ({
             ))}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            {/* --- STYLE UPDATE: Updated title color --- */}
-            <h2 className="text-2xl font-bold text-slate-900">
+            {/* Title: Smaller on Mobile */}
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 truncate">
               {currentTitle}
             </h2>
             {currentTitle === 'Dashboard Overview' && (
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-medium">
+              <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-medium hidden sm:inline-block">
                 Live
               </span>
             )}
           </div>
-          <p className="text-sm text-slate-500 mt-1">
+          {/* Subtitle: Hidden on Mobile */}
+          <p className="text-sm text-slate-500 mt-1 hidden md:block">
             Quick glance of activity, tasks, and patient pipeline.
           </p>
         </div>
@@ -141,24 +167,23 @@ const DashboardHeader = ({
           {/* User Account Dropdown */}
           {loggedInUser ? (
             <div className="relative">
-              {/* --- STYLE UPDATE: Changed button style for a cleaner look --- */}
               <button
                 id="account-dropdown-btn"
-                className="flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 text-slate-700 
+                className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1.5 md:py-2 rounded-full bg-slate-100 text-slate-700 
                            font-medium text-sm cursor-pointer hover:bg-slate-200/70 transition-colors"
                 title="Account"
                 onClick={() => setShowAccountDropdown((v) => !v)}
               >
-                {/* --- STYLE UPDATE: Improved avatar contrast --- */}
-                <div className="h-7 w-7 rounded-full bg-blue-600 text-white grid place-items-center text-xs font-bold">
+                <div className="h-7 w-7 rounded-full bg-blue-600 text-white grid place-items-center text-xs font-bold flex-shrink-0">
                   {loggedInUser.firstName?.[0]}
                   {loggedInUser.lastName?.[0]}
                 </div>
+                {/* Name: Hidden on Mobile */}
                 <span className="hidden sm:block">
                   Hi, {loggedInUser.firstName}
                 </span>
                 <svg
-                  className={`ml-1 w-4 h-4 text-slate-500 transition-transform ${
+                  className={`ml-1 w-4 h-4 text-slate-500 transition-transform hidden sm:block ${
                     showAccountDropdown ? 'rotate-180' : ''
                   }`}
                   fill="none"
@@ -174,7 +199,6 @@ const DashboardHeader = ({
                 </svg>
               </button>
               {showAccountDropdown && (
-                // --- STYLE UPDATE: Added padding and new hover effect ---
                 <div
                   id="account-dropdown-menu"
                   className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-xl border border-slate-100 z-50 p-1.5"

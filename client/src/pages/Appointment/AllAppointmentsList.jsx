@@ -125,7 +125,7 @@ const AllAppointmentsList = () => {
 
                 try {
                     // This will now get the correct patient fields ('name', 'childNo')
-                    const res = await axios.get('http://localhost:5000/api/appointments', config);
+                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/appointments`, config);
                     setAppointments(res.data.data || res.data);
                 } catch (err) {
                     if (err.response && err.response.status === 401) {
@@ -209,7 +209,7 @@ const AllAppointmentsList = () => {
 
         try {
             const res = await axios.put(
-                `http://localhost:5000/api/appointments/${id}/status`, 
+                `${import.meta.env.VITE_API_URL}/appointments/${id}/status`, 
                 { status: newStatus }, 
                 config
             );
@@ -237,7 +237,7 @@ const AllAppointmentsList = () => {
             if (!config) return;
             
             try {
-                await axios.delete(`http://localhost:5000/api/appointments/${id}`, config);
+                await axios.delete(`${import.meta.env.VITE_API_URL}/appointments/${id}`, config);
                 setAppointments(prevAppointments => 
                     prevAppointments.filter(appt => appt._id !== id)
                 );

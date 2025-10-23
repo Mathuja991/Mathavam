@@ -13,7 +13,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import StatCard from '../StatCard';
 import QuickAction from '../QuickAction';
 
-// --- Auth Token එක ලබාගන්නා Helper Function ---
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -27,7 +26,6 @@ const getAuthConfig = () => {
   };
 };
 
-// --- අද දිනය "YYYY-MM-DD" format එකෙන් (Local Time) ලබාගැනීම ---
 const getTodayLocalString = () => {
   const today = new Date();
   const year = today.getFullYear();
@@ -36,7 +34,6 @@ const getTodayLocalString = () => {
   return `${year}-${month}-${day}`;
 };
 
-// --- Appointment date එක (UTC වලින් ආවත්) Local "YYYY-MM-DD" format එකට හැරවීම ---
 const getAppointmentLocalString = (dateString) => {
   if (!dateString) return null;
   const apptDate = new Date(dateString);
@@ -77,28 +74,27 @@ const DashboardHome = () => {
           axios.get('/api/appointments', authConfig),
         ]);
 
-        // --- 1. Appointment දත්ත සැකසීම ---
-        // (Date logic එක නිවැරදියි, ඔබගේ data තියෙන්නේ 22 වෙනිදාට)
-        const allAppointments = apptRes.data.data || (Array.isArray(apptRes.data) ? apptRes.data : []);
-        const today = getTodayLocalString(); // e.g., "2025-10-21"
+        const allAppointments =
+          apptRes.data.data || (Array.isArray(apptRes.data) ? apptRes.data : []);
+        const today = getTodayLocalString();
 
         const todayAppointments = allAppointments.filter((appt) => {
-          const apptDateString = getAppointmentLocalString(appt.appointmentDate); // e.g., "2025-10-22"
+          const apptDateString = getAppointmentLocalString(appt.appointmentDate);
           return apptDateString === today;
         }).length;
 
         const pendingAppointments = allAppointments.filter(
           (appt) => appt.status === 'Pending'
-        ).length; // (ඔබේ data අනුව 4 ක් පෙන්විය යුතුයි)
+        ).length;
 
-        // --- 2. (FIX) Total Counts ගණනය කිරීම ---
-        // API response එක { data: [...] } හෝ [...] ආවොත් handle කිරීම
-        
-        const patientArray = patientRes.data.data || (Array.isArray(patientRes.data) ? patientRes.data : []);
-        const totalPatients = patientArray.length; // (ඔබේ data අනුව 3 ක් පෙන්විය යුතුයි)
+        const patientArray =
+          patientRes.data.data ||
+          (Array.isArray(patientRes.data) ? patientRes.data : []);
+        const totalPatients = patientArray.length;
 
-        const userArray = userRes.data.data || (Array.isArray(userRes.data) ? userRes.data : []);
-        const totalUsers = userArray.length; // (ඔබේ data අනුව 5 ක් පෙන්විය යුතුයි)
+        const userArray =
+          userRes.data.data || (Array.isArray(userRes.data) ? userRes.data : []);
+        const totalUsers = userArray.length;
 
         setStats({
           todayAppointments,
@@ -121,93 +117,110 @@ const DashboardHome = () => {
   const handleAppointmentManagement = () => navigate('/dashboard/appointments');
   const handleRDHS = () => navigate('/dashboard/rdhs');
 
-  // Loading State
   if (loading) {
     return (
-      <section className="p-4 md:p-6 flex justify-center items-center h-full min-h-[300px]">
+      // FIX: h-full සහ අනවශ්‍ය background classes ඉවත් කර ඇත.
+      <section className="flex justify-center items-center min-h-[400px]">
         <FontAwesomeIcon
           icon={faSpinner}
           spin
           size="3x"
-          className="text-blue-500"
+          className="text-indigo-600"
         />
       </section>
     );
   }
 
-  // Error State
   if (error) {
     return (
-      <section className="p-4 md:p-6">
+      <section className="max-w-4xl mx-auto">
         <div
-          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg"
+          className="bg-red-100 border-2 border-red-500 text-red-800 px-6 py-4 rounded-xl shadow-2xl text-center font-['Roboto',_sans-serif]"
           role="alert"
         >
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
+          <p className="text-xl font-bold mb-2">Data Loading Error</p>
+          <span className="block text-lg">{error}</span>
         </div>
       </section>
     );
   }
 
-  // Success State
   return (
-    <section className="p-4 md:p-6 space-y-6">
+    <section className="space-y-10 font-['Roboto',_sans-serif]"> 
+      <div className="flex justify-between items-center pb-4 border-b-4 border-indigo-100">
+        <h1 className="text-4xl font-extrabold text-indigo-900 tracking-tight">
+          System Overview 🚀
+        </h1>
+      </div>
+
+      {/* --- Stats Cards Grid --- */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           icon={faCalendarCheck}
           title="Today's Appointments"
-          value={stats.todayAppointments} // <-- අද දවසට (Oct 21) අගය 0 වේ. හෙට (Oct 22) දින බැලුවොත් 5 වේ.
+          value={stats.todayAppointments}
           sub={
             stats.todayAppointments === 0
               ? 'No appointments today'
               : `Total for ${new Date().toLocaleDateString()}`
           }
+          iconColor="text-teal-500"
+          bgColor="bg-white hover:bg-teal-50 shadow-lg border-l-4 border-teal-500 transition-all duration-300"
         />
         <StatCard
           icon={faHourglassHalf}
           title="Pending Appointments"
-          value={stats.pendingAppointments} // <-- ඔබගේ data අනුව 4 ක් පෙන්විය යුතුයි
-          sub={
-            stats.pendingAppointments > 0
-              ? 'Needs confirmation'
-              : 'All clear'
-          }
+          value={stats.pendingAppointments}
+          sub={stats.pendingAppointments > 0 ? 'Needs confirmation' : 'All clear'}
+          iconColor="text-yellow-500"
+          bgColor="bg-white hover:bg-yellow-50 shadow-lg border-l-4 border-yellow-500 transition-all duration-300"
         />
         <StatCard
           icon={faClipboardList}
           title="Total Patients"
-          value={stats.totalPatients} // <-- (FIXED) ඔබගේ data අනුව 3 ක් පෙන්විය යුතුයි
+          value={stats.totalPatients}
           sub="All registered patients"
+          iconColor="text-blue-500"
+          bgColor="bg-white hover:bg-blue-50 shadow-lg border-l-4 border-blue-500 transition-all duration-300"
         />
         <StatCard
           icon={faUsers}
           title="Total Users"
-          value={stats.totalUsers} // <-- (FIXED) ඔබගේ data අනුව 5 ක් පෙන්විය යුතුයි
+          value={stats.totalUsers}
           sub="Staff, Admins, and Parents"
+          iconColor="text-purple-500"
+          bgColor="bg-white hover:bg-purple-50 shadow-lg border-l-4 border-purple-500 transition-all duration-300"
         />
       </div>
 
-      {/* --- Quick Actions (Static Links) --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <QuickAction
-          title="Record New Patient"
-          desc="Add demographics & intake"
-          onClick={handleRecordingSheet}
-          icon={faClipboardList}
-        />
-        <QuickAction
-          title="Schedule Session"
-          desc="Book a therapy appointment"
-          onClick={handleAppointmentManagement}
-          icon={faCalendarCheck}
-        />
-        <QuickAction
-          title="Open RDHS"
-          desc="Regional health dashboard"
-          onClick={handleRDHS}
-          icon={faHospital}
-        />
+      {/* --- Quick Actions --- */}
+      <div className="pt-4">
+        <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2">
+          Quick Actions ⚡
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <QuickAction
+            title="Record New Patient"
+            desc="Add demographics & intake"
+            onClick={handleRecordingSheet}
+            icon={faClipboardList}
+            bgColor="bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-xl"
+          />
+          <QuickAction
+            title="Schedule Session"
+            desc="Book a therapy appointment"
+            onClick={handleAppointmentManagement}
+            icon={faCalendarCheck}
+            bgColor="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 shadow-xl"
+          />
+          <QuickAction
+            title="Open RDHS"
+            desc="Regional health dashboard"
+            onClick={handleRDHS}
+            icon={faHospital}
+            bgColor="bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 shadow-xl"
+          />
+        </div>
       </div>
     </section>
   );
