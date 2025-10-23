@@ -218,11 +218,14 @@ const BehaviorChecklist = () => {
       setPreviousEntries((prev) => [...prev, savedEntry]);
       setIsSubmitted(true);
       alert("Form submitted successfully!");
-      navigate("/forms");
+      navigate("/dashboard/forms");
     } catch (err) {
       console.error(err);
       setErrorMessage("🚨 Submission failed. Please try again.");
     }
+
+      
+
   };
 
   const renderCardOptions = (sectionKey, idx) => (
@@ -242,13 +245,25 @@ const BehaviorChecklist = () => {
       })}
     </div>
   );
+  const handleBack = () => {
+    navigate(`/dashboard/forms`);
+
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-white rounded-xl shadow-md">
+       <button
+          onClick={handleBack}
+          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </button>
       <h2 className="text-2xl font-bold mb-6 ">Behavior Checklist</h2>
-
-   
-
+ 
+    
       {/* Child Info */}
       <div className="bg-blue-50 p-6 rounded-xl shadow-sm ml-20">
         <ChildInfoInputs formData={formData} handleChildNoChange={handleChildNoChange} />
