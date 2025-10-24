@@ -37,13 +37,18 @@ import BcPrevious from './components/BcPrevious';
 import CarsProgress from './components/CarsProgress';
 import BcProgress from './components/BcProgress';
 import EditBcEntry from './components/EditBcEntry';
- import EditMfEntry from './components/EditMfEntry';
+import EditMfEntry from './components/EditMfEntry';
 import ViewPatientRecord from './pages/RecordSheet/ViewPatientRecord';
 
 import AdminUploadDocument from './components/doc_parent/AdminUploadDocument';
 import UserViewDocuments from './components/doc_parent/UserViewDocuments';
 
-
+//kujinsika
+import DSM5Form from './pages/DSM5/DSM5Form';
+import ViewDSM5Form from './pages/DSM5/ViewDSM5Form';
+import SnapForm from './pages/SNAP/SnapForm';
+import SubmittedSnapFormsList from './pages/SNAP/SubmittedSnapFormsList';
+import SubmittedFormsList from './pages/DSM5/SubmittedFormsList';
 
 
 import AppointmentManagement from './pages/Appointment/AppointmentManagement';
@@ -156,6 +161,16 @@ function App() {
           <Route path="forms/monreturn" element={<MonthlyReturnForm />} />
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
+
+          {/*Kujinsika*/}
+          <Route path="snap-submitted-forms" element={<SubmittedSnapFormsList />} />
+          <Route path="SnapForm" element={<SnapForm />} />
+          <Route path="SnapForm/:id" element={<SnapForm />} />
+
+          <Route path="submitted-dsm5-forms" element={<SubmittedFormsList />} />
+          <Route path="DSM5Form" element={<DSM5Form />} />
+          <Route path="view-dsm5-form/:id" element={<ViewDSM5Form />} />
+
           {/* Catch-all for routes within Dashboard layout (optional, but good for empty states) */}
           <Route
             path="*"

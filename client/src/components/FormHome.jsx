@@ -56,6 +56,24 @@ const forms = [
     progressPath: "../forms/bc-progress",
     color: "green",
   },
+   { 
+    name: "DSM5 Form", 
+    icon: "📝",
+    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    newPath: "../DSM5Form", 
+    previousPath: "../submitted-dsm5-forms", 
+    progressPath: null,
+    color: "green"
+  },
+  { 
+    name: "SNAP Form", 
+    icon: "📝",
+    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    newPath: "../SnapForm", 
+    previousPath: "../snap-submitted-forms", 
+    progressPath: null,
+    color: "green"
+  },
 ];
 
 const FormHome = () => {
