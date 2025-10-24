@@ -1,25 +1,48 @@
-// server/routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/userController');
 
-// --- THIS IS THE FIX ---
-// Add the route for logging in
-router.post('/login', userController.loginUser);
+// --- 1. Controller Functions Import කිරීම (Destructuring) ---
+// getAllUsers ලෙස 's' අකුර ඇති බවට වග බලා ගන්න
+const {
+  addUser,
+  getAllUsers,
+  loginUser,
+  updateUsername,
+  updatePassword
+} = require('../controllers/userController');
 
-// Route to add a new user
-router.post('/add', userController.addUser);
+// --- 2. Auth Middleware Import කිරීම ---
+// මෙතනදී { } වරහන් නොමැතිව import කිරීම අත්‍යවශ්‍යයි
+const authMiddleware = require('../middleware/authMiddleware');
 
-// Route to get all users
-router.get('/', userController.getAllUsers);
+// @route   POST /api/users/add
+// @desc    Add a new user
+// @access  Public
+router.post('/add', addUser);
 
-// Route to get a single user by ID (optional, but good for editing)
-router.get('/:id', userController.getUserById);
+// @route   POST /api/users/login
+// @desc    Login user & get token
+// @access  Public
+router.post('/login', loginUser);
 
-// Route to update a user by ID
-router.put('/:id', userController.updateUser);
+// --- 3. 17 වන පේළිය (ගැටළුව තිබූ තැන) ---
+// @route   GET /api/users
+// @desc    Get all users
+// @access  Private (authMiddleware යොදා ආරක්ෂිත කර ඇත)
+router.get('/', authMiddleware, getAllUsers); // <-- ගැටළුව තිබූ පේළිය මෙය විය හැක
 
-// Route to delete a user by ID
-router.delete('/:id', userController.deleteUser);
+// (ඔබට user ID එකෙන් user ව ලබාගන්නා route එකක් ඇත්නම් එය මෙතනට දාන්න,
+// උදා: router.get('/:id', authMiddleware, getUserById); )
 
+// --- 4. අලුත් Routes දෙක එකතු කිරීම ---
+
+// @route   PUT /api/users/update-username
+// @desc    Update logged-in user's username
+// @access  Private
+router.put('/update-username', authMiddleware, updateUsername);
+
+// @route   PUT /api/users/update-password
+// @desc    Update logged-in user's password
+// @access  Private
+router.put('/update-password', authMiddleware, updatePassword,);
 module.exports = router;

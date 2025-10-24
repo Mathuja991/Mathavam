@@ -3,14 +3,8 @@ import ChildInfoInputs from "./ChildInfoInputs";
 import { Link } from "react-router-dom";
 import CarsPrevious from "../components/CarsPrevious";
 import { useNavigate } from "react-router-dom";
-// Inside the return JSX:
-
-
-
-
 
 const AutismRatingForm = () => {
-
   const navigate = useNavigate();
   const categories = [
     "Relating people", "Imitation", "Emotional Response", "Body use", "Object use",
@@ -27,40 +21,55 @@ const AutismRatingForm = () => {
     name: "",
     childNo: "",
     age: "",
-    date: new Date().toISOString().split("T")[0], // ← sets current date in YYYY-MM-DD format
+    date: new Date().toISOString().split("T")[0],
     gender: "",
   });
 
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [previousEntries, setPreviousEntries] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
- const handleChildNoChange = async (e) => {
-  const value = e.target.value;
-  setFormData((prev) => ({ ...prev, childNo: value }));
+  const handleChildNoChange = async (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({ ...prev, childNo: value }));
 
-  try {
-    const response = await fetch(`http://localhost:5000/api/patientRecords`);
-    if (!response.ok) throw new Error("Failed to fetch records");
-    const data = await response.json();
+    if (value.length < 2) return; // Only search if meaningful input
 
-    // Find the record with matching childNo
-    const matchedRecord = data.find(record => record.childNo === value);
+    setIsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:5000/api/patientRecords`);
+      if (!response.ok) throw new Error("Failed to fetch records");
+      const data = await response.json();
 
-    if (matchedRecord) {
-      setFormData((prev) => ({
-        ...prev,
-        name: matchedRecord.name || '',
-        age: matchedRecord.age || '',
-        gender: matchedRecord.gender || '',
-        address: matchedRecord.address || '',
-        contactNo: matchedRecord.contactNo || '',
-        dateOfBirth: matchedRecord.dateOfBirth ? new Date(matchedRecord.dateOfBirth).toISOString().split('T')[0] : '',
-        // add other fields similarly as needed
-      }));
-      setErrorMessage('');
-    } else {
-      // No record found
+      const matchedRecord = data.find(record => record.childNo === value);
+
+      if (matchedRecord) {
+        setFormData((prev) => ({
+          ...prev,
+          name: matchedRecord.name || '',
+          age: matchedRecord.age || '',
+          gender: matchedRecord.gender || '',
+          address: matchedRecord.address || '',
+          contactNo: matchedRecord.contactNo || '',
+          dateOfBirth: matchedRecord.dateOfBirth ? new Date(matchedRecord.dateOfBirth).toISOString().split('T')[0] : '',
+        }));
+        setErrorMessage('');
+      } else {
+        setFormData((prev) => ({
+          ...prev,
+          name: '',
+          age: '',
+          gender: '',
+          address: '',
+          contactNo: '',
+          dateOfBirth: '',
+        }));
+        setErrorMessage('Child record not found');
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorMessage('Failed to fetch patient records');
       setFormData((prev) => ({
         ...prev,
         name: '',
@@ -70,23 +79,10 @@ const AutismRatingForm = () => {
         contactNo: '',
         dateOfBirth: '',
       }));
-      setErrorMessage('Child record not found');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-    setErrorMessage('Failed to fetch patient records');
-    setFormData((prev) => ({
-      ...prev,
-      name: '',
-      age: '',
-      gender: '',
-      address: '',
-      contactNo: '',
-      dateOfBirth: '',
-    }));
-  }
-};
-
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -108,14 +104,13 @@ const AutismRatingForm = () => {
   const totalScore = Object.values(selectedScores).reduce((acc, curr) => acc + curr, 0);
   const allFilled = Object.keys(selectedScores).length === categories.length;
   const allBasicInfoFilled = Object.values(formData).every(
-  (field) => typeof field === 'string' ? field.trim() !== '' : field !== undefined && field !== null
-);
-
+    (field) => typeof field === 'string' ? field.trim() !== '' : field !== undefined && field !== null
+  );
 
   const getSeverity = () => {
     if (!allFilled) return { label: "Pending", color: "bg-gray-400 text-white" };
     if (totalScore >= 15 && totalScore < 30) return { label: "Minimal to no symptoms of ASD", color: "bg-green-500 text-white" };
-    if (totalScore >= 30 && totalScore < 37) return { label: "Mild to Moderate symptoms of ASD", color: "bg-yellow-400 text-black" };
+    if (totalScore >= 30 && totalScore < 37) return { label: "Mild to Moderate symptoms of ASD", color: "bg-yellow-500 text-white" };
     if (totalScore >= 37) return { label: "Severe symptoms of ASD", color: "bg-red-500 text-white" };
   };
 
@@ -129,6 +124,7 @@ const AutismRatingForm = () => {
     }
 
     const newEntry = { ...formData, scores: selectedScores, severity };
+    setIsLoading(true);
 
     try {
       const response = await fetch("http://localhost:5000/api/carsform/submit", {
@@ -142,15 +138,17 @@ const AutismRatingForm = () => {
       if (!response.ok) throw new Error("Failed to submit");
 
       const savedEntry = await response.json();
-
       setPreviousEntries((prev) => [...prev, savedEntry]);
       setIsSubmitted(true);
+      
       alert("Form submitted successfully!");
-      navigate("/forms");
+      navigate("/dashboard/forms");
 
     } catch (err) {
       console.error(err);
       setErrorMessage("🚨 Submission failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,152 +159,234 @@ const AutismRatingForm = () => {
     setIsSubmitted(false);
   };
 
- 
+  const progressPercentage = (Object.keys(selectedScores).length / categories.length) * 100;
 
   return (
-    <div>
-    <form onSubmit={handleSubmit} className="max-w-7xl mx-auto p-6 bg-white shadow-lg rounded-xl space-y-6">
-      <h2 className="text-2xl font-bold text-center">Childhood Autism Rating Scale (CARS)</h2>
-      <p className="text-center text-gray-600">Second Edition - Mathavam Centre</p>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Childhood Autism Rating Scale (CARS)
+          </h1>
+          <p className="text-lg text-gray-600 mb-4">Second Edition - Mathavam Centre</p>
+          
+          {/* Progress Bar */}
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                Assessment Progress
+              </span>
+              <span className="text-sm font-semibold text-blue-600">
+                {Object.keys(selectedScores).length}/{categories.length} categories
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
 
-   <div className="bg-blue-50 p-6 rounded-xl shadow-sm space-y-6">
-  <ChildInfoInputs
-    formData={formData}
-    handleChildNoChange={handleChildNoChange}
-  />
-
- 
-    </div>
-
-<div className="overflow-x-auto rounded-2xl max-h-[400px] overflow-y-auto">
-  <table className="min-w-full border-separate border-spacing-1">
-    <thead className="bg-gray-100 sticky top-0 z-20">
-      <tr>
-        <th
-          rowSpan="2"
-          className="border border-gray-300 p-3 font-semibold text-gray-700 text-center align-middle sticky left-0 bg-gray-100 z-30"
-          style={{ minWidth: '50px' }}
-        >
-          #
-        </th>
-        <th
-          rowSpan="2"
-          className="border border-gray-300 p-3 font-semibold text-gray-700 text-left align-middle sticky left-[50px] bg-gray-100 z-30"
-          style={{ minWidth: '150px' }}
-        >
-          Category
-        </th>
-        <th
-          colSpan="7"
-          className="border border-gray-300 p-3 font-semibold text-gray-700 text-center"
-        >
-          Score
-        </th>
-      </tr>
-      <tr>
-        {scores.map((score, idx) => {
-          const colors = [
-            "bg-green-300", "bg-green-200", "bg-yellow-100",
-            "bg-yellow-200", "bg-orange-200", "bg-red-200", "bg-red-400"
-          ];
-          return (
-            <th
-              key={idx}
-              className={`border border-gray-300 p-3 font-medium text-gray-800 ${colors[idx]}`}
-              style={{ minWidth: '60px' }}
-            >
-              {score.toFixed(1)}
-            </th>
-          );
-        })}
-      </tr>
-    </thead>
-    <tbody>
-      {categories.map((item, idx) => (
-        <tr key={idx} className="hover:bg-blue-50 transition-colors">
-          <td
-            className="border border-gray-300 p-3 text-center sticky left-0 bg-white z-10"
-            style={{ minWidth: '50px' }}
-          >
-            {idx + 1}
-          </td>
-          <td
-            className="border border-gray-300 p-3 text-left sticky left-[50px] bg-white z-10"
-            style={{ minWidth: '150px' }}
-          >
-            {item}
-          </td>
-          {scores.map((score) => (
-            <td
-              key={score}
-              className="border border-gray-300 p-3 text-center"
-              style={{ minWidth: '60px' }}
-            >
-              <input
-                type="radio"
-                name={item}
-                value={score}
-                checked={selectedScores[item] === score}
-                onChange={() => handleRadioChange(item, score)}
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Child Information Card */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">Patient Information</h2>
+            </div>
+            
+            <div className="bg-blue-50 rounded-xl p-6 border border-blue-100">
+              <ChildInfoInputs
+                formData={formData}
+                handleChildNoChange={handleChildNoChange}
+                isLoading={isLoading}
               />
-            </td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+            </div>
+          </div>
 
+          {/* Assessment Scoring Card */}
+          <div className="p-6 border-b border-gray-200">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">CARS Assessment Scoring</h2>
+            </div>
 
-     {/* Total Score */}
-<div className="flex justify-end">
-  <div className="text-lg font-semibold text-gray-700 bg-gray-100 px-4 py-2 rounded-lg shadow-inner">
-    Total Score: <span className="text-blue-600">{totalScore.toFixed(1)}</span>
-  </div>
-</div>
+            <div className="bg-gray-50 rounded-xl p-4 mb-4">
+              <p className="text-sm text-gray-600 text-center">
+                Select the appropriate score for each category (1.0 - 4.0)
+              </p>
+            </div>
 
-{/* Severity Group */}
-<div className="p-6 border rounded-xl bg-gray-50 shadow-sm flex items-center space-x-3 mt-4 max-w-3xl">
-  <p className="font-semibold text-gray-700">Severity Group:</p>
-  <span className={`text-base font-medium px-4 py-2 rounded-full ${severity.color} shadow`}>
-    {severity.label}
-  </span>
-</div>
+            <div className="overflow-x-auto rounded-xl border border-gray-200 max-h-[500px] overflow-y-auto">
+              <table className="min-w-full border-collapse">
+                <thead className="bg-gray-100 sticky top-0 z-10">
+                  <tr>
+                    <th className="border border-gray-300 p-3 font-semibold text-gray-700 text-center sticky left-0 bg-gray-100 z-20 min-w-[60px]">
+                      #
+                    </th>
+                    <th className="border border-gray-300 p-3 font-semibold text-gray-700 text-left sticky left-[60px] bg-gray-100 z-20 min-w-[250px]">
+                      Category
+                    </th>
+                    {scores.map((score, idx) => {
+                      const colors = [
+                        "bg-green-100 border-green-200", 
+                        "bg-green-50 border-green-100", 
+                        "bg-yellow-50 border-yellow-100",
+                        "bg-yellow-100 border-yellow-200", 
+                        "bg-orange-100 border-orange-200", 
+                        "bg-red-100 border-red-200", 
+                        "bg-red-200 border-red-300"
+                      ];
+                      return (
+                        <th 
+                          key={idx} 
+                          className={`border ${colors[idx]} p-3 font-semibold text-gray-700 text-center min-w-[80px]`}
+                        >
+                          {score.toFixed(1)}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((item, idx) => (
+                    <tr 
+                      key={idx} 
+                      className={`hover:bg-blue-50 transition-colors ${
+                        idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                      }`}
+                    >
+                      <td className="border border-gray-300 p-3 text-center font-medium text-gray-600 sticky left-0 bg-white z-10">
+                        {idx + 1}
+                      </td>
+                      <td className="border border-gray-300 p-3 text-gray-700 sticky left-[60px] bg-white z-10 font-medium">
+                        {item}
+                      </td>
+                      {scores.map((score) => (
+                        <td key={score} className="border border-gray-300 p-3 text-center">
+                          <label className="flex items-center justify-center cursor-pointer group">
+                            <input
+                              type="radio"
+                              name={item}
+                              value={score}
+                              checked={selectedScores[item] === score}
+                              onChange={() => handleRadioChange(item, score)}
+                              className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            />
+                            
+                          </label>
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-{/* Error Message */}
-{errorMessage && (
-  <div className="flex items-center p-4 mt-4 bg-red-100 border border-red-400 text-red-700 rounded-lg shadow">
-    <svg
-      className="w-5 h-5 mr-2 text-red-600"
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
-    </svg>
-    {errorMessage}
-  </div>
-)}
+          {/* Results Summary Card */}
+          <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Total Score */}
+              <div className="text-center bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="text-2xl font-bold text-blue-600 mb-1">{totalScore.toFixed(1)}</div>
+                <div className="text-sm text-gray-600 font-medium">Total Score</div>
+              </div>
 
-{/* Submit Button */}
-<button
-  type="submit"
-  className={`mt-6 w-1/3 py-3 rounded-xl font-semibold transition-all duration-300 ${
-    allFilled && allBasicInfoFilled
-      ? "bg-green-600 text-white hover:bg-green-700 active:scale-95"
-      : "bg-green-400 text-white cursor-not-allowed"
-  }`}
-  disabled={!(allFilled && allBasicInfoFilled)}
->
-  Submit
-</button>
+              {/* Severity */}
+              <div className="text-center bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className={`inline-flex items-center px-4 py-2 rounded-full text-white font-semibold ${severity.color} mb-1`}>
+                  {severity.label}
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Severity Level</div>
+              </div>
 
-    </form>
-   
+              {/* Completion Status */}
+              <div className="text-center bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {Object.keys(selectedScores).length}/{categories.length}
+                </div>
+                <div className="text-sm text-gray-600 font-medium">Categories Completed</div>
+              </div>
+            </div>
+          </div>
 
-  
+          {/* Error Message & Submit Section */}
+          <div className="p-6">
+            {errorMessage && (
+              <div className="flex items-center p-4 mb-6 bg-red-50 border border-red-200 rounded-lg">
+                <svg className="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-red-700 font-medium">{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <button
+                type="button"
+                onClick={() => navigate("/dashboard/forms")}
+                className="flex-1 py-3 px-6 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Cancel
+              </button>
+              
+              <button
+                type="submit"
+                disabled={!(allFilled && allBasicInfoFilled) || isLoading}
+                className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                  allFilled && allBasicInfoFilled && !isLoading
+                    ? "bg-green-600 text-white hover:bg-green-700 active:transform active:scale-95 shadow-lg" 
+                    : "bg-green-400 text-white cursor-not-allowed"
+                }`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Submit Assessment
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="flex justify-center mt-6 pt-6 border-t border-gray-200">
+              <Link 
+                to="/dashboard/forms"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                
+                
+                Back
+              </Link>
+            </div>
+          </div>
+        </form>
       </div>
+    </div>
   );
 };
 

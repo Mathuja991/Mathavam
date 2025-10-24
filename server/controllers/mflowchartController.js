@@ -1,33 +1,25 @@
 const MFlowchart = require('../models/MFlowchart');
 
-// @desc Submit Mathavam Flowchart
+// 🟩 Submit new entry
 const submitMFlowchart = async (req, res) => {
   try {
     const { name, childNo, age, gender, date, ...rest } = req.body;
 
-    // Extract section data into schema format
     const sections = Object.entries(rest).map(([key, value]) => ({
       name: key,
-      dates: value,
+      dates: Array.isArray(value) ? value : [value],
     }));
 
-    const form = new MFlowchart({
-      name,
-      childNo,
-      age,
-      gender,
-      date,
-      sections,
-    });
-
+    const form = new MFlowchart({ name, childNo, age, gender, date, sections });
     const saved = await form.save();
+
     res.status(201).json(saved);
   } catch (err) {
     res.status(400).json({ message: "Submission failed", error: err.message });
   }
 };
 
-// @desc Get all entries
+// 🟦 Get all entries
 const getMFlowchart = async (req, res) => {
   try {
     const forms = await MFlowchart.find();
@@ -37,7 +29,7 @@ const getMFlowchart = async (req, res) => {
   }
 };
 
-// @desc Get by ID
+// 🟨 Get single entry
 const getMFlowchartById = async (req, res) => {
   try {
     const form = await MFlowchart.findById(req.params.id);
@@ -48,86 +40,55 @@ const getMFlowchartById = async (req, res) => {
   }
 };
 
-// @desc Delete an entry by ID
+// 🟥 Delete an entry
 const deleteEntry = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const deletedEntry = await MFlowchart.findByIdAndDelete(id);
-
-    if (!deletedEntry) {
-      return res.status(404).json({ message: "Entry not found" });
-    }
-
-    res.status(200).json({ message: "Entry deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    const deleted = await MFlowchart.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Entry not found" });
+    res.json({ message: "Entry deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting entry", error: err.message });
   }
 };
 
+// 🟩 Update a specific section date
 const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
-    const { childNo, name, age, gender, date, sections } = req.body;
+    const { sectionName, oldDate, newDate } = req.body;
+
+    if (!sectionName || !oldDate || !newDate) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
     const entry = await MFlowchart.findById(id);
-    if (!entry) {
-      return res.status(404).json({ message: 'Entry not found' });
+    if (!entry) return res.status(404).json({ message: "Entry not found" });
+
+    const section = entry.sections.find(sec => sec.name === sectionName);
+    if (!section) return res.status(404).json({ message: "Section not found" });
+
+    const dateIndex = section.dates.findIndex(d => d === oldDate);
+    if (dateIndex === -1) {
+      return res.status(404).json({ message: `Date '${oldDate}' not found in section '${sectionName}'` });
     }
 
-    sections.forEach((incomingSection) => {
-      const existingSection = entry.sections.find(
-        (s) => s.name === incomingSection.name
-      );
+    // Update the date safely
+    section.dates[dateIndex] = newDate;
 
-      if (existingSection) {
-        // ✅ Update specific date by index
-        if (
-          existingSection.dates[incomingSection.index] !== undefined
-        ) {
-          existingSection.dates[incomingSection.index] = incomingSection.newDate;
-        }
-      }
-    });
+    await entry.save();
 
-    entry.childNo = childNo;
-    entry.name = name;
-    entry.age = age;
-    entry.gender = gender;
-    entry.date = date;
-
-    const updatedEntry = await entry.save();
-
-    res.status(200).json(updatedEntry);
-  } catch (error) {
-    console.error('Update failed:', error);
-    res.status(500).json({ message: 'Server error while updating entry' });
-  }
-};
-
-
-// @desc Get an entry by ID (duplicate handler, keeping for reference)
-const getEntryById = async (req, res) => {
-  try {
-    console.log("Fetching entry with ID:", req.params.id);
-    const entry = await MFlowchart.findById(req.params.id);
-    if (!entry) {
-      console.log("Entry not found for ID:", req.params.id);
-      return res.status(404).json({ message: "Entry not found" });
-    }
-    res.status(200).json(entry);
+    res.status(200).json({ message: "Date updated successfully", entry });
   } catch (err) {
-    console.error("Error fetching entry by ID:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Update failed:", err);
+    res.status(500).json({ message: "Server error while updating entry", error: err.message });
   }
 };
 
-// Export all handlers in CommonJS
+// Export all handlers
 module.exports = {
   submitMFlowchart,
   getMFlowchart,
   getMFlowchartById,
   deleteEntry,
   updateEntry,
-  getEntryById,
 };

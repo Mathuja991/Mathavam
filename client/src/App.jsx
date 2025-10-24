@@ -136,8 +136,8 @@ function App() {
           <Route path="qr-attendance" element={<AdminQrAttendancePage />} />
           {/* Mathuja's Parts */}
           <Route path="forms" element={<FormHome />} />
-          <Route path="forms/carsform" element={<Carsform />} />
-          <Route path="carsformprevious-entries" element={<CarsPrevious />} />
+          <Route path="forms/Carsform" element={<Carsform />} />
+          <Route path="forms/carsform-previous-entries" element={<CarsPrevious />} />
           <Route path="editcar/:id" element={<EditCarEntry />} />
           <Route
             path="forms/mathavamflowchart"

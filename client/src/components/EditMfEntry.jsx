@@ -43,19 +43,19 @@ const EditMathavamFlowchart = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Get sections with data
   const getPopulatedItems = () => {
     const populated = {};
     Object.entries(sections).forEach(([section, items]) => {
       const filteredItems = items.filter(
         (item) => formData[item] && formData[item].length > 0
       );
-      if (filteredItems.length > 0) {
-        populated[section] = filteredItems;
-      }
+      if (filteredItems.length > 0) populated[section] = filteredItems;
     });
     return populated;
   };
 
+  // Fetch existing entries for the given child
   useEffect(() => {
     const fetchEntries = async () => {
       try {
@@ -63,7 +63,7 @@ const EditMathavamFlowchart = () => {
         if (!res.ok) throw new Error("Failed to fetch entries");
 
         const data = await res.json();
-        if (data.length === 0) {
+        if (!data || data.length === 0) {
           setError("No entries found for this Child No.");
           setLoading(false);
           return;
@@ -80,14 +80,11 @@ const EditMathavamFlowchart = () => {
           if (entry.sections && Array.isArray(entry.sections)) {
             entry.sections.forEach((sectionItem) => {
               const existingDates = mergedFormData[sectionItem.name] || [];
-              const newDates = sectionItem.dates
-                .filter(date => !existingDates.some(d => d.date === date))
-                .map(date => ({
-                  date,               // Editable field
-                  originalDate: date, // Reference for update
-                  entryId: entry._id
-                }));
-
+              const newDates = (sectionItem.dates || []).map((date) => ({
+                date,
+                originalDate: date,
+                entryId: entry._id,
+              }));
               mergedFormData[sectionItem.name] = [...existingDates, ...newDates];
             });
           }
@@ -96,6 +93,7 @@ const EditMathavamFlowchart = () => {
         setFormData(mergedFormData);
         setLoading(false);
       } catch (err) {
+        console.error("Error loading entries:", err);
         setError(err.message);
         setLoading(false);
       }
@@ -118,36 +116,39 @@ const EditMathavamFlowchart = () => {
   };
 
   const handleSubmitDate = async (item, index) => {
+    const { date: newDate, originalDate, entryId } = formData[item][index];
+
+    if (!newDate) {
+      alert("Date cannot be empty.");
+      return;
+    }
+
     try {
-      const { date: newDate, originalDate, entryId } = formData[item][index];
-
-      if (!newDate) {
-        alert("Date cannot be empty.");
-        return;
-      }
-
       const res = await fetch(`http://localhost:5000/api/mflow/entries/${entryId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          sectionName: item,   // Example: "Doctor Assessment"
-          oldDate: originalDate, // Example: "2025-07-06"
-          newDate: newDate      // Example: "2025-07-08"
+          sectionName: item,
+          oldDate: originalDate,
+          newDate: newDate,
         }),
       });
 
-      if (!res.ok) throw new Error("Update failed");
+      if (!res.ok) {
+        const errMsg = await res.text();
+        throw new Error(`Update failed: ${errMsg}`);
+      }
 
-      await res.json();
-      alert(`${item} - Date ${index + 1} updated successfully!`);
+      const updatedEntry = await res.json();
+      alert(`${item} date updated successfully!`);
 
-      // Update the local "originalDate" to the new date after successful update
+      // Update local state to reflect success
       const updated = [...(formData[item] || [])];
       updated[index].originalDate = newDate;
       setFormData((prev) => ({ ...prev, [item]: updated }));
-
     } catch (error) {
-      alert("Operation failed: " + error.message);
+      console.error("Update failed:", error);
+      alert("Failed to update date: " + error.message);
     }
   };
 
@@ -165,14 +166,14 @@ const EditMathavamFlowchart = () => {
       <div className="bg-blue-50 p-5 rounded-xl shadow-sm mb-6">
         <ChildInfoInputs formData={formData} readOnlyFields={true} />
       </div>
-
-      {Object.keys(populatedSections).length === 0 ? (
+<div  className="mt-5 ml-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+{Object.keys(populatedSections).length === 0 ? (
         <div className="text-center text-gray-600 mt-8">
           No assessment or intervention data to edit.
         </div>
       ) : (
         Object.entries(populatedSections).map(([section, items]) => (
-          <div key={section} className="border rounded-xl shadow p-6 bg-gray-100 mb-6">
+          <div key={section} className="border rounded-xl shadow p-6 bg-gray-100 mb-4 max-w-sm">
             <h3 className="text-xl font-semibold mb-4">{section}</h3>
             <div className="space-y-5">
               {items.map((item) => (
@@ -196,7 +197,6 @@ const EditMathavamFlowchart = () => {
                             onChange={(e) => handleDateChange(item, index, e.target.value)}
                             className="p-2 border rounded-md"
                           />
-
                           <button
                             type="button"
                             onClick={() => handleSubmitDate(item, index)}
@@ -214,6 +214,8 @@ const EditMathavamFlowchart = () => {
           </div>
         ))
       )}
+</div>
+      
     </div>
   );
 };
