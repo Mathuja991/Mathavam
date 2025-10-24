@@ -21,7 +21,7 @@ import ChildManagementPage from "./pages/QrAttendance/ChildManagementPage";
 import ParentQrViewPage from "./pages/QrAttendance/ParentQrViewPage";
 import AdminQrAttendancePage from "./pages/QrAttendance/AdminQrAttendancePage";
 
-//Mathuja parts
+//Mathuja
 
 import AdminDashboard from './components/AdminDashboard';
 import Carsform from './forms/carsform';
