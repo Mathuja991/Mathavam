@@ -14,6 +14,7 @@ const assessmentRoutes = require('./routes/assessmentRoutes');
 const appointmentRoutes = require('./routes/appointments'); 
 const userRoutes = require('./routes/userRoutes');
 const doctorAppointmentsRoute = require('./routes/doctorAppointments');
+const sessionRoutes = require('./routes/sessionRoutes');
 
 // Mathuja's routes
 const ChildRoutes = require('./routes/ChildRoutes.js');
@@ -25,6 +26,8 @@ const monthReturnRoutes =require('./routes/monthReturnRoutes.js');
 const documentRoutes = require('./routes/documentRoutes.js');
 const authRoutes = require('./routes/authRoutes'); 
 
+//Varsha's QR part
+const adminQrRoutes = require("./routes/adminQrRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,11 +45,12 @@ app.use('/api/therapyAssessments', therapyAssessmentRoutes);
 app.use('/api/medicalAssessments', medicalAssessmentRoutes);
 app.use('/api/patientRecords', patientRecordsRouter);
 app.use('/api/assessments', assessmentRoutes);
-app.use('/api/patientRecords', patientRecordsRouter);
 app.use('/api/appointments', appointmentRoutes); 
 app.use('/api/users', userRoutes); 
 app.use('/api/auth', authRoutes);  //api/auth/login
 app.use('/api/doctor-appointments', doctorAppointmentsRoute); 
+app.use("/api/child", ChildRoutes);
+app.use("/api/sessions", sessionRoutes);
 
 // Mathuja's Routes
 
@@ -64,6 +68,10 @@ app.use('/api/documents', documentRoutes);
 //Kujinsika's routes
 app.use("/api/snapforms", require("./routes/SnapRoutes"));
 app.use("/api/dsm5forms", require("./routes/DSM5Routes"));
+
+
+//varsha's qr routes
+app.use("/api/adminqr", adminQrRoutes);
 
 // Basic Root Route
 app.get('/', (req, res) => {
