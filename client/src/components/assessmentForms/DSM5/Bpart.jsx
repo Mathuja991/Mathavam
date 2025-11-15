@@ -4,11 +4,11 @@ const Bpart = ({ answers, handleAnswerChange, severityRating, setSeverityRating,
   return (
     <>
       <tr className="bg-blue-300 text-white">
-        <th className="border border-blue-500 p-2">
+        <th className="border border-blue-300 p-2">
           B. Restricted, repetitive patterns of behavior, interests, or activities as manifested by at least two of the following, currently or by history:
         </th>
-        <th className="border border-blue-500 p-2">Present</th>
-        <th className="border border-blue-500 p-2">Not present</th>
+        <th className="border border-blue-300 p-2">Present</th>
+        <th className="border border-blue-300 p-2">Not present</th>
       </tr>
       {[
         "1. Stereotyped or repetitive motor movements, use of objects, or speech (e.g., simple motor stereotypies, lining up toys or flipping objects, echolalia, idiosyncratic phrases).",
@@ -16,40 +16,39 @@ const Bpart = ({ answers, handleAnswerChange, severityRating, setSeverityRating,
         "3. Highly restricted, fixated interests that are abnormal in intensity or focus (e.g., strong attachment to or preoccupation with unusual objects, excessively circumscribed or perseverative interests).",
         "4. Hyper-or hyporeactivity to sensory input or unusual interest in sensory aspects of the environment (e.g., apparent indifference to pain/temperature, adverse response to specific sounds or textures, excessive smelling or touching of objects, visual fascination with lights or movement)."
       ].map((item, index) => (
-        <tr key={index} className="bg-green-50">
-          <td className="border border-green-400 p-2 text-gray-700">{item}</td>
-          <td className="border border-green-400 p-2 text-center">
+        <tr key={index} className="hover:bg-blue-50 transition-colors">
+          <td className="border border-blue-300 p-2 text-gray-700 text-left">{item}</td>
+          <td className="border border-blue-300 p-2 text-center">
             <input
               type="radio"
               name={`repetitiveBehaviors${index}`}
               value="Present"
               checked={answers.repetitiveBehaviors[index] === "Present"}
               onChange={() => handleAnswerChange("repetitiveBehaviors", index, "Present")}
-              className="transform scale-150"
-              disabled={!isEditing} // Disable if not editing
+              className="transform scale-150 cursor-pointer"
+              disabled={!isEditing} 
             />
           </td>
-          <td className="border border-green-400 p-2 text-center">
+          <td className="border border-blue-300 p-2 text-center">
             <input
               type="radio"
               name={`repetitiveBehaviors${index}`}
               value="Not present"
               checked={answers.repetitiveBehaviors[index] === "Not present"}
               onChange={() => handleAnswerChange("repetitiveBehaviors", index, "Not present")}
-              className="transform scale-150"
-              disabled={!isEditing} // Disable if not editing
+              className="transform scale-150 cursor-pointer"
+              disabled={!isEditing} 
             />
           </td>
         </tr>
       ))}
-      <tr className="bg-green-50">
-        <td className="border border-green-400 p-4 text-gray-700" colSpan="3">
+      <tr className="">
+        <td className="border border-blue-300 p-4 text-gray-700" colSpan="3">
           <p className="text-center text-lg font-semibold">
             Restricted,repetitive behaviours domain severity rating
             <span className="text-sm text-gray-600">(See DSM-5 page 52 for severity description)</span>
           </p>
 
-          {/* Severity Rating Options with Rectangle Boxes */}
           <div className="flex justify-center gap-4 mt-4">
             {["Requires Support", "Substantial Support", "Very Substantial Support"].map((option, index) => (
               <div

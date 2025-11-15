@@ -3,8 +3,23 @@ const router = express.Router();
 
 const SensoryProfile = require("../models/SensoryProfile");
 
+// --- ALUTH IMPORTS ---
+const authMiddleware = require('../middleware/authMiddleware');
+const checkRole = require('../middleware/checkRoleMiddleware');
+
+// --- Role Arrays ---
+// Rule: View for Doctor, Therapist, Admin, Super Admin. Parent = Restrict
+const ROLES_VIEW_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person'];
+// Rule: CRUD for "O,P" -> Therapists
+const ROLES_CRUD_THERAPIST = ['Therapist', 'Resource Person'];
+
+
 // GET all sensory profiles with optional patientId filter
-router.get("/sensory-profile", async (req, res) => {
+router.get(
+    "/sensory-profile", 
+    authMiddleware,
+    checkRole(ROLES_VIEW_STAFF),
+    async (req, res) => {
   try {
     const filter = {};
     if (req.query.patientId) {
@@ -22,7 +37,11 @@ router.get("/sensory-profile", async (req, res) => {
 });
 
 // POST new sensory profile
-router.post("/sensory-profile", async (req, res) => {
+router.post(
+    "/sensory-profile", 
+    authMiddleware,
+    checkRole(ROLES_CRUD_THERAPIST),
+    async (req, res) => {
   try {
     const newProfile = new SensoryProfile(req.body);
     const savedProfile = await newProfile.save();
@@ -37,25 +56,23 @@ router.post("/sensory-profile", async (req, res) => {
           "A duplicate assessment for this patient, category, and test date already exists.",
       });
     }
-
-    // Don't expose the full error object
-    res.status(500).json({ message: "An unexpected error occurred." });
+    res.status(500).json({ message: "Error saving assessment" });
   }
 });
 
 // DELETE sensory profile by ID
-router.delete("/sensory-profile/:id", async (req, res) => {
+router.delete(
+    "/sensory-profile/:id", 
+    authMiddleware,
+    checkRole(ROLES_CRUD_THERAPIST),
+    async (req, res) => {
   try {
-    const assessmentId = req.params.id;
-    const deletedAssessment = await SensoryProfile.findByIdAndDelete(
-      assessmentId
-    );
+    const assessment = await SensoryProfile.findByIdAndDelete(req.params.id);
 
-    if (!deletedAssessment) {
-      return res.status(404).json({ message: "Assessment not found." });
+    if (!assessment) {
+      return res.status(404).json({ message: "Assessment not found" });
     }
-
-    res.status(200).json({ message: "Assessment deleted successfully." });
+    res.status(200).json({ message: "Assessment deleted successfully" });
   } catch (error) {
     console.error("Error deleting assessment:", error);
     res.status(500).json({ message: "Error deleting assessment." });
@@ -63,7 +80,11 @@ router.delete("/sensory-profile/:id", async (req, res) => {
 });
 
 // GET sensory profile by ID
-router.get("/sensory-profile/:id", async (req, res) => {
+router.get(
+    "/sensory-profile/:id", 
+    authMiddleware,
+    checkRole(ROLES_VIEW_STAFF),
+    async (req, res) => {
   try {
     const assessment = await SensoryProfile.findById(req.params.id);
     console.log("DATA BEING SENT TO EDIT PAGE:", assessment);
@@ -78,7 +99,11 @@ router.get("/sensory-profile/:id", async (req, res) => {
 });
 
 // PUT update sensory profile by ID
-router.put("/sensory-profile/:id", async (req, res) => {
+router.put(
+    "/sensory-profile/:id", 
+    authMiddleware,
+    checkRole(ROLES_CRUD_THERAPIST),
+    async (req, res) => {
   try {
     const { id } = req.params;
     const updatedData = req.body;
@@ -96,13 +121,6 @@ router.put("/sensory-profile/:id", async (req, res) => {
     res.status(200).json(updatedAssessment);
   } catch (error) {
     console.error("Error updating assessment:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        message: "This update would create a duplicate record.",
-      });
-    }
-
     res.status(500).json({ message: "Error updating assessment" });
   }
 });

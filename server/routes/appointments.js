@@ -2,6 +2,7 @@
 
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware'); 
+const checkRole = require('../middleware/checkRoleMiddleware'); // <-- ALUTH IMPORT
 const {
   getAllAppointments,
   getAppointmentById,
@@ -15,29 +16,37 @@ const {
 
 const router = express.Router();
 
+// --- Role Arrays ---
+const ROLES_ADMIN = ['Super Admin', 'Admin'];
+const ROLES_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person'];
+const ROLES_ALL = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
+
 // Base /api/appointments routes
 router.route('/')
-  .get(authMiddleware, getAllAppointments) // GET: Protected
-  // --- THIS IS THE FIX ---
-  // authMiddleware was removed from the .post route.
-  // Anyone can now create an appointment.
-  .post(createAppointment); // POST: NOW PUBLIC
+  // Rule: Get All -> Admin/Super Admin witharai
+  .get(authMiddleware, checkRole(ROLES_ADMIN), getAllAppointments) 
+  // Rule: Create -> Okkoma logged in users lata puluwan (Doctor, Therapist, Parent, Admin...)
+  .post(authMiddleware, checkRole(ROLES_ALL), createAppointment); // <-- MEKA PROTECT KALA
 
-// Routes for specific appointment by ID (Still protected)
+// Routes for specific appointment by ID
 router.route('/:id')
-  .get(authMiddleware, getAppointmentById)    
-  .put(authMiddleware, updateAppointment)     
-  .delete(authMiddleware, deleteAppointment); 
+  // Rule: Get/Update/Delete -> Okkoma roles walata denawa, eth controller eken check karanna one eya eyage appointment ekakda kiyala.
+  .get(authMiddleware, checkRole(ROLES_ALL), getAppointmentById)    
+  .put(authMiddleware, checkRole(ROLES_ALL), updateAppointment)     
+  .delete(authMiddleware, checkRole(ROLES_ALL), deleteAppointment); 
 
-// Route for updating appointment status (Still protected)
+// Route for updating appointment status
 router.route('/:id/status')
-  .put(authMiddleware, updateAppointmentStatus); 
+  // Rule: Status eka wenas karanne staff eka witharai
+  .put(authMiddleware, checkRole(ROLES_STAFF), updateAppointmentStatus); 
 
-// Routes for fetching appointments (Still protected)
+// Routes for fetching appointments
 router.route('/practitioner/:id')
-  .get(authMiddleware, getPractitionerAppointments); 
+  // Rule: Practitioner (Doctor/Therapist) ge data balanne staff eka witharai
+  .get(authMiddleware, checkRole(ROLES_STAFF), getPractitionerAppointments); 
 
 router.route('/patient/:id')
-  .get(authMiddleware, getPatientAppointments); 
+  // Rule: Patientge data okkoma roles walata balanna puluwan (Parent ta eyage childge data balanna)
+  .get(authMiddleware, checkRole(ROLES_ALL), getPatientAppointments); 
 
 module.exports = router;
