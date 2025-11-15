@@ -218,12 +218,12 @@ const CarsPrevious = () => {
                   Edit
                 </button>
               
-                <button 
+                {/* <button 
                   className="text-red-600 hover:underline" 
                   onClick={() => handleDelete(entry._id)}
                 >
                   Delete
-                </button>
+                </button> */}
                   <button 
                   className="text-green-600 hover:underline" 
                   onClick={() => handleExportSingle(entry)}
