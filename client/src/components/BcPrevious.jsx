@@ -381,12 +381,12 @@ const BCPrevious = () => {
                       <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex gap-3">
                            <button className="text-blue-600 mr-2 hover:underline" onClick={() => handleEdit(entry)}>Edit</button>
-                          <button
+                          {/* <button
                             onClick={() => handleDelete(entry._id)}
                             className="text-red-600 hover:text-red-900"
                           >
                             Delete
-                          </button>
+                          </button> */}
                            <button
                               className="text-green-600 hover:text-green-900 hover:underline"
                               onClick={() => handleExportSingle(entry)}
