@@ -158,7 +158,10 @@ function App() {
           <Route path="bc-progress" element={<BcProgress />} />
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
-          <Route path="forms/monreturn" element={<MonthlyReturnForm />} />
+          
+          {/* FIX: Monthly Returns Route එක /forms/ monreturn සිට /monreturn වෙත වෙනස් කරන ලදි */}
+          <Route path="monreturn" element={<MonthlyReturnForm />} />
+          
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
 
