@@ -97,7 +97,7 @@ const DashboardSidebar = ({
   const canViewQRAttendance = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
 
   // Rule: RDHS -> View (Staff), Hide (Parents)
-  const canViewRDHS = isSuperAdmin || isAdmin || isDoctor || isTherapist;
+  const canViewRDHS = isSuperAdmin || isAdmin;
 
   // Rule: Parental Training (Table eke natha, okkotama damu)
   const canViewParentalTraining = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
@@ -287,7 +287,7 @@ const DashboardSidebar = ({
         {/* ALUTH ADMIN SECTION LOGIC */}
         {canViewAdminSection && (
           <>
-            <SectionLabel isOpen={isSidebarOpen} text="Admin" />
+
             
             {/* Rule: Manage Users -> SA, A */}
             {canManageUsers && (

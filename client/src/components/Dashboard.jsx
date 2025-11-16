@@ -40,25 +40,21 @@ function Dashboard() {
   }, [navigate]);
   
   useEffect(() => {
-    const onKey = (e) => {
-      const target = e.target;
-      const typingInField =
-        target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-      // Desktop/Tablet වලට [ key එක එබූ විට Sidebar toggle කිරීම
-      if (e.key === '[' && !typingInField && window.innerWidth >= 768) {
-        e.preventDefault();
-        setIsSidebarOpen((s) => !s);
-      }
-      if (e.key === '/' && !typingInField) {
-        e.preventDefault();
-        searchRef.current?.focus();
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -72,16 +68,23 @@ function Dashboard() {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
+  if (!loggedInUser) {
+    return (
+      <div className="flex justify-center items-center h-screen bg-slate-100">
+        Loading User Data...
+      </div>
+    );
+  }
+
   return (
-    // Dashboard එකේ මුළු Layout එක. h-screen
-    <div className="flex h-screen bg-slate-100 text-slate-900 antialiased">
+    <div className="flex h-screen bg-slate-100">
       <DashboardSidebar
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
         loggedInUser={loggedInUser}
       />
 
-      {/* Mobile Overlay (Backdrop): Sidebar open නම් overlay එක පෙන්වන්න, Desktop වලදී සඟවන්න (md:hidden) */}
+      {/* Mobile Sidebar Overlay: Sidebar open නම් overlay එක පෙන්වන්න, Desktop වලදී සඟවන්න (md:hidden) */}
       {isSidebarOpen && window.innerWidth < 768 && (
         <div
           className="fixed inset-0 bg-black bg-opacity-40 z-30 transition-opacity duration-200"
@@ -108,10 +111,14 @@ function Dashboard() {
         />
 
         {/* මෙම div එක flex-1 සහ overflow-y-auto ලෙස සකසා ඇති නිසා, මෙයට ඇතුළත් වන content scroll වේ */}
-        <div className="flex-1 bg-slate-50/50 overflow-y-auto rounded-br-none">
-          <div className="p-4 md:p-6">
-            {location.pathname === '/dashboard' ? <DashboardHome /> : <Outlet />}
-          </div>
+        <div className="flex-1 bg-slate-50/50 overflow-y-auto p-4 md:p-6 custom-scrollbar">
+          {/* Main dashboard path එකේදී (e.g. /dashboard) DashboardHome එක පෙන්වනු ලැබේ */}
+          {location.pathname === '/dashboard' ? (
+            <DashboardHome loggedInUser={loggedInUser} /> 
+          ) : (
+            // අනිත් routes Outlet එක හරහා පෙන්වනු ලැබේ (e.g. /dashboard/manage-users)
+            <Outlet />
+          )}
         </div>
       </main>
     </div>
