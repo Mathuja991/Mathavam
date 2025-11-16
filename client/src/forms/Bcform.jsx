@@ -13,7 +13,8 @@ const BehaviorChecklist = () => {
   const [previousEntries, setPreviousEntries] = useState([]);
   const [selectedScores, setSelectedScores] = useState({});
   const [severity, setSeverity] = useState(null);
-
+  
+  const API_URL = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
     childNo: '',
     name: '',
@@ -124,7 +125,7 @@ const BehaviorChecklist = () => {
   setFormData((prev) => ({ ...prev, childNo: value }));
 
   try {
-    const response = await fetch(`http://localhost:5000/api/patientRecords`);
+    const response = await fetch(`${API_URL}/patientRecords`);
     if (!response.ok) throw new Error("Failed to fetch records");
     const data = await response.json();
 
@@ -203,7 +204,7 @@ const BehaviorChecklist = () => {
     const newEntry = { ...formData, scores: selectedScores, severity };
 
     try {
-      const response = await fetch("http://localhost:5000/api/bc/submit", {
+      const response = await fetch(`${API_URL}/bc/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEntry),
