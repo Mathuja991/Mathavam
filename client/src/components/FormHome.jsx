@@ -1,16 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
+// Access Permissions Key:
+// C: Create (Start New Assessment)
+// R: Read (View Previous Entries, Track Progress)
+// U: Update (Implicit in CRUD/C access to update existing)
+// D: Delete (Not explicitly handled in this UI, but covered by CRUD/C)
+
 const forms = [
-  {
-    name: "Patient Record Form",
-    icon: "📋",
-    desc: "Complete demographic and initial intake information.",
-    newPath: "../record-sheet",
-    previousPath: "../patient-records",
-    progressPath: null,
-    color: "blue",
-  },
+
   {
     name: "Skill Assessment Flow",
     icon: "🧠",
@@ -19,6 +17,13 @@ const forms = [
     previousPath: "../therapy-assessments-list",
     progressPath: null,
     color: "teal",
+    access: {
+      Doctors: "View",
+      Therapists: "S - CRUD", // Assuming this is the 'Speech' form
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "No need",
+    },
   },
   {
     name: "Sensory Profile",
@@ -28,6 +33,13 @@ const forms = [
     previousPath: "../sensory-profile-view",
     progressPath: null,
     color: "purple",
+    access: {
+      Doctors: "View",
+      Therapists: "O,P - CRUD",
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "Restrict",
+    },
   },
   {
     name: "Autism Rating Form (CARS)",
@@ -37,6 +49,13 @@ const forms = [
     previousPath: "../forms/carsform-previous-entries",
     progressPath: "../forms/cars-progress",
     color: "indigo",
+    access: {
+      Doctors: "CRUD",
+      Therapists: "No need",
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "No need",
+    },
   },
   // {
   //   name: "Mathavam Flowchart",
@@ -55,10 +74,69 @@ const forms = [
     previousPath: "../forms/bc-previous-entries",
     progressPath: "../forms/bc-progress",
     color: "green",
+    access: {
+      Doctors: "View",
+      Therapists: "CRUD",
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "No need",
+    },
+  },
+  {
+    name: "DSM5 Form",
+    icon: "📝",
+    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    newPath: "../DSM5Form",
+    previousPath: "../submitted-dsm5-forms",
+    progressPath: null,
+    color: "green",
+    access: {
+      Doctors: "CRUD",
+      Therapists: "No need",
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "No need",
+    },
+  },
+  {
+    name: "SNAP Form",
+    icon: "📝",
+    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    newPath: "../SnapForm",
+    previousPath: "../snap-submitted-forms",
+    progressPath: null,
+    color: "green",
+    access: {
+      Doctors: "CRUD",
+      Therapists: "No need",
+      Admin: "View",
+      SuperAdmin: "View",
+      Parents: "CRUD",
+    },
   },
 ];
 
-const FormHome = () => {
+const FormHome = ({ userRole = "SuperAdmin" }) => {
+  // Utility function to check if the user has an access level that permits 'Create'
+  const canCreate = (form) => {
+    const accessLevel = form.access[userRole];
+    if (!accessLevel) return false;
+    return accessLevel.includes("CRUD") || accessLevel.includes("C");
+  };
+
+  // Utility function to check if the user has an access level that permits 'Read' (View)
+  const canRead = (form) => {
+    const accessLevel = form.access[userRole];
+    if (!accessLevel) return false;
+    return (
+      accessLevel.includes("CRUD") ||
+      accessLevel.includes("View") ||
+      accessLevel.includes("R") ||
+      accessLevel.includes("Y") ||
+      accessLevel.includes("Restrict") // Assuming 'Restrict' means View is possible but with limitations
+    );
+  };
+
   const getButtonClass = (baseColor) => {
     switch (baseColor) {
       case "blue":
@@ -119,62 +197,82 @@ const FormHome = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {forms.map((form, index) => (
-          <div
-            key={index}
-            className={`bg-gray-50/80 backdrop-blur-sm p-7 rounded-2xl shadow-xl border-t-8 border-${form.color}-500 
-                        hover:shadow-2xl hover:bg-white transition-all duration-300 ease-in-out 
-                        flex flex-col justify-between transform hover:scale-[1.02]`}
-          >
-            <div>
-              <div className="flex items-center mb-3">
-                <span className="text-3xl mr-3">{form.icon}</span>
-                <h2 className={`text-2xl font-bold text-gray-900`}>
-                  {form.name}
-                </h2>
+          // Only render the form if the user has some level of 'Read' or 'Create' access
+          (canCreate(form) || canRead(form)) && (
+            <div
+              key={index}
+              className={`bg-gray-50/80 backdrop-blur-sm p-7 rounded-2xl shadow-xl border-t-8 border-${form.color}-500 
+                             hover:shadow-2xl hover:bg-white transition-all duration-300 ease-in-out 
+                             flex flex-col justify-between transform hover:scale-[1.02]`}
+            >
+              <div>
+                <div className="flex items-center mb-3">
+                  <span className="text-3xl mr-3">{form.icon}</span>
+                  <h2 className={`text-2xl font-bold text-gray-900`}>
+                    {form.name}
+                  </h2>
+                </div>
+                <p className="text-sm text-gray-600 mb-6">{form.desc}</p>
+                {/* Displaying Access for Current Role (Optional, for debugging/info) */}
+                <p className="text-xs text-gray-400 mb-2">
+                  {userRole} Access: {form.access[userRole] || "No need"}
+                </p>
               </div>
-              <p className="text-sm text-gray-600 mb-6">{form.desc}</p>
+
+              <div className="flex flex-col space-y-3 mt-auto pt-4 border-t border-gray-100">
+                {/* 1. Start New Assessment (Create Access Check) */}
+                {canCreate(form) && (
+                  <Link
+                    to={form.newPath}
+                    className={`w-full text-center py-3 px-6 rounded-xl font-bold text-white shadow-lg 
+                                 transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                                 focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getButtonClass(
+                                   form.color
+                                 )}`}
+                  >
+                    Start New Assessment
+                  </Link>
+                )}
+                {!canCreate(form) && (
+                  <button
+                    disabled
+                    className="w-full text-center py-3 px-6 rounded-xl font-bold text-white bg-gray-400/80 cursor-not-allowed"
+                  >
+                    No Creation Access
+                  </button>
+                )}
+
+                {/* 2. View Previous Entries (Read Access Check and Path Check) */}
+                {form.previousPath && canRead(form) && (
+                  <Link
+                    to={form.previousPath}
+                    className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
+                                     bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                                     focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getViewButtonClass(
+                                       form.color
+                                     )}`}
+                  >
+                    View Previous Entries
+                  </Link>
+                )}
+
+                {/* 3. Track Progress (Read Access Check and Path Check) */}
+                {form.progressPath && canRead(form) && (
+                  <Link
+                    to={form.progressPath}
+                    className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
+                                     bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                                     focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getProgressButtonClass(
+                                       form.color,
+                                       true
+                                     )}`}
+                  >
+                    Track Progress 📈
+                  </Link>
+                )}
+              </div>
             </div>
-
-            <div className="flex flex-col space-y-3 mt-auto pt-4 border-t border-gray-100">
-              <Link
-                to={form.newPath}
-                className={`w-full text-center py-3 px-6 rounded-xl font-bold text-white shadow-lg 
-                            transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                            focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getButtonClass(
-                              form.color
-                            )}`}
-              >
-                Start New Assessment
-              </Link>
-
-              {form.previousPath && (
-                <Link
-                  to={form.previousPath}
-                  className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
-                                bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                                focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getViewButtonClass(
-                                  form.color
-                                )}`}
-                >
-                  View Previous Entries
-                </Link>
-              )}
-
-              {form.progressPath && (
-                <Link
-                  to={form.progressPath}
-                  className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
-                                bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                                focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getProgressButtonClass(
-                                  form.color,
-                                  true
-                                )}`}
-                >
-                  Track Progress 📈
-                </Link>
-              )}
-            </div>
-          </div>
+          )
         ))}
       </div>
     </div>

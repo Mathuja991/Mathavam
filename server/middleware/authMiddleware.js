@@ -1,4 +1,4 @@
-// middleware/authMiddleware.js
+// server/middleware/authMiddleware.js
 
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -15,41 +15,37 @@ module.exports = function(req, res, next) {
 
   // 3. Verify token
   try {
-    // Attempt to verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    // --- Log the decoded payload ---
     console.log(`[${new Date().toISOString()}] Auth Middleware: Token decoded successfully for ${req.originalUrl}. Payload:`, decoded);
 
-    // 4. --- CHECK PAYLOAD FOR 'userId' ---
-    if (decoded.userId) {
+    // 4. --- PAYLOAD EKA CHECK KIRIMA (MEKA THAMAI WENASA) ---
+    // decoded payload eke 'userId' HA 'userType' thiyenna one
+    // Obage authRoutes.js eken me deka enawa.
+    if (decoded.userId && decoded.userType) {
 
-      // Attach user object { id: '...' }
+      // req.user object ekata data dekama attach karanna
       req.user = {
-          id: decoded.userId
+          id: decoded.userId,
+          userType: decoded.userType // <-- MEKA THAMAI ALUTH WENASA
       };
 
-      console.log(`[${new Date().toISOString()}] Auth Middleware: Success! User ID ${req.user.id} attached. Proceeding to next handler for ${req.originalUrl}.`);
-      next(); // Proceed to the controller
+      console.log(`[${new Date().toISOString()}] Auth Middleware: Success! User ID ${req.user.id} (Role: ${req.user.userType}) attached. Proceeding...`);
+      next(); // Controller ekata yanna
 
     } else {
-      // If the decoded token doesn't have 'userId'
-      console.error(`[${new Date().toISOString()}] Auth Middleware: Token payload is invalid (missing 'userId'). Request to ${req.originalUrl} denied. Decoded Payload:`, decoded);
-      return res.status(401).json({ msg: 'Token payload is invalid (missing userId)' });
+      // Token eke payload eka waradi nam
+      console.error(`[${new Date().toISOString()}] Auth Middleware: Token payload is invalid (missing 'userId' or 'userType'). Request to ${req.originalUrl} denied.`);
+      return res.status(401).json({ msg: 'Token payload is invalid' });
     }
 
   } catch (err) {
-    // --- IMPROVED ERROR HANDLING ---
-    console.error(`[${new Date().toISOString()}] Auth Middleware: Token verification FAILED for ${req.originalUrl}. Error: ${err.name} - ${err.message}. Token provided (first 10 chars): ${token.substring(0, 10)}...`);
-
+    console.error(`[${new Date().toISOString()}] Auth Middleware: Token verification FAILED for ${req.originalUrl}. Error: ${err.name} - ${err.message}.`);
+    
     if (err.name === 'TokenExpiredError') {
-        // Token එක expire වෙලා නම්
         return res.status(401).json({ msg: 'Token has expired, please log in again' });
     } else if (err.name === 'JsonWebTokenError') {
-        // Token එක වැරදි නම් (e.g., JWT_SECRET එක වැරදි නම්)
-        return res.status(401).json({ msg: 'Token is invalid (JsonWebTokenError)' });
-    } else {
-        // වෙනත් error එකක් නම්
-        return res.status(401).json({ msg: 'Token is not valid (General Error)' });
+        return res.status(401).json({ msg: 'Token is invalid' });
     }
+    return res.status(500).json({ msg: 'Server error during token verification' });
   }
 };
