@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
 const MonthlyReturnForm = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
   const [view, setView] = useState('main');
   const [formData, setFormData] = useState({
     period: 'January-June',
@@ -39,7 +40,7 @@ const MonthlyReturnForm = () => {
   const fetchSubmittedReturns = async () => {
     setLoadingReturns(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/monthlyreturns');
+      const response = await axios.get(`${API_URL}/monthlyreturns`);
       
       let returnsData = [];
       
@@ -196,7 +197,7 @@ const MonthlyReturnForm = () => {
     setMessage('🔄 Fetching assessment data for the 6-month period...');
     
     try {
-      const response = await axios.get('http://localhost:5000/api/patientRecords');
+      const response = await axios.get(`${API_URL}/patientRecords`);
       const patientRecords = response.data;
 
       // Filter records for the selected 6-month period
@@ -207,7 +208,7 @@ const MonthlyReturnForm = () => {
       const newChildrenCount = filteredRecords.length;
       
       // Fetch CARS assessments
-      const response2 = await axios.get('http://localhost:5000/api/carsform/entries');
+      const response2 = await axios.get(`${API_URL}/carsform/entries`);
       const carsAssessment = response2.data;
 
       const filteredcarsAssessment = carsAssessment.filter(record => 
@@ -216,7 +217,7 @@ const MonthlyReturnForm = () => {
       const carsCount = filteredcarsAssessment.length;
       
       // Fetch behavioral assessments
-      const response3 = await axios.get('http://localhost:5000/api/bc/');
+      const response3 = await axios.get(`${API_URL}/bc/`);
       const bcAssessment = response3.data;
 
       const filteredbcAssessment = bcAssessment.filter(record => 
@@ -258,7 +259,7 @@ const MonthlyReturnForm = () => {
   const fetchNewChildrenCount = async () => {
     setLoadingCount(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/patientRecords');
+      const response = await axios.get(`${API_URL}/patientRecords`);
       const patientRecords = response.data;
 
       const filtered = patientRecords.filter(record => 
@@ -298,7 +299,7 @@ const handleSubmit = async (e) => {
   try {
     console.log('Submitting data:', formData); // Debug log
 
-    const response = await fetch("http://localhost:5000/api/monthlyreturns/submit", {
+    const response = await fetch(`${API_URL}/monthlyreturns/submit`, {
       method: "POST",
       headers: { 
         "Content-Type": "application/json",
@@ -353,7 +354,7 @@ const handleSubmit = async (e) => {
     if (!window.confirm('Are you sure you want to delete this six-month return?')) return;
     
     try {
-      const response = await axios.delete(`http://localhost:5000/api/monthlyreturns/${id}`);
+      const response = await axios.delete(`${API_URL}/monthlyreturns/${id}`);
       if (response.status === 200) {
         setMessage('✅ Six-month return deleted successfully!');
         fetchSubmittedReturns();
@@ -484,7 +485,7 @@ const handleSubmit = async (e) => {
               <div className="flex flex-col gap-2">
                 <button
                   type="button"
-                  className="px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-semibold"
+                  className="px-4 py-3  bg-green-600 text-white rounded-xl hover:bg-green-700 transition font-semibold"
                   onClick={fetchAllAssessmentCounts}
                   disabled={loadingCount}
                 >
@@ -493,7 +494,7 @@ const handleSubmit = async (e) => {
                 <span className="text-xs text-gray-600 text-center">Fills all assessment counts</span>
               </div>
 
-              <div className="flex flex-col gap-2">
+              {/* <div className="flex flex-col gap-2">
                 <button
                   type="button"
                   className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-semibold"
@@ -503,7 +504,7 @@ const handleSubmit = async (e) => {
                   {loadingCount ? '🔄 Loading...' : '👶 Children Only'}
                 </button>
                 <span className="text-xs text-gray-600 text-center">Fills only new registrations</span>
-              </div>
+              </div> */}
             </div>
 
             {/* Auto-filled Values Summary */}

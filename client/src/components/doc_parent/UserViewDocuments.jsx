@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 
 const UserViewDocuments = () => {
+   const API_URL = import.meta.env.VITE_API_URL;
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,7 +13,7 @@ const UserViewDocuments = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:5000/api/documents')
+    fetch(`${API_URL}/documents/`)
       .then(res => res.json())
       .then(data => {
         setDocuments(data);
@@ -232,7 +233,7 @@ const UserViewDocuments = () => {
                   </div>
                   <div className="flex-1">
                     <a
-                      href={`http://localhost:5000/api/documents/${doc._id}`}
+                      href={`${API_URL}/documents/${doc._id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xl font-semibold text-blue-700 hover:text-blue-900 hover:underline block mb-2"
@@ -259,7 +260,7 @@ const UserViewDocuments = () => {
                 </div>
                 
                 <a
-                  href={`http://localhost:5000/api/documents/${doc._id}`}
+                  href={`${API_URL}/documents/${doc._id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"

@@ -7,7 +7,7 @@ const AdminUploadDocument = () => {
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState(null); // "upload" | "manage" | null
-  
+  const API_URL = import.meta.env.VITE_API_URL;
   // Filter states
   const [titleFilter, setTitleFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
@@ -15,7 +15,7 @@ const AdminUploadDocument = () => {
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/documents");
+      const res = await fetch(`${API_URL}/documents`);
       if (res.ok) {
         const data = await res.json();
         setDocuments(data);
@@ -92,7 +92,7 @@ const AdminUploadDocument = () => {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://localhost:5000/api/documents/upload", {
+      const res = await fetch(`${API_URL}/documents/upload`, {
         method: "POST",
         body: formData,
       });
@@ -116,7 +116,7 @@ const AdminUploadDocument = () => {
     if (!window.confirm("Are you sure you want to delete this file?")) return;
     
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${fileId}`, {
+      const res = await fetch(`${API_URL}/documents/${fileId}`, {
         method: "DELETE",
       });
       

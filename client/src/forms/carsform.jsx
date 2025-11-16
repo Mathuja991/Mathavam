@@ -25,6 +25,9 @@ const AutismRatingForm = () => {
     gender: "",
   });
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
+
   const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [previousEntries, setPreviousEntries] = useState([]);
@@ -38,7 +41,7 @@ const AutismRatingForm = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/patientRecords`);
+      const response = await fetch(`${API_URL}/patientRecords`);
       if (!response.ok) throw new Error("Failed to fetch records");
       const data = await response.json();
 
@@ -127,7 +130,7 @@ const AutismRatingForm = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch("http://localhost:5000/api/carsform/submit", {
+      const response = await fetch(`${API_URL}/carsform/submit`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -160,7 +163,6 @@ const AutismRatingForm = () => {
   };
 
   const progressPercentage = (Object.keys(selectedScores).length / categories.length) * 100;
-
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
