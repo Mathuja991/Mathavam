@@ -7,7 +7,10 @@ const {
   deleteAvailabilitySlot,
   clearDoctorAvailability,
   updateAvailabilitySlot,
-  getMultipleDoctorsAvailability
+  getMultipleDoctorsAvailability,
+  getAllDoctorsFromAvailability,
+  deleteAvailabilitySlotBody,
+  clearDoctorAvailabilityBody
 } = require('../controllers/availabilityController');
 
 // @route   GET /api/availability/doctor/:doctorId
@@ -25,24 +28,28 @@ router.post('/', setAvailability);
 // @access  Private
 router.post('/add', addAvailabilitySlots);
 
-// @route   PUT /api/availability/:slotId
-// @desc    Update a specific availability slot
+// ⭐️ ADD THESE MISSING ROUTES THAT YOUR FRONTEND NEEDS:
+
+// @route   PUT /api/availability/update
+// @desc    Update a specific availability slot (frontend expects this)
 // @access  Private
+router.put('/update', updateAvailabilitySlot); // ADD THIS
+
+// @route   DELETE /api/availability/delete
+// @desc    Delete a specific availability slot (frontend expects this)
+// @access  Private
+router.delete('/delete', deleteAvailabilitySlotBody); // ADD THIS
+
+// @route   DELETE /api/availability/delete-all
+// @desc    Delete all availability for a doctor (frontend expects this)
+// @access  Private
+router.delete('/delete-all', clearDoctorAvailabilityBody); // ADD THIS
+
+// Existing routes (keep these too)
 router.put('/:slotId', updateAvailabilitySlot);
-
-// @route   DELETE /api/availability/:slotId
-// @desc    Delete a specific availability slot
-// @access  Private
 router.delete('/:slotId', deleteAvailabilitySlot);
-
-// @route   DELETE /api/availability/doctor/:doctorId
-// @desc    Delete all availability for a doctor
-// @access  Private
 router.delete('/doctor/:doctorId', clearDoctorAvailability);
-
-// @route   POST /api/availability/doctors
-// @desc    Get availability for multiple doctors
-// @access  Private
 router.post('/doctors', getMultipleDoctorsAvailability);
-
+// Add this route
+router.get('/doctors/all', getAllDoctorsFromAvailability);
 module.exports = router;

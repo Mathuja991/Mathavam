@@ -1,10 +1,10 @@
 import React from "react";
 import { CheckCircle } from "lucide-react";
 
-const DoctorSelection = ({ filteredDoctors, selectedDoctorId, handleDoctorSelect }) => {
+const DoctorSelection = ({ doctors, selectedDoctorId, handleDoctorSelect }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      {filteredDoctors.map((doctor) => (
+      {doctors.map((doctor) => (
         <button
           key={doctor._id}
           onClick={() => handleDoctorSelect(doctor._id)}
@@ -26,9 +26,9 @@ const DoctorSelection = ({ filteredDoctors, selectedDoctorId, handleDoctorSelect
         </button>
       ))}
 
-      {filteredDoctors.length === 0 && (
+      {doctors.length === 0 && (
         <div className="text-center py-8 text-gray-500 col-span-full">
-          No doctors found matching your search.
+          No doctors available at the moment.
         </div>
       )}
     </div>

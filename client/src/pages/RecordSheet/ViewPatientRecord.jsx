@@ -1,213 +1,326 @@
-// D:\Computer Science - University of Jaffna\3rd Year\Group Project\Mathavam Project\client\src\pages\RecordSheet\ViewPatientRecord.jsx
+// ViewPatientRecord.jsx (Full Data Layout Updated)
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSpinner, faArrowLeft, faEdit, faTrash, faPrint } from '@fortawesome/free-solid-svg-icons';
 
+// 1. Token eka ganna helper function eka
+const getAuthConfig = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+        console.error('Auth token not found in localStorage');
+        return { headers: {} };
+    }
+    return {
+        headers: {
+            'x-auth-token': token,
+        },
+    };
+};
+
+// 2. Userge Role eka ganna helper function eka
+const getLoggedInUser = () => {
+    const userString = localStorage.getItem('user');
+    if (!userString) {
+        console.error('Logged in user object not found in localStorage');
+        return null;
+    }
+    try {
+        return JSON.parse(userString);
+    } catch (e) {
+        console.error('Error parsing user from localStorage', e);
+        return null;
+    }
+};
+
+// 3. Helper component (Data field pennanna)
+const InfoField = ({ label, value }) => {
+    // Check for null, undefined, or empty string. Allow 0.
+    if (!value && typeof value !== 'number' && typeof value !== 'boolean') {
+        return null; 
+    }
+
+    let displayValue = value;
+
+    // Boolean-gulo "Yes/No" hishebe dekhano
+    if (typeof value === 'boolean') {
+        displayValue = value ? 'Yes' : 'No';
+    }
+    
+    // Date string hole format kora (Date object noy)
+    if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
+        const date = new Date(value);
+        if (!isNaN(date)) {
+             displayValue = date.toLocaleDateString();
+        }
+    }
+    
+    // Array hole join kora
+    if (Array.isArray(value)) {
+        displayValue = value.length > 0 ? value.join(', ') : 'N/A';
+    }
+
+    return (
+        <div className="mb-4 break-inside-avoid">
+            <p className="text-sm font-semibold text-indigo-700">{label}</p>
+            <p className="text-lg text-gray-800 break-words">{String(displayValue)}</p>
+        </div>
+    );
+};
+
+// 4. Helper component (Section pennanna)
+const InfoSection = ({ title, children }) => (
+    <div className="mb-8 p-6 bg-gray-50 rounded-2xl shadow-lg border border-gray-200">
+        <h3 className="text-2xl font-bold text-indigo-800 mb-6 pb-2 border-b border-indigo-200">
+            {title}
+        </h3>
+        {/* Column layout for better readability */}
+        <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+            {children}
+        </div>
+    </div>
+);
+
+// 5. Main Component
 const ViewPatientRecord = () => {
-    const { id } = useParams(); // Get the ID from the URL
+    const { id } = useParams();
     const navigate = useNavigate();
-    const [record, setRecord] = useState(null);
+    const [record, setRecord] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [canCRUD, setCanCRUD] = useState(false);
 
     useEffect(() => {
+        // User role check
+        const loggedInUser = getLoggedInUser();
+        if (loggedInUser && loggedInUser.userType === 'Super Admin') {
+            setCanCRUD(true);
+        }
+
+        // Data fetch
         const fetchRecord = async () => {
             try {
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/patientRecords/${id}`);
+                const config = getAuthConfig();
+                if (!config.headers['x-auth-token']) {
+                    setError('Authentication token not found. Please log in again.');
+                    setLoading(false);
+                    return;
+                }
+                const response = await axios.get(
+                    `${import.meta.env.VITE_API_URL}/patientRecords/${id}`,
+                    config
+                );
                 setRecord(response.data);
-                setLoading(false);
             } catch (err) {
-                console.error(`Error fetching record with ID ${id}:`, err);
-                setError('Failed to load patient record. It might not exist or there was a server error.');
+                console.error('Error fetching patient data:', err);
+                setError('Failed to load patient data.');
+            } finally {
                 setLoading(false);
             }
         };
 
         fetchRecord();
-    }, [id]); // Re-run effect if ID changes
+    }, [id]);
 
     const handleDelete = async () => {
+        if (!canCRUD) {
+            alert("You do not have permission to delete this record.");
+            return;
+        }
         if (window.confirm('Are you sure you want to permanently delete this patient record?')) {
             try {
-                await axios.delete(`${import.meta.env.VITE_API_URL}/patientRecords/${id}`);
-                alert('Patient record deleted successfully!');
-                navigate('/patient-records'); // Redirect to the list after deletion
+                const config = getAuthConfig();
+                await axios.delete(`${import.meta.env.VITE_API_URL}/patientRecords/${id}`, config);
+                alert('Record deleted successfully.');
+                navigate('/dashboard/patient-records');
             } catch (err) {
-                console.error(`Error deleting record with ID ${id}:`, err);
-                alert('Failed to delete patient record. Please try again.');
-            }
-        }
-    };
-
-    const renderField = (label, value) => {
-        if (value === undefined || value === null || value === '') {
-            return null; // Don't render if value is empty/null/undefined
-        }
-        if (typeof value === 'boolean') {
-            return (
-                <p className="mb-2 text-gray-700">
-                    <strong className="font-semibold text-blue-800">{label}:</strong> {value ? 'Yes' : 'No'}
-                </p>
-            );
-        }
-        if (typeof value === 'object' && value instanceof Date) {
-            return (
-                <p className="mb-2 text-gray-700">
-                    <strong className="font-semibold text-blue-800">{label}:</strong> {value.toLocaleDateString()}
-                </p>
-            );
-        }
-        // Handle dates that might come as ISO strings
-        if (typeof value === 'string' && (label.toLowerCase().includes('date') || label.toLowerCase().includes('dob'))) {
-             try {
-                const date = new Date(value);
-                if (!isNaN(date)) { // Check if it's a valid date
-                    return (
-                        <p className="mb-2 text-gray-700">
-                            <strong className="font-semibold text-blue-800">{label}:</strong> {date.toLocaleDateString()}
-                        </p>
-                    );
+                console.error('Error deleting record:', err);
+                if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+                    alert("You do not have permission to delete this record.");
+                } else {
+                    alert('Failed to delete record.');
                 }
-            } catch (e) {
-                // Ignore parsing errors, treat as regular string
             }
         }
-        
-        return (
-            <p className="mb-2 text-gray-700">
-                <strong className="font-semibold text-blue-800">{label}:</strong> {value}
-            </p>
-        );
+    };
+    
+    // Handle Print
+    const handlePrint = () => {
+        window.print(); // Simple browser print
     };
 
-    const renderSection = (title, dataObject) => {
-        if (!dataObject || Object.keys(dataObject).length === 0 || Object.values(dataObject).every(val => val === null || val === undefined || val === '')) {
-            return null; // Don't render section if all its fields are empty
-        }
+    if (loading) {
         return (
-            <div className="bg-gray-50 p-6 rounded-lg shadow-inner mb-6">
-                <h3 className="text-xl font-bold text-blue-700 border-b pb-2 mb-4">{title}</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
-                    {Object.entries(dataObject).map(([key, value]) => {
-                        // Attempt to make keys more readable
-                        const readableKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-                        return renderField(readableKey, value);
-                    })}
+            <div className="flex justify-center items-center h-screen bg-gray-100">
+                <div className="text-center">
+                    <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-indigo-600" />
+                    <p className="mt-4 text-lg text-gray-700">Loading patient record...</p>
                 </div>
             </div>
         );
-    };
-
-
-    if (loading) {
-        return <div className="text-center text-xl font-semibold mt-10">Loading patient record details...</div>;
     }
 
     if (error) {
-        return <div className="text-center text-red-600 text-xl font-semibold mt-10">{error}</div>;
-    }
-
-    if (!record) {
-        return <div className="text-center text-gray-600 text-xl font-semibold mt-10">Patient record not found.</div>;
-    }
-
-    // Main render
-    return (
-        <div className="p-8 bg-white rounded-lg shadow-xl max-w-7xl mx-auto my-8">
-            <h2 className="text-4xl font-extrabold text-center text-blue-900 mb-10">Patient Record Details</h2>
-            <div className="flex justify-between items-center mb-6">
-                <Link 
-                    to="/dashboard/patient-records" 
-                    className="px-5 py-2 bg-gray-300 text-gray-800 font-semibold rounded-md shadow-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-200"
+        return (
+            <div className="p-8 max-w-2xl mx-auto mt-10 bg-red-50 border border-red-400 rounded-lg shadow-xl text-center">
+                <p className="text-xl font-bold text-red-700">{error}</p>
+                <Link
+                    to="/dashboard/patient-records"
+                    className="mt-6 inline-block px-6 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700"
                 >
-                    ← Back to List
+                    Back to List
                 </Link>
-                <div>
-                    <Link 
-                        to={`/patient-records/edit/${record._id}`} 
-                        className="px-5 py-2 bg-indigo-600 text-white font-semibold rounded-md shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition duration-200 mr-4"
+            </div>
+        );
+    }
+
+    return (
+        <div className="p-4 md:p-8 bg-gray-100 max-w-7xl mx-auto my-8 rounded-2xl shadow-2xl">
+            
+            {/* Header and Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4 print:hidden">
+                <h1 className="text-4xl font-extrabold text-indigo-900">
+                    Patient Record View
+                </h1>
+                <div className="flex flex-wrap gap-3">
+                    <Link
+                        to="/dashboard/patient-records"
+                        className="flex items-center px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600 transition"
                     >
-                        Edit Record
+                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2" />
+                        Back
                     </Link>
+                    {canCRUD && (
+                        <>
+                            <Link
+                                to={`../patient-records/edit/${id}`}
+                                className="flex items-center px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition"
+                            >
+                                <FontAwesomeIcon icon={faEdit} className="mr-2" />
+                                Edit
+                            </Link>
+                            <button
+                                onClick={handleDelete}
+                                className="flex items-center px-4 py-2 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 transition"
+                            >
+                                <FontAwesomeIcon icon={faTrash} className="mr-2" />
+                                Delete
+                            </button>
+                        </>
+                    )}
                     <button
-                        onClick={handleDelete}
-                        className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+                        onClick={handlePrint}
+                        className="flex items-center px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg shadow-md hover:bg-teal-700 transition"
                     >
-                        Delete Record
+                        <FontAwesomeIcon icon={faPrint} className="mr-2" />
+                        Print
                     </button>
                 </div>
             </div>
 
-            <div className="space-y-8">
-                {/* Part 1: Patient Information */}
-                <div className="bg-blue-100 p-8 rounded-xl shadow-lg border-l-4 border-blue-600">
-                    <h3 className="text-2xl font-bold text-blue-900 mb-6 border-b pb-2 border-blue-400">Patient Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
-                        {renderField('Child No', record.childNo)}
-                        {renderField('Name', record.name)}
-                        {renderField('Address', record.address)}
-                        {renderField('Contact No', record.contactNo)}
-                        {renderField('GN Division', record.gnDiv)}
-                        {renderField('Referred By', record.referredBy)}
-                        {renderField('Reason For Referral', record.reasonForReferral)}
-                        {renderField('Date of Initial Assessment', record.dateOfInitialAssessment)}
-                        {renderField('Date of Birth', record.dateOfBirth)}
-                        {renderField('Gender', record.gender)}
-                        {renderField('Age', record.age)}
-                    </div>
+            {/* --- Form Data Display --- */}
+            
+            {/* --- Part 1: Patient Info --- */}
+            <InfoSection title="Part 1: Patient Information">
+                <InfoField label="Child No" value={record.childNo} />
+                <InfoField label="Name" value={record.name} />
+                <InfoField label="Date of Birth" value={record.dateOfBirth} />
+                <InfoField label="Age" value={record.age} />
+                <InfoField label="Gender" value={record.gender} />
+                <InfoField label="Contact No" value={record.contactNo} />
+                <InfoField label="Address" value={record.address} />
+                <InfoField label="GN Division" value={record.gnDiv} />
+                <InfoField label="Date of Initial Assessment" value={record.dateOfInitialAssessment} />
+                <InfoField label="Referred By" value={record.referredBy} />
+            </InfoSection>
+
+            {/* --- Part 2: History --- */}
+            <InfoSection title="Part 2: History">
+                {/* Nested Section: Family History */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Family History of Disorders</h4>
+                    <InfoField label="Developmental Disorders" value={record.familyHistoryOfDisorders?.devDisorders} />
+                    <InfoField label="ASD" value={record.familyHistoryOfDisorders?.asd} />
+                    <InfoField label="Speech Disorders" value={record.familyHistoryOfDisorders?.speechDisorders} />
+                    <InfoField label="Psychiatric Illness" value={record.familyHistoryOfDisorders?.psychiatricIllness} />
+                    <InfoField label="Other Family History" value={record.familyHistoryOfDisorders?.other} />
+                </div>
+                
+                {/* Nested Section: Birth History */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Birth History</h4>
+                    <InfoField label="Gestational Age (weeks)" value={record.birthHistory?.gestationalAge} />
+                    <InfoField label="Birth Weight (kg)" value={record.birthHistory?.birthWeight} />
+                    <InfoField label="Type of Delivery" value={record.birthHistory?.typeOfDelivery} />
+                    <InfoField label="Mother's Health During Pregnancy/Delivery" value={record.birthHistory?.mothersHealthDuringPregnancyDelivery} />
                 </div>
 
-                {renderSection('Parent Information', record.parentInformation)}
+                {/* Nested Section: Medical History */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Medical History</h4>
+                    <InfoField label="Allergies" value={record.medicalHistory?.allergies} />
+                    <InfoField label="Medications" value={record.medicalHistory?.medications} />
+                    <InfoField label="Past Illnesses" value={record.medicalHistory?.pastIllnesses} />
+                    <InfoField label="Past Surgeries" value={record.medicalHistory?.pastSurgeries} />
+                </div>
+
+                {/* Nested Section: Developmental History */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Developmental History</h4>
+                    <InfoField label="Developmental Delay" value={record.developmentalHistory?.developmentalDelay} />
+                    <InfoField label="Other Developmental Concerns" value={record.developmentalHistory?.otherDevelopmentalConcerns} />
+                </div>
+
+                {/* Nested Section: Developmental Milestones */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Developmental Milestones (Age in months)</h4>
+                    <InfoField label="Head Control" value={record.developmentalMilestones?.headControl} />
+                    <InfoField label="Sitting" value={record.developmentalMilestones?.sitting} />
+                    <InfoField label="Walking" value={record.developmentalMilestones?.walking} />
+                    <InfoField label="First Words" value={record.developmentalMilestones?.firstWords} />
+                    <InfoField label="First Sentences" value={record.developmentalMilestones?.firstSentences} />
+                </div>
+
+                {/* Nested Section: Motor Skills */}
+                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3">Motor Skills</h4>
+                    <InfoField label="Gross Motor" value={record.motorSkills?.grossMotor} />
+                    <InfoField label="Fine Motor" value={record.motorSkills?.fineMotor} />
+                </div>
+            </InfoSection>
+
+            {/* --- Part 3: Diagnosis --- */}
+            <InfoSection title="Part 3: Diagnosis & Assessment">
+                <InfoField label="Schooling" value={record.schooling} />
+                <InfoField label="Main Complaints" value={record.mainComplaints} />
+                <InfoField label="Hearing Screening" value={record.hearingScreening} />
+                <InfoField label="Vision Screening" value={record.visionScreening} />
+                <InfoField label="Parent's Expectation" value={record.parentsExpectation} />
+                <InfoField label="Diagnosis" value={record.diagnosis} />
+                <InfoField label="Associated Conditions" value={record.associatedConditions} />
+            </InfoSection>
+
+            {/* --- Part 4: Management --- */}
+            <InfoSection title="Part 4: Management Plan">
+                <InfoField label="Management Plan" value={record.managementPlan} />
+                <InfoField label="Home Training Recommendations" value={record.homeTraining} />
+                <InfoField label="Summary" value={record.summary} />
+                <InfoField label="CARS Score" value={record.carsScore} />
+                <InfoField label="Vineland Social Maturity Scale" value={record.vinelandSocialMaturityScale} />
                 
-                {/* Part 2: Review of System */}
-                {renderSection('Growth & Weight Problems', record.reviewOfSystem?.growthWeightProblems)}
-                {renderSection('Respiratory System', record.reviewOfSystem?.respiratorySystem)}
-                {renderSection('Gastrointestinal System', record.reviewOfSystem?.gastrointestinalSystem)}
-                {renderSection('Cardiovascular System', record.reviewOfSystem?.cardiovascularSystem)}
-                {renderSection('Genitourinary System', record.reviewOfSystem?.genitourinarySystem)}
-                {renderSection('Musculoskeletal System', record.reviewOfSystem?.musculoskeletalSystem)}
-                {renderSection('Nervous System', record.reviewOfSystem?.nervousSystem)}
-                {renderSection('Sensory Organs (Eyes/Ears)', record.reviewOfSystem?.sensoryOrgans)}
-                {renderSection('Skin', record.reviewOfSystem?.skin)}
-
-                {/* Part 2: Developmental History */}
-                {renderSection('Motor', record.developmentalHistory?.motor)}
-                {renderSection('Speech and Language', record.developmentalHistory?.speechAndLanguage)}
-                {renderSection('Social and Emotional', record.developmentalHistory?.socialAndEmotional)}
-                {renderSection('Cognitive', record.developmentalHistory?.cognitive)}
-                {renderSection('Toileting', record.developmentalHistory?.toileting)}
-                {renderSection('Feeding', record.developmentalHistory?.feeding)}
-                {renderSection('Sleep', record.developmentalHistory?.sleep)}
-                {renderSection('Play', record.developmentalHistory?.play)}
-                {renderSection('Behavior', record.developmentalHistory?.behavior)}
-                {renderSection('Specific Skills', record.developmentalHistory?.specificSkills)}
-                {renderSection('School Readiness', record.developmentalHistory?.schoolReadiness)}
-                {renderSection('Allergies', record.developmentalHistory?.allergies)}
-                {renderSection('Immunization', record.developmentalHistory?.immunization)}
-                {renderSection('Medications', record.developmentalHistory?.medications)}
-                {renderSection('Hospitalizations', record.developmentalHistory?.hospitalizations)}
-                {renderSection('Family History', record.developmentalHistory?.familyHistory)}
-
-                {/* Part 3: Other Sections */}
-                {renderField('Chief Complaints', record.chiefComplaints)}
-                {renderField('Parent\'s Expectation', record.parentsExpectation)}
-                {renderSection('Clinical Diagnosis', record.clinicalDiagnosis)}
-                {renderField('Associated Conditions', record.associatedConditions)}
-
-                {/* Part 4: Management Plan */}
-                {renderField('Management Plan', record.managementPlan)}
-                {renderField('Home Training Recommendations', record.homeTrainingRecommendations)}
-                {renderField('Summary', record.summary)}
-                {renderField('Presenting Complaints Summary', record.presentingComplaintsSummary)}
-                {renderField('CARS Score', record.carsScore)}
-                {renderField('Vineland Social Maturity Scale', record.vinelandSocialMaturityScale)}
-                {renderSection('Assessment Plan', record.assessmentPlan)}
-                {renderField('Future Therapy Plan', record.futureTherapyPlan)}
-                {renderField('Next Review Date', record.nextReviewDate)}
-                {renderField('Therapist Name', record.therapistName)}
-                {renderField('Contact Number of Therapist', record.contactNumberOfTherapist)}
-            </div>
+                {/* Array fix (jemon age chilo) */}
+                <InfoField 
+                    label="Assessment Plan" 
+                    value={record.assessmentPlan} 
+                />
+                
+                <InfoField label="Future Therapy Plan" value={record.futureTherapyPlan} />
+                <InfoField label="Next Review Date" value={record.nextReviewDate} />
+                <InfoField label="Therapist Name" value={record.therapistName} />
+                <InfoField label="Contact (Therapist)" value={record.contactNumberOfTherapist} />
+            </InfoSection>
         </div>
     );
 };

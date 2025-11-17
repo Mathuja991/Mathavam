@@ -1,12 +1,28 @@
-// D:\Computer Science - University of Jaffna\3rd Year\Group Project\Mathavam Project\backend\routes\patientRecords.js
+// D:\\Computer Science - University of Jaffna\\3rd Year\\Group Project\\Mathavam Project\\backend\\routes\\patientRecords.js
 
 const express = require('express');
 const router = express.Router();
 const PatientRecord = require('../models/PatientRecord'); // Ensure correct path to your model
 
+// --- ALUTH IMPORTS ---
+const authMiddleware = require('../middleware/authMiddleware');
+const checkRole = require('../middleware/checkRoleMiddleware');
+
+// --- Role Arrays ---
+const ROLES_VIEW_ALL = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
+const ROLES_CRUD_SUPER_ADMIN = ['Super Admin'];
+
 // GET /api/patientRecords - Get all patient records
-router.get('/', async (req, res) => {
+// Rule: View for all roles
+router.get(
+    '/', 
+    authMiddleware,
+    checkRole(ROLES_VIEW_ALL),
+    async (req, res) => {
     try {
+        // **IMPORTANT**: Parent kenek nam, e parentge childRegNo ekata adala records witharak filter karanna
+        // Me logic eka controller eka athule hadanna one.
+        // If (req.user.userType === 'Parent') { ... filter by req.user.childRegNo ... }
         const records = await PatientRecord.find({}); // Fetch all records
         res.status(200).json(records);
     } catch (err) {
@@ -16,8 +32,14 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/patientRecords/:id - Get a single patient record by ID
-router.get('/:id', async (req, res) => {
+// Rule: View for all roles
+router.get(
+    '/:id', 
+    authMiddleware,
+    checkRole(ROLES_VIEW_ALL),
+    async (req, res) => {
     try {
+        // **IMPORTANT**: Parent kenek nam, me record eka eyage childge da kiyala check karanna one.
         const record = await PatientRecord.findById(req.params.id);
         if (!record) {
             return res.status(404).json({ message: 'Patient record not found' });
@@ -33,26 +55,33 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/patientRecords - Create a new patient record
-router.post('/', async (req, res) => {
+// Rule: CRUD for Super Admin only
+router.post(
+    '/', 
+    authMiddleware,
+    checkRole(ROLES_CRUD_SUPER_ADMIN),
+    async (req, res) => {
     try {
         const newRecord = new PatientRecord(req.body);
         const savedRecord = await newRecord.save();
         res.status(201).json(savedRecord);
     } catch (err) {
-        console.error('Error saving patient record:', err);
-        // More specific error handling for validation if Mongoose validation is used
+        console.error('Error creating new patient record:', err);
         if (err.name === 'ValidationError') {
             return res.status(400).json({ message: err.message, errors: err.errors });
         }
-        res.status(400).json({ message: 'Error saving patient record', error: err.message });
+        res.status(500).json({ message: 'Server error creating record', error: err.message });
     }
 });
 
 // PUT /api/patientRecords/:id - Update a patient record by ID
-router.put('/:id', async (req, res) => {
+// Rule: CRUD for Super Admin only
+router.put(
+    '/:id', 
+    authMiddleware,
+    checkRole(ROLES_CRUD_SUPER_ADMIN),
+    async (req, res) => {
     try {
-        // { new: true } returns the updated document
-        // { runValidators: true } runs Mongoose schema validators on update
         const updatedRecord = await PatientRecord.findByIdAndUpdate(
             req.params.id,
             req.body,
@@ -76,7 +105,12 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /api/patientRecords/:id - Delete a patient record by ID
-router.delete('/:id', async (req, res) => {
+// Rule: CRUD for Super Admin only
+router.delete(
+    '/:id', 
+    authMiddleware,
+    checkRole(ROLES_CRUD_SUPER_ADMIN),
+    async (req, res) => {
     try {
         const deletedRecord = await PatientRecord.findByIdAndDelete(req.params.id);
 

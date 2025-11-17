@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom";
 const MathavamFlowchart = () => {
   const location = useLocation();
   const editingEntry = location.state?.entry;
-
+  const API_URL = import.meta.env.VITE_API_URL;
   // ✅ Sections configuration
   const sections = {
     Assessment: [

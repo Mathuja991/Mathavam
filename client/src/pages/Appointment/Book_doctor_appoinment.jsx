@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import BookingTabs from "../../components/appointmentUser/BookingTabs";
 import BookAppointmentTab from "../../components/appointmentUser/BookAppointmentTab";
 import UpcomingAppointmentsTab from "../../components/appointmentUser/UpcomingAppointmentsTab";
@@ -8,22 +9,17 @@ import CancelConfirmationDialog from "../../components/appointmentUser/CancelCon
 import SuccessMessage from "../../components/appointmentUser/SuccessMessage";
 
 const PatientAppointmentBooking = () => {
-  // Mock doctors data
-  const [doctors] = useState([
-    { _id: "1", name: "Dr. John Smith", specialization: "Cardiology" },
-  ]);
-
-  // Mock availability data from admin - based on DAYS
-  const [doctorAvailability] = useState({
-    "1": [
-      { day: "Monday", startTime: "09:00", endTime: "12:00" },
-    ],
-  });
+  // REAL doctors data from availability database
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // REAL availability data from database
+  const [doctorAvailability, setDoctorAvailability] = useState({});
 
   // Mock existing appointments count for each date
   const [existingAppointments] = useState({
-    "2024-01-15": 3, // Monday
-    "2024-01-16": 1, // Tuesday
+    "2024-01-15": 3,
+    "2024-01-16": 1,
   });
 
   // Mock appointment history data
@@ -43,7 +39,6 @@ const PatientAppointmentBooking = () => {
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
   const [availableDates, setAvailableDates] = useState([]);
   const [availableTimeRanges, setAvailableTimeRanges] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -62,11 +57,66 @@ const PatientAppointmentBooking = () => {
     status: "all"
   });
 
-  // Filter doctors based on search
-  const filteredDoctors = doctors.filter(doctor =>
-    doctor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // 🔥 FETCH DOCTORS AND AVAILABILITY FROM DATABASE
+  useEffect(() => {
+    const fetchDoctorsAndAvailability = async () => {
+      try {
+        setLoading(true);
+        
+        // Fetch all availability data to get doctors
+        const response = await axios.post('/api/availability/doctors', {
+          doctorIds: [] // Empty array to get ALL doctors
+        });
+         console.log('🟢 API RESPONSE RECEIVED:', response);
+      console.log('🟢 Response status:', response.status);
+      console.log('🟢 Response data:', response.data);
+
+        if (response.data.success) {
+          const availabilityData = response.data.data || [];
+          
+          // Extract unique doctors from availability data
+          const uniqueDoctorsMap = new Map();
+          
+          availabilityData.forEach(slot => {
+            if (!uniqueDoctorsMap.has(slot.doctorId)) {
+              uniqueDoctorsMap.set(slot.doctorId, {
+                _id: slot.doctorId,
+                name: slot.doctorName,
+                specialization: "General Practice"
+              });
+            }
+          });
+          
+          const doctorsList = Array.from(uniqueDoctorsMap.values());
+          setDoctors(doctorsList);
+          
+          // Organize availability by doctorId
+          const availabilityByDoctor = {};
+          availabilityData.forEach(slot => {
+            if (!availabilityByDoctor[slot.doctorId]) {
+              availabilityByDoctor[slot.doctorId] = [];
+            }
+            availabilityByDoctor[slot.doctorId].push({
+              day: slot.day,
+              startTime: slot.startTime,
+              endTime: slot.endTime
+            });
+          });
+          
+          setDoctorAvailability(availabilityByDoctor);
+        }
+      } catch (error) {
+        console.error('Error fetching doctors and availability:', error);
+        // Fallback to empty arrays if API fails
+        setDoctors([]);
+        setDoctorAvailability({});
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorsAndAvailability();
+  }, []);
 
   // Generate dates for next 2 months based on available days
   const generateAvailableDates = () => {
@@ -142,7 +192,7 @@ const PatientAppointmentBooking = () => {
     }
     
     // Add next month's leading days
-    const totalCells = 42; // 6 weeks
+    const totalCells = 42;
     while (calendar.length < totalCells) {
       const date = new Date(year, month + 1, calendar.length - daysInMonth - firstDayOfWeek + 1);
       calendar.push({
@@ -249,7 +299,6 @@ const PatientAppointmentBooking = () => {
   };
 
   const handleDone = () => {
-    // Reset form
     setSelectedDoctorId("");
     setSelectedDate("");
     setSelectedTime("");
@@ -298,28 +347,29 @@ const PatientAppointmentBooking = () => {
   const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
   const calendarDays = generateCalendar();
   
-  // Filter appointments for upcoming tab
   const upcomingAppointments = appointmentHistory.filter(apt => apt.status === "upcoming");
 
-  // Filter appointments for history tab
   const filteredHistoryAppointments = appointmentHistory.filter(apt => {
     const matchesDoctor = historyFilters.doctorName === "" || 
       apt.doctorName.toLowerCase().includes(historyFilters.doctorName.toLowerCase());
-    
-    const matchesDate = historyFilters.date === "" || 
-      apt.date.includes(historyFilters.date);
-    
-    const matchesTime = historyFilters.time === "" || 
-      apt.time.toLowerCase().includes(historyFilters.time.toLowerCase());
-    
-    const matchesStatus = historyFilters.status === "all" || 
-      apt.status === historyFilters.status;
-    
+    const matchesDate = historyFilters.date === "" || apt.date.includes(historyFilters.date);
+    const matchesTime = historyFilters.time === "" || apt.time.toLowerCase().includes(historyFilters.time.toLowerCase());
+    const matchesStatus = historyFilters.status === "all" || apt.status === historyFilters.status;
     return matchesDoctor && matchesDate && matchesTime && matchesStatus;
   });
 
-  // Calculate appointment number
   const appointmentNumber = (existingAppointments[selectedDate] || 0) + 1;
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading doctors and availability...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -333,14 +383,11 @@ const PatientAppointmentBooking = () => {
 
         <BookingTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {/* Tab Content */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
           {activeTab === "book" && (
             <BookAppointmentTab
-              filteredDoctors={filteredDoctors}
+              doctors={doctors}
               selectedDoctorId={selectedDoctorId}
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
               handleDoctorSelect={handleDoctorSelect}
               selectedDoctor={selectedDoctor}
               selectedDate={selectedDate}
@@ -378,7 +425,6 @@ const PatientAppointmentBooking = () => {
           )}
         </div>
 
-        {/* Confirmation Dialog */}
         {showConfirmation && (
           <ConfirmationDialog
             handleNoConfirm={handleNoConfirm}
@@ -386,7 +432,6 @@ const PatientAppointmentBooking = () => {
           />
         )}
 
-        {/* Cancel Confirmation Dialog */}
         {cancelConfirmation && (
           <CancelConfirmationDialog
             handleCancelCancel={handleCancelCancel}
@@ -394,7 +439,6 @@ const PatientAppointmentBooking = () => {
           />
         )}
 
-        {/* Success Message */}
         {showSuccess && (
           <SuccessMessage
             selectedDoctor={selectedDoctor}

@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Trash2, PlusCircle, Edit, X, Clock, Calendar } from "lucide-react";
+import { Loader } from "lucide-react";
 import TimeSlotForm from "./TimeSlotForm";
 import TimeSlotsDisplay from "./TimeSlotsDisplay";
 import WeeklySchedule from "./WeeklySchedule";
@@ -8,47 +8,97 @@ import WeeklySchedule from "./WeeklySchedule";
 const AvailabilityManager = ({
   selectedDoctor,
   selectedDoctorId,
-  weeklyAvailability,
-  dispatch,
   doctorList,
   daysOfWeek
 }) => {
   const [selectedDay, setSelectedDay] = useState("Monday");
-  const [timeSlots, setTimeSlots] = useState({ startTime: "09:00", endTime: "17:00" });
+  const [timeSlots, setTimeSlots] = useState({ startTime: "", endTime: "" });
   const [editingSlot, setEditingSlot] = useState(null);
   const [editTimeSlots, setEditTimeSlots] = useState({ startTime: "", endTime: "" });
+  const [existingSlots, setExistingSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [slotLoading, setSlotLoading] = useState(false);
 
-  const getSlotsForDay = (day) => {
-    return weeklyAvailability.filter((slot) => slot.day === day && slot.doctorId === selectedDoctorId);
-  };
+  // Fetch existing slots when doctor or day changes
+  useEffect(() => {
+    if (selectedDoctorId) {
+      fetchExistingSlots();
+    }
+  }, [selectedDoctorId, selectedDay]);
 
-  const handleAddSlot = (e) => {
+  const fetchExistingSlots = async () => {
+  try {
+    setSlotLoading(true);
+    const response = await axios.post('/api/availability/doctors', {
+      doctorIds: [selectedDoctorId]
+    });
+
+    if (response.data.success) {
+      const allAvailability = response.data.data || [];
+
+      const doctorAvailability = allAvailability.find(
+        doc => doc.doctorId === selectedDoctorId
+      );
+
+      const daySlots = doctorAvailability?.availabilitySlots?.filter(
+        slot => slot.day === selectedDay
+      ) || [];
+
+      setExistingSlots(daySlots);
+    }
+  } catch (error) {
+    console.error('Error fetching existing slots:', error);
+    alert('Error loading existing time slots');
+  } finally {
+    setSlotLoading(false);
+  }
+};
+
+
+  // Add slot directly to database
+  const handleAddSlot = async (e) => {
     e.preventDefault();
-    if (!timeSlots.startTime || !timeSlots.endTime) return;
+    if (!timeSlots.startTime || !timeSlots.endTime) {
+      alert('Please enter both start and end time');
+      return;
+    }
     
     // Check if end time is after start time
     if (timeSlots.startTime >= timeSlots.endTime) {
       alert('End time must be after start time');
       return;
     }
-    
-    dispatch({ 
-      type: "ADD_TIME_SLOT", 
-      day: selectedDay, 
-      startTime: timeSlots.startTime, 
-      endTime: timeSlots.endTime,
-      doctorId: selectedDoctorId
-    });
-    
-    setTimeSlots({ startTime: "09:00", endTime: "17:00" });
+
+    try {
+      setLoading(true);
+      
+      const response = await axios.post('/api/availability/add', {
+        doctorId: selectedDoctorId,
+        doctorName: selectedDoctor.name,
+        availabilitySlots: [{
+          day: selectedDay,
+          startTime: timeSlots.startTime,
+          endTime: timeSlots.endTime
+        }]
+      });
+
+      if (response.data.success) {
+        // Clear form
+        setTimeSlots({ startTime: "", endTime: "" });
+        // Refresh the slots list
+        fetchExistingSlots();
+        alert('Time slot added successfully!');
+      }
+    } catch (error) {
+      console.error('Error adding time slot:', error);
+      alert('Error adding time slot: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleEditSlot = (slot) => {
-    setEditingSlot(slot.id);
-    setEditTimeSlots({ startTime: slot.startTime, endTime: slot.endTime });
-  };
-
-  const handleUpdateSlot = () => {
+  // Update slot directly in database
+  const handleUpdateSlot = async () => {
     if (!editTimeSlots.startTime || !editTimeSlots.endTime) return;
     
     // Check if end time is after start time
@@ -56,85 +106,87 @@ const AvailabilityManager = ({
       alert('End time must be after start time');
       return;
     }
-    
-    dispatch({
-      type: "UPDATE_TIME_SLOT",
-      id: editingSlot,
-      startTime: editTimeSlots.startTime,
-      endTime: editTimeSlots.endTime
-    });
-    
-    setEditingSlot(null);
-    setEditTimeSlots({ startTime: "", endTime: "" });
+
+    try {
+      setLoading(true);
+      
+      // Update the slot in database - FIXED: using params instead of body for slotId
+      const response = await axios.put(`/api/availability/${editingSlot}`, {
+        startTime: editTimeSlots.startTime,
+        endTime: editTimeSlots.endTime
+      });
+
+      if (response.data.success) {
+        setEditingSlot(null);
+        setEditTimeSlots({ startTime: "", endTime: "" });
+        // Refresh the slots list
+        fetchExistingSlots();
+        alert('Time slot updated successfully!');
+      }
+    } catch (error) {
+      console.error('Error updating time slot:', error);
+      alert('Error updating time slot: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteSlot = (slotId) => {
-    dispatch({ type: "REMOVE_TIME_SLOT", id: slotId });
-  };
-
-  const handleDeleteAllAvailability = () => {
-    if (!selectedDoctorId) return;
-    
-    if (!window.confirm("Clear all availability for this doctor?")) {
+  // Delete slot directly from database
+  const handleDeleteSlot = async (slotId) => {
+    if (!window.confirm("Are you sure you want to delete this time slot?")) {
       return;
     }
 
-    const updatedSlots = weeklyAvailability.filter(slot => slot.doctorId !== selectedDoctorId);
-    dispatch({ type: "SET_INITIAL_STATE", payload: updatedSlots });
+    try {
+      setLoading(true);
+      
+      // FIXED: Using params instead of body for DELETE
+      const response = await axios.delete(`/api/availability/${slotId}`);
+
+      if (response.data.success) {
+        // Refresh the slots list
+        fetchExistingSlots();
+        alert('Time slot deleted successfully!');
+      }
+    } catch (error) {
+      console.error('Error deleting time slot:', error);
+      alert('Error deleting time slot: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSaveAvailability = async () => {
-  if (!selectedDoctorId) return;
-  
-  const doctorSlots = weeklyAvailability.filter(slot => slot.doctorId === selectedDoctorId);
-  
-  if (doctorSlots.length === 0) {
-    alert('Please add at least one time slot before saving.');
-    return;
-  }
-
-  try {
-    // First, check if doctor already has existing availability
-    const existingResponse = await axios.get(`/api/availability/doctor/${selectedDoctorId}`);
-    const hasExistingSlots = existingResponse.data.data && existingResponse.data.data.length > 0;
-
-    let response;
+  // Delete all availability for this doctor
+  const handleDeleteAllAvailability = async () => {
+    if (!selectedDoctorId) return;
     
-    if (hasExistingSlots) {
-      // If doctor has existing slots, use the ADD endpoint to only add new slots
-      response = await axios.post('/api/availability/add', {
-        doctorId: selectedDoctorId,
-        doctorName: selectedDoctor.name,
-        availabilitySlots: doctorSlots.map(slot => ({
-          day: slot.day,
-          startTime: slot.startTime,
-          endTime: slot.endTime
-        }))
-      });
-    } else {
-      // If no existing slots, use the regular endpoint
-      response = await axios.post('/api/availability', {
-        doctorId: selectedDoctorId,
-        doctorName: selectedDoctor.name,
-        availabilitySlots: doctorSlots.map(slot => ({
-          day: slot.day,
-          startTime: slot.startTime,
-          endTime: slot.endTime
-        }))
-      });
+    if (!window.confirm("Are you sure you want to clear ALL availability for this doctor?")) {
+      return;
     }
 
-    if (response.data.success) {
-      alert('Availability saved successfully!');
-      // Clear the local state after successful save
-      const updatedSlots = weeklyAvailability.filter(slot => slot.doctorId !== selectedDoctorId);
-      dispatch({ type: "SET_INITIAL_STATE", payload: updatedSlots });
+    try {
+      setLoading(true);
+      
+      // FIXED: Using params instead of body
+      const response = await axios.delete(`/api/availability/doctor/${selectedDoctorId}`);
+
+      if (response.data.success) {
+        setExistingSlots([]);
+        alert('All availability cleared successfully!');
+      }
+    } catch (error) {
+      console.error('Error clearing availability:', error);
+      alert('Error clearing availability: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error('Error saving availability:', error);
-    alert('Error saving availability: ' + (error.response?.data?.message || error.message));
-  }
-};
+  };
+
+  // FIXED: Added missing handleEditSlot function
+  const handleEditSlot = (slot) => {
+    setEditingSlot(slot._id); // Use _id from database
+    setEditTimeSlots({ startTime: slot.startTime, endTime: slot.endTime });
+  };
 
   return (
     <div className="p-8">
@@ -145,10 +197,10 @@ const AvailabilityManager = ({
             <h2 className="text-2xl font-bold text-white">Set Availability for {selectedDoctor?.name}</h2>
             <button
               onClick={handleDeleteAllAvailability}
-              disabled={weeklyAvailability.filter(slot => slot.doctorId === selectedDoctorId).length === 0}
+              disabled={loading || existingSlots.length === 0}
               className="px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
             >
-              Clear All
+              {loading ? "Processing..." : "Clear All"}
             </button>
           </div>
         </div>
@@ -162,11 +214,12 @@ const AvailabilityManager = ({
                 <button
                   key={day}
                   onClick={() => setSelectedDay(day)}
+                  disabled={loading}
                   className={`px-5 py-3 rounded-xl font-medium transition-all duration-200 ${
                     selectedDay === day
                       ? "bg-blue-500 text-white shadow-lg shadow-blue-500/25"
                       : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:shadow-sm"
-                  }`}
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {day}
                 </button>
@@ -180,41 +233,38 @@ const AvailabilityManager = ({
             timeSlots={timeSlots}
             onTimeSlotsChange={setTimeSlots}
             onAddSlot={handleAddSlot}
+            loading={loading}
           />
 
           {/* Time Slots Display */}
-          <TimeSlotsDisplay
-            selectedDay={selectedDay}
-            slots={getSlotsForDay(selectedDay)}
-            editingSlot={editingSlot}
-            editTimeSlots={editTimeSlots}
-            onEditTimeSlotsChange={setEditTimeSlots}
-            onEditSlot={handleEditSlot}
-            onUpdateSlot={handleUpdateSlot}
-            onCancelEdit={() => {
-              setEditingSlot(null);
-              setEditTimeSlots({ startTime: "", endTime: "" });
-            }}
-            onDeleteSlot={handleDeleteSlot}
-          />
+          {slotLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader className="w-6 h-6 text-blue-500 animate-spin" />
+              <span className="ml-2 text-gray-600">Loading time slots...</span>
+            </div>
+          ) : (
+            <TimeSlotsDisplay
+              selectedDay={selectedDay}
+              slots={existingSlots}
+              editingSlot={editingSlot}
+              editTimeSlots={editTimeSlots}
+              onEditTimeSlotsChange={setEditTimeSlots}
+              onEditSlot={handleEditSlot}
+              onUpdateSlot={handleUpdateSlot}
+              onCancelEdit={() => {
+                setEditingSlot(null);
+                setEditTimeSlots({ startTime: "", endTime: "" });
+              }}
+              onDeleteSlot={handleDeleteSlot}
+              loading={loading}
+            />
+          )}
         </div>
-      </div>
-
-      {/* Save Availability Button */}
-      <div className="flex justify-center mt-8 pt-6 border-t border-gray-200">
-        <button
-          onClick={handleSaveAvailability}
-          disabled={weeklyAvailability.filter(slot => slot.doctorId === selectedDoctorId).length === 0}
-          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 px-8 rounded-xl font-bold text-lg transition-colors shadow-lg shadow-blue-500/25 flex items-center gap-3"
-        >
-          Save Availability 
-        </button>
       </div>
 
       {/* Weekly Schedule Overview */}
       <WeeklySchedule
         doctorList={doctorList}
-        weeklyAvailability={weeklyAvailability}
         daysOfWeek={daysOfWeek}
       />
     </div>

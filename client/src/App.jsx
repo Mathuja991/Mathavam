@@ -150,13 +150,16 @@ function App() {
             path="mathavamflowchartprevious-entries"
             element={<MFPrevious />}
           />
-          <Route path="forms/bc" element={<Bcform />} />
-          <Route path="bcprevious-entries" element={<BcPrevious />} />
-          <Route path="cars-progress" element={<CarsProgress />} />
-          <Route path="bc-progress" element={<BcProgress />} />
+          <Route path="forms/behavioral-checklist" element={<Bcform />} />
+          <Route path="forms/bc-previous-entries" element={<BcPrevious />} />
+          <Route path="forms/cars-progress" element={<CarsProgress />} />
+          <Route path="forms/bc-progress" element={<BcProgress />} />
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
-          <Route path="forms/monreturn" element={<MonthlyReturnForm />} />
+          
+          {/* FIX: Monthly Returns Route එක /forms/ monreturn සිට /monreturn වෙත වෙනස් කරන ලදි */}
+          <Route path="monreturn" element={<MonthlyReturnForm />} />
+          
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
 

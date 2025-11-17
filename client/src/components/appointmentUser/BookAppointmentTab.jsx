@@ -1,14 +1,12 @@
 import React from "react";
-import { Search, CheckCircle, Mail, FileText, Clock } from "lucide-react";
+import { Mail, FileText } from "lucide-react";
 import DoctorSelection from "./DoctorSelection";
 import DateSelection from "./DateSelection";
 import TimeSelection from "./TimeSelection";
 
 const BookAppointmentTab = ({
-  filteredDoctors,
+  doctors,
   selectedDoctorId,
-  searchTerm,
-  setSearchTerm,
   handleDoctorSelect,
   selectedDoctor,
   selectedDate,
@@ -31,23 +29,9 @@ const BookAppointmentTab = ({
       {/* Step 1: Select Doctor */}
       <div className="mb-8">
         <h2 className="text-gray-600 mb-8 text-center">Choose a doctor to book for an appointment</h2>
-        
-        {/* Search */}
-        <div className="mb-6 max-w-2xl mx-auto">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search doctors by name or specialization..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
 
         <DoctorSelection
-          filteredDoctors={filteredDoctors}
+          doctors={doctors}
           selectedDoctorId={selectedDoctorId}
           handleDoctorSelect={handleDoctorSelect}
         />

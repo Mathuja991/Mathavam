@@ -1,4 +1,4 @@
-import React, { useState, useReducer, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar } from "lucide-react";
 import axios from "axios";
 import DoctorSelection from "../../components/appointmentAdmin/DoctorSelection";
@@ -7,39 +7,6 @@ import AppointmentsTab from "../../components/appointmentAdmin/AppointmentsTab";
 import CancelConfirmation from "../../components/appointmentAdmin/CancelConfirmation";
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
-// Reducer for managing availability state
-function availabilityReducer(state, action) {
-  switch (action.type) {
-    case "ADD_TIME_SLOT":
-      return [...state, { 
-        day: action.day, 
-        startTime: action.startTime, 
-        endTime: action.endTime,
-        id: Date.now() + Math.random(), // Ensure unique ID
-        doctorId: action.doctorId
-      }];
-    
-    case "REMOVE_TIME_SLOT":
-      return state.filter((slot) => slot.id !== action.id);
-    
-    case "UPDATE_TIME_SLOT":
-      return state.map((slot) =>
-        slot.id === action.id 
-          ? { ...slot, startTime: action.startTime, endTime: action.endTime }
-          : slot
-      );
-    
-    case "SET_INITIAL_STATE":
-      return action.payload || [];
-    
-    case "RESET_STATE":
-      return [];
-    
-    default:
-      return state;
-  }
-}
 
 const DoctorsAvailability = () => {
   const [doctorList, setDoctorList] = useState([]);
@@ -63,7 +30,6 @@ const DoctorsAvailability = () => {
   ]);
 
   const [selectedDoctorId, setSelectedDoctorId] = useState(null);
-  const [weeklyAvailability, dispatch] = useReducer(availabilityReducer, []);
   const [activeTab, setActiveTab] = useState("availability");
   const [cancelConfirmation, setCancelConfirmation] = useState(null);
   
@@ -225,8 +191,6 @@ const DoctorsAvailability = () => {
                 <AvailabilityManager
                   selectedDoctor={selectedDoctor}
                   selectedDoctorId={selectedDoctorId}
-                  weeklyAvailability={weeklyAvailability}
-                  dispatch={dispatch}
                   doctorList={doctorList}
                   daysOfWeek={daysOfWeek}
                 />

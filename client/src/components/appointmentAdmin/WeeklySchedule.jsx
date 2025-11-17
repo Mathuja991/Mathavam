@@ -141,54 +141,58 @@ const WeeklySchedule = ({ doctorList, daysOfWeek }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
-              {doctorList.length === 0 ? (
-                <tr>
-                  <td colSpan={daysOfWeek.length + 1} className="px-8 py-12 text-center">
-                    <div className="text-slate-500">
-                      No doctors available
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                doctorList.map((doctor) => {
-                  const doctorSlots = weeklyAvailability.filter(slot => slot.doctorId === doctor._id);
-                  
-                  return (
-                    <tr key={doctor._id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="px-8 py-6 border-r">
-                        <div className="font-semibold text-slate-900">
-                          {doctor.name}
-                        </div>
-                      </td>
-                      {daysOfWeek.map(day => {
-                        const daySlots = doctorSlots.filter(slot => slot.day === day);
-                        
-                        return (
-                          <td key={day} className="px-6 py-6 border-r last:border-r-0 min-w-[180px]">
-                            {daySlots.length > 0 ? (
-                              <div className="space-y-2">
-                                {daySlots.map((slot, index) => (
-                                  <div 
-                                    key={slot._id || index}
-                                    className="text-sm bg-green-100 text-green-800 px-3 py-2 rounded-lg font-medium border border-green-200 text-center"
-                                  >
-                                    {formatTimeToAMPM(slot.startTime)} - {formatTimeToAMPM(slot.endTime)}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-4">
-                                <span className="text-slate-400 text-sm">No slots</span>
-                              </div>
-                            )}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
+  {doctorList.length === 0 ? (
+    <tr>
+      <td colSpan={daysOfWeek.length + 1} className="px-8 py-12 text-center">
+        <div className="text-slate-500">
+          No doctors available
+        </div>
+      </td>
+    </tr>
+  ) : (
+    doctorList.map((doctor) => {
+      // Updated to match new DB structure
+      const doctorData = weeklyAvailability.find(item => item.doctorId === doctor._id);
+      const doctorSlots = doctorData ? doctorData.availabilitySlots : [];
+
+      return (
+        <tr key={doctor._id} className="hover:bg-slate-50/50 transition-colors">
+          <td className="px-8 py-6 border-r">
+            <div className="font-semibold text-slate-900">
+              {doctor.name}
+            </div>
+          </td>
+
+          {daysOfWeek.map(day => {
+            const daySlots = doctorSlots.filter(slot => slot.day === day);
+
+            return (
+              <td key={day} className="px-6 py-6 border-r last:border-r-0 min-w-[180px]">
+                {daySlots.length > 0 ? (
+                  <div className="space-y-2">
+                    {daySlots.map((slot, index) => (
+                      <div 
+                        key={slot._id || index}
+                        className="text-sm bg-green-100 text-green-800 px-3 py-2 rounded-lg font-medium border border-green-200 text-center"
+                      >
+                        {formatTimeToAMPM(slot.startTime)} - {formatTimeToAMPM(slot.endTime)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <span className="text-slate-400 text-sm">No slots</span>
+                  </div>
+                )}
+              </td>
+            );
+          })}
+        </tr>
+      );
+    })
+  )}
+</tbody>
+
           </table>
         </div>
       </div>
