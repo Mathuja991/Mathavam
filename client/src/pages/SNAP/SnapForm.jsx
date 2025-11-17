@@ -55,7 +55,7 @@ const SnapForm = () => {
     if (id) { 
       const fetchSpecificFormData = async () => {
         try {
-          const res = await axios.get(`http://localhost:5000/api/snapforms/${id}`);
+          const res = await axios.get(`${import.meta.env.VITE_API_URL}/snapforms/${id}`);
           const formData = res.data;
 
           setStudentInfo(formData.studentInfo || {});
@@ -136,10 +136,10 @@ const SnapForm = () => {
       };
 
       if (id && isEditing) { 
-        await axios.put(`http://localhost:5000/api/snapforms/${id}`, formData);
+        await axios.put(`${import.meta.env.VITE_API_URL}/snapforms/${id}`, formData);
         toast.success(isTranslated ? "Form updated successfully!" : "படிவம் வெற்றிகரமாக புதுப்பிக்கப்பட்டது!");
       } else { 
-        await axios.post("http://localhost:5000/api/snapforms", formData);
+        await axios.post(`${import.meta.env.VITE_API_URL}/snapforms`, formData);
         toast.success(isTranslated ? "Form submitted successfully!" : "படிவம் வெற்றிகரமாகச் சமர்ப்பிக்கப்பட்டது!");
       }
 
