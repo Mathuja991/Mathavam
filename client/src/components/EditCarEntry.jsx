@@ -22,7 +22,7 @@ const CATEGORIES = [
 ];
 
 const SCORES = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
-
+const API_URL = import.meta.env.VITE_API_URL;
 const EditCarEntry = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const EditCarEntry = () => {
   useEffect(() => {
     const fetchEntry = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/carsform/entries/${id}`);
+        const res = await fetch(`${API_URL}/carsform/entries/${id}`);
         const data = await res.json();
 
         setEntry(data);
@@ -94,7 +94,7 @@ const EditCarEntry = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/carsform/entries/${id}`, {
+      const res = await fetch(`${API_URL}/carsform/entries/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...entry, date: form.date, scores }),
@@ -103,7 +103,7 @@ const EditCarEntry = () => {
       if (!res.ok) throw new Error("Update failed");
 
       alert("Entry updated successfully!");
-      navigate("/dashboard/carsformprevious-entries");
+      navigate("/dashboard/forms/carsform-previous-entries");
     } catch (err) {
       console.error("Update error:", err);
       setErrorMessage("🚨 Failed to update entry.");

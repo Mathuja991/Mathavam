@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import ChildInfoInputs from '../forms/ChildInfoInputs';
 
 const EditBcEntry = () => {
+  const API_URL = import.meta.env.VITE_API_URL;
   const { id } = useParams();
   const navigate = useNavigate();
   const totalSteps = 6;
@@ -108,7 +109,7 @@ const EditBcEntry = () => {
   useEffect(() => {
     const fetchEntry = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/bc/entries/${id}`);
+        const response = await fetch(`${API_URL}/bc/entries/${id}`);
         if (!response.ok) throw new Error('Entry not found');
 
         const data = await response.json();
@@ -151,7 +152,7 @@ const EditBcEntry = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/bc/entries/${id}`, {
+      const response = await fetch(`${API_URL}/bc/entries/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -160,7 +161,7 @@ const EditBcEntry = () => {
       if (!response.ok) throw new Error('Update failed');
 
       alert('Entry updated successfully!');
-      navigate('/dashboard/bcprevious-entries');
+      navigate('/dashboard/forms/bc-previous-entries');
     } catch (err) {
       console.error('Update error:', err);
       setErrorMessage('🚨 Update failed. Please try again.');

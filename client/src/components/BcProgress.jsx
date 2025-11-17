@@ -6,6 +6,7 @@ import {
 } from "recharts";
 
 const ChildProgressBC = () => {
+   const API_URL = import.meta.env.VITE_API_URL;
   const [childNo, setChildNo] = useState("");
   const [entries, setEntries] = useState([]);
   const [error, setError] = useState("");
@@ -58,7 +59,7 @@ const navigate = useNavigate();
     setError("");
 
     try {
-      const res = await fetch("http://localhost:5000/api/bc");
+      const res = await fetch(`${API_URL}/bc`);
       const data = await res.json();
       const filtered = data.filter(entry => entry.childNo === childNo.trim());
 
