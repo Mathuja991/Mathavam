@@ -112,9 +112,9 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
           bgColor="bg-white hover:bg-emerald-50 shadow-lg border-l-4 border-emerald-500 transition-all duration-300"
         />
         <StatCard
-          title="Pending Tasks"
+          title="Pending Appointments"
           value={stats.pendingTasks || <FontAwesomeIcon icon={faSpinner} spin />}
-          desc="Forms & follow-ups"
+          desc="Therapy Service"
           icon={faHourglassHalf}
           iconColor="text-yellow-500"
           bgColor="bg-white hover:bg-yellow-50 shadow-lg border-l-4 border-yellow-500 transition-all duration-300"
