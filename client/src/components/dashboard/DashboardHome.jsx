@@ -176,14 +176,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
             />
           )}
 
-          <QuickAction
-            title="Open RDHS"
-            desc="Regional health dashboard"
-            onClick={handleRDHS}
-            icon={faHospital}
-            bgColor="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-xl"
-          />
-
+         
           <QuickAction
             title="Upload Resources"
             desc="Share reading materials for parents"
