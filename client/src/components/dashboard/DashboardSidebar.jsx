@@ -46,6 +46,7 @@ const DashboardSidebar = ({
   const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
   const handleParentsReadingResources = () => handleNavigation('/dashboard/adminuploaddocs');
   const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
+  const addDoctor = () => handleNavigation('/dashboard/add-doctors');
 
 
   // --- Helpers ---
@@ -287,7 +288,39 @@ const DashboardSidebar = ({
         {/* ALUTH ADMIN SECTION LOGIC */}
         {canViewAdminSection && (
           <>
-
+            <SectionLabel isOpen={isSidebarOpen} text="Admin" />
+            <NavItem
+              icon={faUsers}
+              label="Manage Users"
+              isOpen={isSidebarOpen}
+              onClick={handleManageUsers}
+              isActive={isActive('/dashboard/manage-users')}
+              color="blue"
+            />
+            <NavItem
+              icon={faNotesMedical}
+              label="Upload Reading Resources for Parents "
+              isOpen={isSidebarOpen}
+              onClick={handleParentsReadingResources}
+              isActive={isActive('/dashboard/adminuploaddocs')}
+              color="blue"
+            />
+            <NavItem
+              icon={faNotesMedical}
+              label="Upload Monthly Returns "
+              isOpen={isSidebarOpen}
+              onClick={handleMonthlyReturns}
+              isActive={isActive('/dashboard/forms/monreturn')}
+              color="blue"
+            />
+            <NavItem
+              icon={faNotesMedical}
+              label="Add doctors "
+              isOpen={isSidebarOpen}
+              onClick={addDoctor}
+              isActive={isActive('/dashboard/forms/add-doctor')}
+              color="blue"
+            />
             
             {/* Rule: Manage Users -> SA, A */}
             {canManageUsers && (
@@ -324,6 +357,7 @@ const DashboardSidebar = ({
                 color="blue"
               />
             )}
+>>>>>>> bce3fca1d095311348562c8302afd25886cf0708
           </>
         )}
       </nav>

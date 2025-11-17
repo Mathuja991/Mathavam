@@ -13,7 +13,6 @@ const patientRecordsRouter = require('./routes/patientRecords');
 const assessmentRoutes = require('./routes/assessmentRoutes');
 const appointmentRoutes = require('./routes/appointments'); 
 const userRoutes = require('./routes/userRoutes');
-const doctorAppointmentsRoute = require('./routes/doctorAppointments');
 const sessionRoutes = require('./routes/sessionRoutes');
 
 // Mathuja's routes
@@ -22,6 +21,10 @@ const CarsformRoutes = require('./routes/CarsformRoutes.js');
 const MflowchartRoutes = require('./routes/MflowchartRoutes.js');
 const BcRoutes = require('./routes/BcRoutes.js');
 const monthReturnRoutes =require('./routes/monthReturnRoutes.js');
+
+//kujinsika
+const availabilityRoutes = require('./routes/availabilityRoutes');
+
 
 const documentRoutes = require('./routes/documentRoutes.js');
 const authRoutes = require('./routes/authRoutes'); 
@@ -48,7 +51,6 @@ app.use('/api/assessments', assessmentRoutes);
 app.use('/api/appointments', appointmentRoutes); 
 app.use('/api/users', userRoutes); 
 app.use('/api/auth', authRoutes);  //api/auth/login
-app.use('/api/doctor-appointments', doctorAppointmentsRoute); 
 app.use("/api/child", ChildRoutes);
 app.use("/api/sessions", sessionRoutes);
 
@@ -68,7 +70,9 @@ app.use('/api/documents', documentRoutes);
 //Kujinsika's routes
 app.use("/api/snapforms", require("./routes/SnapRoutes"));
 app.use("/api/dsm5forms", require("./routes/DSM5Routes"));
+app.use('/api/doctors', require('./routes/doctorRoutes'));
 
+app.use('/api/availability', availabilityRoutes);
 
 //varsha's qr routes
 app.use("/api/adminqr", adminQrRoutes);

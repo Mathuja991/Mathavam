@@ -52,11 +52,14 @@ import SnapForm from './pages/SNAP/SnapForm';
 import SubmittedSnapFormsList from './pages/SNAP/SubmittedSnapFormsList';
 import SubmittedFormsList from './pages/DSM5/SubmittedFormsList';
 
+import Add_doctors from './forms/Add_doctors';
+import DoctorAvailability from './pages/Appointment/DoctorAvailability';
+import Book_doctor_appoinment from './pages/Appointment/Book_doctor_appoinment';
+import PatientAppointment from './pages/Appointment/PatientAppoinment';
+
 
 import AppointmentManagement from './pages/Appointment/AppointmentManagement';
-import DoctorAppointmentBooking from './pages/Appointment/DoctorAppointmentBooking';
 import ServiceBookingForm from './pages/Appointment/ServiceBookingForm';
-import SessionBookingForm from './pages/Appointment/SessionBookingForm'; // If you keep it
 import PractitionerCalendar from './pages/Appointment/PractitionerCalendar'; // NEW
 import AllAppointmentsList from './pages/Appointment/AllAppointmentsList'; // Will create this next for Admin view
 
@@ -91,19 +94,14 @@ function App() {
           <Route path="manage-users" element={<ManageUser />} />
           <Route path="manage-users/add" element={<AddNewUser />} />
           <Route path="appointments" element={<AppointmentManagement />} />
-          <Route
-            path="appointments/doctor-booking"
-            element={<DoctorAppointmentBooking />}
-          />
+          
           <Route
             path="appointments/service-booking"
             element={<ServiceBookingForm />}
           />
           {/* Conditionally include if you decide to keep SessionBookingForm distinct */}
-          <Route
-            path="appointments/session-booking"
-            element={<SessionBookingForm />}
-          />
+          
+          
           <Route
             path="therapy-assessments-list"
             element={<TherapyAssessmentList />}
@@ -183,6 +181,11 @@ function App() {
           <Route path="submitted-dsm5-forms" element={<SubmittedFormsList />} />
           <Route path="DSM5Form" element={<DSM5Form />} />
           <Route path="view-dsm5-form/:id" element={<ViewDSM5Form />} />
+
+          <Route path="add-doctors" element={<Add_doctors />} />
+          <Route path="appointments/manage-availability" element={<DoctorAvailability />} />  {/*admin part*/}
+          <Route path="appointments/book-appointment" element={<Book_doctor_appoinment />} /> {/*user part*/}
+          <Route path="appointments/patient-appointments" element={<PatientAppointment />} /> {/*doctor part*/}
 
           {/* Catch-all for routes within Dashboard layout (optional, but good for empty states) */}
           <Route

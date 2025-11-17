@@ -7,7 +7,6 @@ const AppointmentManagement = () => {
   const [currentUserId, setCurrentUserId] = useState(null);
   const navigate = useNavigate();
 
-  // --- 1. Load User Data ---
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user && user.userType) {
@@ -20,20 +19,23 @@ const AppointmentManagement = () => {
   const handleTypeSelect = (type) => {
     setSelectedType(type);
     switch (type) {
-      case 'session':
-        navigate('/dashboard/appointments/session-booking');
+      case 'doctor':
+        navigate('/dashboard/appointments/patient-appointments');
         break;
       case 'service':
         navigate('/dashboard/appointments/service-booking');
         break;
-      case 'doctor':
-        navigate('/dashboard/appointments/doctor-booking');
+      case 'book':
+        navigate('/dashboard/appointments/book-appointment');
         break;
       case 'my-schedule':
         navigate('/dashboard/appointments/my-schedule');
         break;
       case 'all-appointments':
         navigate('/dashboard/appointments/all');
+        break;
+        case 'manage-availability':
+        navigate('/dashboard/appointments/manage-availability');
         break;
       default:
         break;
@@ -52,9 +54,9 @@ const AppointmentManagement = () => {
 
     // Define Color Theme based on type
     const colorClasses = {
-      doctor: {
+      book: {
         bg: 'from-pink-100 to-rose-200',
-        border: selectedType === 'doctor' ? 'border-rose-600 ring-4 ring-rose-300' : 'border-rose-300',
+        border: selectedType === 'book' ? 'border-rose-600 ring-4 ring-rose-300' : 'border-rose-300',
         text: 'text-rose-700',
         icon: 'text-rose-600',
       },
@@ -64,7 +66,7 @@ const AppointmentManagement = () => {
         text: 'text-teal-800',
         icon: 'text-teal-600',
       },
-      session: {
+      doctor: {
         bg: 'from-blue-100 to-sky-200',
         border: selectedType === 'session' ? 'border-sky-600 ring-4 ring-sky-300' : 'border-sky-300',
         text: 'text-sky-800',
@@ -81,6 +83,12 @@ const AppointmentManagement = () => {
         border: selectedType === 'all-appointments' ? 'border-yellow-600 ring-4 ring-yellow-300' : 'border-yellow-300',
         text: 'text-yellow-800',
         icon: 'text-yellow-600',
+      },
+      'manage-availability': {
+        bg: 'from-green-100 to-green-200',
+        border: selectedType === 'manage-availability' ? 'border-green-600 ring-4 ring-green-300' : 'border-green-300',
+        text: 'text-green-800',
+        icon: 'text-green-600',
       },
     };
 
@@ -135,7 +143,7 @@ const AppointmentManagement = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Doctor Appointment Card */}
         <AppointmentCard
-          type="doctor"
+          type="book"
           icon="fas fa-user-md"
           title="Book Doctor Appointment"
           description="Schedule consultations with medical doctors or specialists."
@@ -153,9 +161,9 @@ const AppointmentManagement = () => {
 
         {/* Session Booking Card */}
         <AppointmentCard
-          type="session"
+          type="doctor"
           icon="fas fa-users"
-          title="Book Group Session"
+          title="Patient Appoinments"
           description="Schedule participation in group sessions or specific topic workshops."
           allowed={isParent || isAdmin || isResourcePerson || isPractitioner}
         />
@@ -174,6 +182,13 @@ const AppointmentManagement = () => {
           type="all-appointments"
           icon="fas fa-list-alt"
           title="All Appointments"
+          description="Oversee, filter, and manage all system appointments and bookings."
+          allowed={isAdmin}
+        />
+        <AppointmentCard
+          type="manage-availability"
+          icon="fas fa-list-alt"
+          title="Manage Availability"
           description="Oversee, filter, and manage all system appointments and bookings."
           allowed={isAdmin}
         />
