@@ -174,6 +174,35 @@ const UserViewDocuments = () => {
       </div>
     );
   }
+  const handleDownload = async (docId, filename) => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${API_URL}/documents/${docId}`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+
+    if (!res.ok) {
+      alert("Download/View failed: Unauthorized or server error.");
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || `Document_${docId}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download error:", err);
+    alert("Download/View failed");
+  }
+};
+
   
   // 🚫 New Error Display
   if (fetchError) {
@@ -293,42 +322,31 @@ const UserViewDocuments = () => {
                   <div className="text-3xl mt-1">
                     {getFileIcon(doc.filename)}
                   </div>
-                  <div className="flex-1">
-                    <a
-                      href={`${API_URL}/documents/${doc._id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xl font-semibold text-blue-700 hover:text-blue-900 hover:underline block mb-2"
-                    >
-                      {doc.metadata?.title || doc.filename}
-                    </a>
+                  <div className="flex-1 flex flex-col">
+    <span
+      onClick={() => handleDownload(doc._id, doc.filename)}
+      className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+    >
+      {doc.metadata?.title || doc.filename || `Document ${doc._id}`}
+    </span>
+    <div className="text-sm text-gray-600">
+      <p>Uploaded: {formatDate(doc.uploadDate || doc.createdAt)}</p>
+      {doc.metadata?.title && doc.metadata.title !== doc.filename && (
+        <p>Title: {doc.metadata.title}</p>
+      )}
+    </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                    
-                      
-                      <div className="flex items-center space-x-1">
-                        <span className="font-medium">📅 Uploaded:</span>
-                        <span>{formatDate(doc.uploadDate || doc.createdAt)}</span>
-                      </div>
-                      
-                      {doc.metadata?.title && doc.metadata.title !== doc.filename && (
-                        <div className="flex items-center space-x-1 md:col-span-2">
-                          <span className="font-medium">🏷️ Title:</span>
-                          <span className="text-blue-600">{doc.metadata.title}</span>
-                        </div>
-                      )}
-                    </div>
+                  
                   </div>
                 </div>
                 
-                <a
-                  href={`${API_URL}/documents/${doc._id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"
-                >
-                  👁️ View
-                </a>
+            <button
+  onClick={() => handleDownload(doc._id, doc.filename)}
+  className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"
+>
+  Download
+</button>
+
               </div>
             </div>
           ))}
