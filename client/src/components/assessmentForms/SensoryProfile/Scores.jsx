@@ -1,11 +1,10 @@
 const scores = [
-  { text: "Almost Always", percent: "(>=90%)", rate: 5 },
-  { text: "Frequently", percent: "(=75%)", rate: 4 },
-  { text: "Half the Time", percent: "(=50%)", rate: 3 },
-  { text: "Occasionally", percent: "(=25%)", rate: 2 },
-  { text: "Almost Never", percent: "(<=10%)", rate: 1 },
-  { text: "Does not Apply", percent: "", rate: 0 },
+  { text: "Almost Always", rate: 5, colorClass: "bg-blue-800" },
+  { text: "Frequently", rate: 4, colorClass: "bg-blue-700" },
+  { text: "Half the Time", rate: 3, colorClass: "bg-blue-600" },
+  { text: "Occasionally", rate: 2, colorClass: "bg-blue-500" },
+  { text: "Almost Never", rate: 1, colorClass: "bg-blue-400" },
+  { text: "Does not Apply", rate: 0, colorClass: "bg-gray-600" },
 ];
-
 
 export default scores;

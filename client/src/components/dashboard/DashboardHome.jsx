@@ -46,7 +46,10 @@ const QuickAction = ({ title, desc, onClick, icon, bgColor }) => (
   </button>
 );
 
-// --- Utility Functions (Mocked Auth/API) ---
+// --- Utility Functions (Auth/API) ---
+
+// **Note: Please configure this base URL in your environment variables (.env)**
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; 
 
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
@@ -56,6 +59,7 @@ const getAuthConfig = () => {
   }
   return {
     headers: {
+      // This header is used by your existing utility/middleware
       'x-auth-token': token,
     },
   };
@@ -84,7 +88,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
         My Dashboard ({loggedInUser.userType}) 👋
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Placeholder Stat Cards - using fetched stats */}
+        {/* Placeholder Stat Cards - using fetched stats. 'value' will show spinner if null */}
         <StatCard
           title="Total Patients"
           value={stats.totalPatients || <FontAwesomeIcon icon={faSpinner} spin />}
@@ -185,7 +189,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   );
 };
 
-// --- Dashboard Content Components (Parent Role) ---
+// --- Dashboard Content Components (Parent Role - No Changes) ---
 
 const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
   // Navigation handlers
@@ -280,31 +284,31 @@ const DashboardHome = ({ loggedInUser }) => {
     navigate(path);
   }, [navigate]);
 
-  // Fetch Dashboard Stats (Mocked for now)
+  // Fetch Dashboard Stats (Updated to use actual API call)
   useEffect(() => {
     // Only fetch stats for staff members
     if (loggedInUser && loggedInUser.userType !== 'Parent') {
       const fetchStats = async () => {
         setLoading(true);
         try {
-          // --- Mock API call ---
-          // const res = await axios.get('/api/dashboard/stats', getAuthConfig());
-          // setStats(res.data);
-
-          // Mock data for display purposes
+          // --- ACTUAL API call ---
+          // Backend route: /api/users/dashboard/stats
+          const res = await axios.get(`${API_BASE_URL}/users/dashboard/stats`, getAuthConfig()); 
+          
           setStats({
-            totalPatients: 125,
-            appointmentsToday: 8,
-            pendingTasks: 4,
-            activeStaff: 15,
+            totalPatients: res.data.totalPatients,
+            appointmentsToday: res.data.appointmentsToday,
+            pendingTasks: res.data.pendingTasks,
+            activeStaff: res.data.activeStaff,
           });
+
         } catch (error) {
           console.error('Error fetching dashboard stats:', error);
           setStats({
-            totalPatients: 'N/A',
-            appointmentsToday: 'N/A',
-            pendingTasks: 'N/A',
-            activeStaff: 'N/A',
+            totalPatients: 'Error',
+            appointmentsToday: 'Error',
+            pendingTasks: 'Error',
+            activeStaff: 'Error',
           });
         } finally {
           setLoading(false);

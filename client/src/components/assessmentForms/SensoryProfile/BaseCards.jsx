@@ -30,7 +30,9 @@ function BaseCards({
   testDate,
   initialResponses,
   initialComments,
-  onFormSubmit,
+  onSubmit,
+  disabled = false,
+  minimal = false,
 }) {
   const renderForm = () => {
     if (formType === "child") {
@@ -44,7 +46,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Visual Processing":
@@ -55,7 +58,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Touch Processing":
@@ -66,7 +70,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Movement Processing":
@@ -77,7 +82,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Body Position Processing":
@@ -88,7 +94,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Oral Sensory Processing":
@@ -99,7 +106,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Conduct Associated with Sensory Processing":
@@ -110,7 +118,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Social Emotional Responses Associated with Sensory Processing":
@@ -121,7 +130,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Attentional Responses Associated with Sensory Processing":
@@ -132,7 +142,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onFormSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         default:
@@ -149,7 +160,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Auditory Processing":
@@ -160,7 +172,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Visual Processing":
@@ -171,7 +184,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Touch Processing":
@@ -182,7 +196,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Movement Processing":
@@ -193,7 +208,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Oral Sensory Processing":
@@ -204,7 +220,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         case "Behavioral Associated with Sensory Processing":
@@ -215,7 +232,8 @@ function BaseCards({
               testDate={testDate}
               initialResponses={initialResponses}
               initialComments={initialComments}
-              onFormSubmit={onFormSubmit}
+              onSubmit={onSubmit}
+              disabled={disabled}
             />
           );
         default:
@@ -225,9 +243,18 @@ function BaseCards({
     return <div>Invalid age range</div>;
   };
 
+  if (minimal) {
+    return (
+      <div className="w-full">
+        <div className="bg-white rounded-2xl shadow-md">
+          <div className="p-4">{renderForm()}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full mb-4 border-x-2 border-b-2 border-gray-600 rounded-3xl overflow-hidden">
-      {/* Header: Clickable to expand/collapse */}
       <div
         className="flex justify-between items-center p-4 cursor-pointer font-bold text-lg text-center"
         onClick={onToggle}
@@ -235,8 +262,6 @@ function BaseCards({
         <h3 className="m-0">{sensoryName}</h3>
         {isExpanded ? <FaChevronUp /> : <FaChevronDown />}
       </div>
-
-      {/* Expanding Section */}
       {isExpanded && (
         <div className="p-4 bg-white transition-all duration-300 ease-in-out">
           {renderForm()}
