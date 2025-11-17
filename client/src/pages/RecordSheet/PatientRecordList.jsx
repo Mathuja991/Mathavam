@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import QRCode from "qrcode";
+import { FaQrcode, FaDownload, FaTimes } from "react-icons/fa";
 
 // --- Token eka ganna helper function eka ---
 const getAuthConfig = () => {
@@ -38,7 +40,8 @@ const PatientRecordList = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+  const [selectedChild, setSelectedChild] = useState({ name: "", childNo: "" });
 
   // --- MEKA ALUTHIN ADD KALE (PERMISSION STATE) ---
   const [canCRUD, setCanCRUD] = useState(false); // CRUD (Add, Edit, Delete) puluwanda?
@@ -118,6 +121,21 @@ const PatientRecordList = () => {
       }
     }
   };
+
+  const handleGenerateQr = async (record) => {
+    try {
+      const qrData = await QRCode.toDataURL(record.childNo, { width: 300 });
+      setQrCodeDataUrl(qrData);
+      setSelectedChild({ name: record.name, childNo: record.childNo });
+    } catch (err) {
+      console.error("Failed to generate QR code", err);
+      alert("Failed to generate QR code. Please try again.");
+    }
+  };
+
+  const sanitizedFileName = selectedChild.name
+    ? `qr-code_${selectedChild.name.toLowerCase().replace(/\s+/g, "_")}.png`
+    : "qr-code.png";
 
   if (loading) {
     // Loading UI eka wenas kara natha
@@ -246,6 +264,41 @@ const PatientRecordList = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      {qrCodeDataUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
+            <h3 className="text-2xl font-bold mb-2">QR Code Ready</h3>
+            <p className="text-gray-500 mb-4">
+              Scan or download this QR code for caregivers.
+            </p>
+            <img
+              src={qrCodeDataUrl}
+              alt="QR code preview"
+              className="mx-auto mb-6"
+            />
+            <div className="flex justify-center gap-4">
+              <a
+                href={qrCodeDataUrl}
+                download={sanitizedFileName}
+                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+              >
+                <FaDownload />
+                Download
+              </a>
+              <button
+                onClick={() => {
+                  setQrCodeDataUrl("");
+                  setSelectedChild({ name: "", childNo: "" });
+                }}
+                className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+              >
+                <FaTimes />
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

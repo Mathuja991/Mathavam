@@ -61,6 +61,55 @@ exports.getSessionById = async (req, res) => {
   }
 };
 
+exports.updateSession = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const body = req.body || {};
+    const update = {};
+
+    const assignIfPresent = (key, transform) => {
+      if (body[key] !== undefined) {
+        update[key] = transform ? transform(body[key]) : body[key];
+      }
+    };
+
+    assignIfPresent("childNo", String);
+    assignIfPresent("childName", String);
+    assignIfPresent("staffId", String);
+    assignIfPresent("staffName", String);
+    assignIfPresent("service", String);
+    assignIfPresent("status", String);
+    assignIfPresent("notes", (val) => String(val || ""));
+    assignIfPresent("startedAt", (val) => new Date(val));
+    assignIfPresent("endedAt", (val) => new Date(val));
+    assignIfPresent("durationSeconds", (val) => Number(val));
+
+    if (
+      update.startedAt instanceof Date &&
+      !isNaN(update.startedAt) &&
+      update.endedAt instanceof Date &&
+      !isNaN(update.endedAt) &&
+      update.durationSeconds === undefined
+    ) {
+      update.durationSeconds = Math.max(
+        0,
+        Math.floor((update.endedAt - update.startedAt) / 1000)
+      );
+    }
+
+    const session = await Session.findByIdAndUpdate(id, update, {
+      new: true,
+    }).lean();
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    res.json(session);
+  } catch (err) {
+    console.error("Session update error:", err.message);
+    res.status(500).json({ error: "Failed to update session" });
+  }
+};
+
 exports.listSessions = async (req, res) => {
   try {
     const {

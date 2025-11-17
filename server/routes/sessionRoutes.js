@@ -10,6 +10,7 @@ router.get("/export.csv", sessionController.exportCsv);
 // Staff flow
 router.post("/", sessionController.createSession);
 router.get("/today", sessionController.getTodaySessions);
+router.put("/:id", sessionController.updateSession);
 
 // Must be last: by-id route
 router.get("/:id", sessionController.getSessionById);

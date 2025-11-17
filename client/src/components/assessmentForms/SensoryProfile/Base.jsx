@@ -1,15 +1,59 @@
 import { useState, useEffect } from "react";
 
-function Base({onDataChange, initialData}) {
-  const today = new Date().toISOString().split("T")[0]; // Format: YYYY-MM-DD
+const API_BASE =
+  (typeof import.meta !== "undefined" &&
+    import.meta.env &&
+    import.meta.env.VITE_API_URL) ||
+  "http://localhost:5000/api";
 
-  const [patientData, setPatientData] = useState(()=>{
+function formatIsoToDisplay(isoDate) {
+  if (!isoDate) return "";
+  const [year, month, day] = isoDate.split("-");
+  if (!year || !month || !day) return isoDate;
+  return `${day.padStart(2, "0")}-${month.padStart(2, "0")}-${year}`;
+}
 
+function parseDisplayToIso(displayDate) {
+  if (!displayDate) return "";
+  const parts = displayDate.includes("/")
+    ? displayDate.split("/")
+    : displayDate.split("-");
+  if (parts.length !== 3) return "";
+  let [day, month, year] = parts.map((p) => p.trim());
+  if (!day || !month || !year) return "";
+  if (year.length === 2) {
+    year = Number(year) > 50 ? `19${year}` : `20${year}`;
+  }
+  return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(
+    2,
+    "0"
+  )}`;
+}
+
+const getLocalDateIso = (value) => {
+  const dateObj =
+    value instanceof Date ? value : value ? new Date(value) : new Date();
+  if (Number.isNaN(dateObj.getTime())) return "";
+  const timezoneOffset = dateObj.getTimezoneOffset() * 60000;
+  const adjusted = new Date(dateObj.getTime() - timezoneOffset);
+  return adjusted.toISOString().split("T")[0];
+};
+
+function Base({ onDataChange, initialData }) {
+  const today = getLocalDateIso(); // Format: YYYY-MM-DD
+  const defaultTestIso = initialData?.testDate
+    ? getLocalDateIso(new Date(initialData.testDate))
+    : today;
+  const defaultDobIso = initialData?.dateOfBirth
+    ? getLocalDateIso(new Date(initialData.dateOfBirth))
+    : "";
+
+  const [patientData, setPatientData] = useState(() => {
     if (initialData) {
       return {
         patientId: initialData.patientId,
-        testDate: new Date(initialData.testDate).toISOString().split("T")[0],
-        dateOfBirth: new Date(initialData.dateOfBirth), //need to check
+        testDate: defaultTestIso,
+        dateOfBirth: defaultDobIso,
         examinerId: initialData.examinerId,
         //examinerName: initialData.examinerName,
         //examinerProfession: initialData.examinerProfession,
@@ -35,6 +79,15 @@ function Base({onDataChange, initialData}) {
     };
   });
 
+  const [displayDates, setDisplayDates] = useState(() => ({
+    testDate: formatIsoToDisplay(
+      initialData ? defaultTestIso : today
+    ),
+    dateOfBirth: formatIsoToDisplay(
+      initialData ? defaultDobIso : ""
+    ),
+  }));
+
   const [ageData, setAgeData] = useState({
     years: "",
     months: "",
@@ -45,25 +98,41 @@ function Base({onDataChange, initialData}) {
     const { name, value } = e.target;
 
     if (name === "testDate") {
+      setDisplayDates((prev) => ({ ...prev, testDate: value }));
+      const isoValue = parseDisplayToIso(value);
+      const limitedIso = isoValue && isoValue > today ? today : isoValue;
       setPatientData((prev) => {
-        if (prev.dateOfBirth && prev.dateOfBirth > value) {
-          return {
-            ...prev,
-            [name]: value,
-            dateOfBirth: "",
-          };
-        }
+        const shouldResetDob =
+          prev.dateOfBirth && limitedIso && prev.dateOfBirth > limitedIso;
         return {
           ...prev,
-          [name]: value,
+          [name]: limitedIso,
+          dateOfBirth: shouldResetDob ? "" : prev.dateOfBirth,
         };
       });
-    } else {
+      return;
+    }
+
+    if (name === "dateOfBirth") {
+      setDisplayDates((prev) => ({ ...prev, dateOfBirth: value }));
+      const isoValue = parseDisplayToIso(value);
+      const limitedIso =
+        isoValue &&
+        patientData.testDate &&
+        isoValue > patientData.testDate
+          ? patientData.testDate
+          : isoValue;
       setPatientData((prev) => ({
         ...prev,
-        [name]: value,
+        [name]: limitedIso,
       }));
+      return;
     }
+
+    setPatientData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
 
@@ -112,6 +181,61 @@ function Base({onDataChange, initialData}) {
     patientData.examinerId,
     onDataChange,
   ]);
+
+  useEffect(() => {
+    setDisplayDates((prev) => {
+      const formatted = formatIsoToDisplay(patientData.testDate);
+      if (prev.testDate === formatted) return prev;
+      return { ...prev, testDate: formatted };
+    });
+  }, [patientData.testDate]);
+
+  useEffect(() => {
+    setDisplayDates((prev) => {
+      const formatted = formatIsoToDisplay(patientData.dateOfBirth);
+      if (prev.dateOfBirth === formatted) return prev;
+      return { ...prev, dateOfBirth: formatted };
+    });
+  }, [patientData.dateOfBirth]);
+
+  useEffect(() => {
+    const childNo = patientData.patientId?.trim();
+    if (!childNo) return;
+
+    let isActive = true;
+
+    const fetchDob = async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/patientRecords/child/${encodeURIComponent(childNo)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const dobIso = data?.dateOfBirth
+          ? new Date(data.dateOfBirth).toISOString().split("T")[0]
+          : "";
+        if (dobIso && isActive) {
+          setPatientData((prev) => {
+            if (prev.dateOfBirth === dobIso) return prev;
+            return {
+              ...prev,
+              dateOfBirth: dobIso,
+            };
+          });
+        }
+      } catch (err) {
+        if (isActive) {
+          console.error("DOB lookup failed", err);
+        }
+      }
+    };
+
+    fetchDob();
+
+    return () => {
+      isActive = false;
+    };
+  }, [patientData.patientId]);
 
   // Determine which form title to show based on age
   const getFormTitle = () => {
@@ -167,7 +291,7 @@ function Base({onDataChange, initialData}) {
               htmlFor="patientID"
               className="w-64 text-sm font-medium text-gray-700 text-left"
             >
-              Patient ID
+              Child ID
             </label>
             <input
               type="text"
@@ -186,16 +310,16 @@ function Base({onDataChange, initialData}) {
               htmlFor="testDate"
               className="w-64 text-sm font-medium text-gray-700 text-left"
             >
-              Test Date
+              Assessment Date
             </label>
             <input
-              type="date"
+              type="text"
               id="testDate"
               name="testDate"
-              value={patientData.testDate}
+              value={displayDates.testDate}
               onChange={handleChange}
-              max={today} // Prevent selecting future dates
               required
+              placeholder="dd-mm-yyyy"
               className="flex-1 p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
@@ -209,13 +333,13 @@ function Base({onDataChange, initialData}) {
               Date of Birth
             </label>
             <input
-              type="date"
+              type="text"
               id="dateOfBirth"
               name="dateOfBirth"
-              value={patientData.dateOfBirth}
+              value={displayDates.dateOfBirth}
               onChange={handleChange}
-              max={patientData.testDate} // Cannot be after test date
               required
+              placeholder="dd-mm-yyyy"
               className="flex-1 p-2 border border-gray-300 rounded-md text-black"
             />
           </div>
@@ -224,18 +348,18 @@ function Base({onDataChange, initialData}) {
           {[
             {
               id: "examinerId",
-              label: "Examiner ID",
+              label: "Therapist ID",
               type: "text",
             },
             ,
             {
               id: "examinerName",
-              label: "Examiner/Service Provider's Name",
+              label: "Therapist Name",
               type: "text",
             },
             {
               id: "examinerProfession",
-              label: "Examiner/Service Provider's Profession",
+              label: "Therapist's Speciality",
               type: "text",
             },
             { id: "caregiverName", label: "Caregiver's Name", type: "text" },

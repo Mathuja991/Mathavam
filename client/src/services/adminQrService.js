@@ -5,9 +5,9 @@ const API_BASE =
     import.meta.env.VITE_API_BASE_URL) ||
   "http://localhost:5000";
 
-const SESSIONS_PATH = "/api/sessions";
-const SUMMARY_PATH = "/api/sessions/summary"; // backend: add this route
-const EXPORT_PATH = "/api/sessions/export.csv"; // backend: add this route
+const SESSIONS_PATH = "/api/adminqr/sessions";
+const SUMMARY_PATH = `${SESSIONS_PATH}/stats/summary`;
+const EXPORT_PATH = `${SESSIONS_PATH}/export.csv`;
 
 function clean(obj) {
   const out = {};

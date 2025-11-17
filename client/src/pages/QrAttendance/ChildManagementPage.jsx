@@ -95,15 +95,13 @@ function ChildManagementPage() {
       {qrCodeDataUrl && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl text-center">
-            <h2 className="text-2xl font-bold mb-2">
-              QR Code for {selectedChildName}
-            </h2>
+            <h2 className="text-2xl font-bold mb-2">QR Code Ready</h2>
             <p className="text-gray-500 mb-6">
-              Parent can scan this from their app or you can print it.
+              Scan or download this QR code for parents to use.
             </p>
             <img
               src={qrCodeDataUrl}
-              alt={`QR Code for ${selectedChildName}`}
+              alt="QR Code preview"
               className="mx-auto"
             />
             <div className="mt-8 flex justify-center gap-4">

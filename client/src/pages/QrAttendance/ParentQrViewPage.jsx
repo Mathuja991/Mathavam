@@ -73,13 +73,13 @@ function ParentQrViewPage() {
       </p>
 
       <div className="bg-white p-8 rounded-2xl shadow-2xl inline-block">
-        <h2 className="text-2xl font-bold text-gray-700">{child?.name}</h2>
-        <p className="text-gray-500 mb-6">ID: {child?.childNo}</p>
-
+        <p className="text-gray-500 mb-6">
+          Scan this secure QR code at check-in. 
+        </p>
         {qrCodeDataUrl && (
           <img
             src={qrCodeDataUrl}
-            alt={`QR Code for ${child?.name}`}
+            alt="Child QR Code"
             className="mx-auto"
           />
         )}

@@ -1,168 +1,211 @@
-import { useState, useMemo, useEffect } from "react";
-import scores from "./Scores";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import scores from "./Scores"; // Assuming this is your array of score options
 
-function BaseForm({
-  questions,
-  onSubmit,
-  formTitle,
-  isSubmitting,
-  initialResponses,
-  initialComments,
-}) {
-  console.log("BaseForm received initialResponses prop:", initialResponses);
-  console.log("BaseForm received initialComments prop:", initialComments);
+const BaseForm = forwardRef(
+  (
+    {
+      questions,
+      onSubmit,
+      formTitle,
+      disabled, // This prop will disable the form while saving/locked
+      initialResponses,
+      initialComments,
+      isSubmitting = false,
+    },
+    ref
+  ) => {
+    // Memoize the initial responses object for stability.
+    // This now correctly assumes it receives the rich object format or nothing.
+    const initialResponsesObject = useMemo(() => {
+      if (!initialResponses || !Array.isArray(initialResponses)) {
+        // If there's no data or it's not an array, return an empty object.
+        return {};
+      }
 
-  const initialResponsesObject = useMemo(() => {
-    if (!initialResponses) return {};
+      // Use reduce to convert the array into an object.
+      // The key is the qid, and the value is the rich { score, quadrant } object.
+      return initialResponses.reduce((acc, response) => {
+        acc[response.qid] = {
+          score: response.score,
+          quadrant: response.quadrant,
+        };
+        return acc;
+      }, {});
+    }, [initialResponses]); 
 
-    return initialResponses.reduce((acc, response) => {
-      acc[response.qid] = {
-        score: response.score,
-        quadrant: response.quadrant,
-      };
-      return acc;
-    }, {});
-  }, [initialResponses]);
+    const [responses, setResponses] = useState({});
+    const [comments, setComments] = useState("");
 
-  console.log("Transformed initialResponsesObject:", initialResponsesObject);
+    // Populate the form with initial data when it becomes available
+    useEffect(() => {
+      setResponses(initialResponsesObject);
+      setComments(initialComments || "");
+    }, [initialResponsesObject, initialComments]);
 
-  const [responses, setResponses] = useState({});
-  const [comments, setComments] = useState("");
+    // Handle changes when a user selects a score
+    const handleChange = (qid, score, quadrant) => {
+      setResponses((prev) => ({
+        ...prev,
+        [qid]: { score: Number(score), quadrant: quadrant },
+      }));
+    };
 
-  // Use useEffect to set initial values when the component mounts or initialResponses change
-  useEffect(() => {
-    console.log(
-      "Setting responses from initialResponsesObject:",
-      initialResponsesObject
-    );
-    setResponses(initialResponsesObject);
-    setComments(initialComments || "");
-  }, [initialResponsesObject, initialComments]);
+    // Correctly calculate the total score from the rich 'responses' object
+    const totalScore = useMemo(() => {
+      let sum = 0;
+      // Iterate over the keys of the responses object
+      for (const qid in responses) {
+        // Check if the response for this qid exists and has a numeric score
+        if (responses[qid] && typeof responses[qid].score === "number") {
+          const question = questions.find((q) => q.qid === parseInt(qid, 10));
 
-  const handleChange = (qid, score, quadrant) => {
-    setResponses((prev) => ({
-      ...prev,
-      [qid]: { score: Number(score), quadrant: quadrant },
-    }));
-  };
-
-  const totalScore = useMemo(() => {
-    let sum = 0;
-    questions.forEach((question) => {
-      if (!question.excludeFromScore) {
-        const responseValue = responses[question.qid];
-        if (responseValue) {
-          sum += responseValue.score;
+          if (question && !question.excludeFromScore) {
+            sum += responses[qid].score;
+          }
         }
       }
-    });
-    return sum;
-  }, [responses, questions]);
+      return sum;
+    }, [responses]);
 
-  return (
-    <div className="w-full bg-white rounded-3xl shadow-md p-6 mb-6">
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          onSubmit({ responses, comments, totalScore, formTitle });
-        }}
-        className="space-y-6"
-      >
-        <div className="overflow-visible">
-          <table className="min-w-full text-sm text-left text-gray-700 border-t border-b border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2">My child...</th>
-                {scores.map((score, index) => (
-                  <th
-                    key={`score-th-${index}`}
-                    className="relative group px-4 py-2 text-center"
-                  >
-                    <span className="text-gray-900 font-medium relative">
-                      {score.rate}
-                      <div className="absolute left-1/2 transform -translate-x-1/2 -top-16 w-44 p-2 text-xs bg-gray-800 text-white rounded shadow-lg invisible group-hover:visible transition-all duration-300 z-50">
-                        {score.text}
-                        <br />
-                        {score.percent}
-                      </div>
-                    </span>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {questions.map((question) => (
-                <tr
-                  key={question.qid}
-                  className="border-t border-gray-200 hover:bg-gray-50"
-                >
-                  <td className="px-4 py-2">
-                    {question.text}
-                    {question.excludeFromScore && (
-                      <span className="text-blue-500 ml-1">*</span>
-                    )}
-                  </td>
-                  {scores.map((score, scoreIndex) => (
-                    <td
-                      key={`score-opt-${question.qid}-${score.rate}-${scoreIndex}`}
-                      className="px-4 py-2 text-center"
-                    >
+    // Expose a function to the parent to get the form's current data
+    useImperativeHandle(ref, () => ({
+      getFormData: () => {
+        return {
+          responses,
+          comments,
+          totalScore,
+        };
+      },
+    }));
+
+    // Handle the form's own submit event
+    const lockedState = Boolean(disabled);
+    const submittingState = Boolean(isSubmitting);
+    const isFormDisabled = lockedState || submittingState;
+    const buttonLabel = submittingState
+      ? "Submitting..."
+      : lockedState
+      ? "Locked"
+      : "Submit Section";
+
+    const handleFormSubmit = (event) => {
+      event.preventDefault();
+      if (onSubmit) {
+        onSubmit({ responses, comments, totalScore, formTitle });
+      }
+    };
+
+    return (
+      <form onSubmit={handleFormSubmit} className="w-full">
+        <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+          <h3 className="text-lg font-bold text-blue-700 text-left">
+            My child...
+          </h3>
+        </div>
+        <div className="space-y-6">
+          {questions.map((question, index) => {
+            const selectedResponse = responses[question.qid];
+            return (
+              <div
+                key={question.qid}
+                className="p-6 bg-white rounded-xl shadow-lg border border-gray-200"
+              >
+                <p className="text-base sm:text-lg font-semibold text-blue-600 mb-5 text-left">
+                  <span className="text-blue-600 font-bold mr-2">
+                    {index + 1}.
+                  </span>
+                  {question.text}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                  {scores.map((scoreOption) => {
+                    const isSelected =
+                      selectedResponse?.score === scoreOption.rate;
+                    return (
+                      <label
+                        key={scoreOption.rate}
+                        className={`p-4 rounded-lg text-center cursor-pointer transition-all duration-200 transform hover:scale-105 ${
+                          isSelected
+                            ? "bg-green-500 text-white shadow-xl ring-2 ring-green-200"
+                            : `${scoreOption.colorClass} text-white hover:brightness-110`
+                        }`}
+                        title={scoreOption.text}
+                      >
                       <input
                         type="radio"
                         name={`q${question.qid}`}
-                        value={score.rate}
-                        checked={responses[question.qid]?.score === score.rate}
+                        value={scoreOption.rate}
+                        checked={isSelected}
                         onChange={() =>
                           handleChange(
                             question.qid,
-                            score.rate,
+                            scoreOption.rate,
                             question.quadrant
                           )
                         }
                         required
-                        className="accent-green-600"
+                        className="sr-only"
+                        disabled={isFormDisabled}
                       />
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      <span className="font-bold text-lg block">
+                        {scoreOption.rate}
+                      </span>
+                      <span className="block text-sm mt-1 font-semibold opacity-90">
+                        {scoreOption.text}
+                      </span>
+                    </label>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
-
-        <div>
-          <h3 className="text-lg font-semibold text-gray-800">
-            {formTitle} Raw Score: {totalScore}
+        <div className="mt-10 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+          <h3 className="text-xl font-bold text-gray-800 mb-4">
+            {formTitle} - Summary
           </h3>
+          <p className="text-lg mb-4">
+            Raw Score:{" "}
+            <span className="font-bold text-blue-600 text-2xl">
+              {totalScore}
+            </span>
+          </p>
+          <div>
+            <label
+              htmlFor="comments"
+              className="block text-lg font-semibold text-gray-700 mb-2"
+            >
+              Comments
+            </label>
+            <textarea
+              id="comments"
+              value={comments}
+              onChange={(e) => setComments(e.target.value)}
+              placeholder="Enter any additional comments here..."
+              rows={4}
+              className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isFormDisabled}
+            />
+          </div>
         </div>
-
-        <div>
-          <label
-            htmlFor="comments"
-            className="block text-lg font-semibold text-gray-800 mb-2"
+        <div className="text-center mt-6">
+          <button
+            type="submit"
+            disabled={isFormDisabled}
+            className="px-10 py-3 bg-green-500 text-white font-bold text-lg rounded-lg shadow-md hover:bg-green-600 transition-transform transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            {formTitle} Processing Comments:
-          </label>
-          <textarea
-            id="comments"
-            value={comments}
-            onChange={(e) => setComments(e.target.value)}
-            placeholder="Enter your comments here..."
-            rows={3}
-            className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            {buttonLabel}
+          </button>
         </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="bg-green-500 text-white font-medium px-6 py-3 rounded-md hover:bg-green-600 transition-colors duration-300 w-full sm:w-auto disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? "Submitting..." : "Submit"}
-        </button>
       </form>
-    </div>
-  );
-}
+    );
+  }
+);
 
 export default BaseForm;
