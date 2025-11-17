@@ -23,7 +23,7 @@ const DoctorsAvailability = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('/api/doctors');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctors`);
 
         if (response.data && response.data.success && response.data.data) {
           const transformedDoctors = response.data.data.map(doctor => ({
@@ -55,7 +55,7 @@ const DoctorsAvailability = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get('/api/doctorappointments');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments`);
       if (response.data.success) {
         setAppointments(response.data.appointments);
       }
@@ -96,7 +96,7 @@ const DoctorsAvailability = () => {
 
   const handleConfirmCancel = async () => {
     try {
-      const response = await axios.put(`/api/doctorappointments/${cancelConfirmation}/cancel`);
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/doctorappointments/${cancelConfirmation}/cancel`);
 
       if (response.data.success) {
         // Refresh appointments list

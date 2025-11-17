@@ -37,7 +37,7 @@ const DoctorDashboard = () => {
             email: user.email,
             phone: user.phone
           };
-          console.log("✅ Doctor info:", doctorInfo);
+          console.log("Doctor info:", doctorInfo);
           return doctorInfo;
         }
       }
@@ -50,7 +50,7 @@ const DoctorDashboard = () => {
 
   const currentDoctor = getCurrentDoctor();
 
-  // 🔥 FETCH APPOINTMENTS FROM DOCTORAPPOINTMENTS DATABASE
+  // FETCH APPOINTMENTS FROM DOCTORAPPOINTMENTS DATABASE
   const fetchAppointments = async () => {
     if (!currentDoctor) {
       setLoading(false);
@@ -60,7 +60,7 @@ const DoctorDashboard = () => {
     try {
       setError(null);
       const token = localStorage.getItem("token");
-      const response = await axios.get('/api/doctorappointments', {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -183,7 +183,7 @@ const DoctorDashboard = () => {
   const handleConfirmCancel = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.put(`/api/doctorappointments/${cancelConfirmation}/cancel`, {}, {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/doctorappointments/${cancelConfirmation}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 

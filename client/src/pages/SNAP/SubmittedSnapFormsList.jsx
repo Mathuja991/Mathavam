@@ -46,7 +46,7 @@ const SubmittedSnapFormsList = () => {
 
   const fetchPreviousForms = async () => {
     try {
-      const formsRes = await axios.get("http://localhost:5000/api/snapforms");
+      const formsRes = await axios.get(`${import.meta.env.VITE_API_URL}/snapforms`);
       const sortedForms = formsRes.data.sort(
         (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
       );
@@ -80,7 +80,7 @@ const SubmittedSnapFormsList = () => {
     setShowDeleteModal(false); // Close the modal
     if (formToDeleteId) {
       try {
-        await axios.delete(`http://localhost:5000/api/snapforms/${formToDeleteId}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/snapforms/${formToDeleteId}`);
         toast.success(isTranslated ? "Form deleted successfully!" : "படிவம் வெற்றிகரமாக நீக்கப்பட்டது!");
         fetchPreviousForms(); // Refresh the list
       } catch (error) {

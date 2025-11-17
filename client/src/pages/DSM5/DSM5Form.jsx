@@ -102,7 +102,7 @@ const DSM5Form = () => {
         severityRatings,
       };
 
-      const res = await axios.post("http://localhost:5000/api/dsm5forms", payload);
+      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/dsm5forms`, payload);
       toast.success(res.data.message);
       navigate('submitted-dsm5-forms');
     } catch (error) {

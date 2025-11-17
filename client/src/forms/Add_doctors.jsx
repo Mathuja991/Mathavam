@@ -48,7 +48,7 @@ const AddDoctor = () => {
           firstName: user.firstName,
           lastName: user.lastName
         }));
-        setIdValidationMessage('✓ Valid doctor ID - Name auto-filled');
+        setIdValidationMessage('Valid doctor ID - Name auto-filled');
         return true;
       } else {
         setFormData(prev => ({
@@ -56,15 +56,15 @@ const AddDoctor = () => {
           firstName: '',
           lastName: ''
         }));
-        setIdValidationMessage('❌ This ID does not belong to a doctor');
+        setIdValidationMessage('This ID does not belong to a doctor');
         return false;
       }
     } catch (error) {
       console.error('Error validating doctor ID:', error);
       if (error.response?.status === 404) {
-        setIdValidationMessage('❌ User with this ID not found');
+        setIdValidationMessage('User with this ID not found');
       } else {
-        setIdValidationMessage('❌ Error validating ID');
+        setIdValidationMessage('Error validating ID');
       }
       setFormData(prev => ({
         ...prev,
@@ -95,7 +95,7 @@ const AddDoctor = () => {
     }
 
     try {
-      const response = await axios.post('/api/doctors', formData);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/doctors`, formData);
       setMessage('Doctor added successfully to database!');
       // Reset form
       setFormData({

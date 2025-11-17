@@ -54,7 +54,7 @@ const PatientAppointmentBooking = () => {
         setLoading(true);
 
         // Fetch all doctors
-        const response = await axios.get('/api/availability/doctors/all');
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/availability/doctors/all`);
         console.log(' API RESPONSE RECEIVED:', response.data.data);
 
         if (response.data.success) {
@@ -77,7 +77,7 @@ const PatientAppointmentBooking = () => {
 
           // Fetch availability for all doctor IDs
           const doctorIds = doctorsList.map(d => d._id);
-          const res = await axios.post('/api/availability/doctors', { doctorIds });
+          const res = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, { doctorIds });
 
           const availability = res.data.data || [];
           const availabilityByDoctor = {};
@@ -116,7 +116,7 @@ const PatientAppointmentBooking = () => {
   //  FETCH APPOINTMENTS FROM BACKEND
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get('/api/doctorappointments');
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments`);
       if (response.data.success) {
         setAppointments(response.data.appointments);
       }
@@ -125,10 +125,10 @@ const PatientAppointmentBooking = () => {
     }
   };
 
-  // 🔥 FETCH APPOINTMENTS BY DOCTOR AND DATE FOR AVAILABILITY CHECK
+  // FETCH APPOINTMENTS BY DOCTOR AND DATE FOR AVAILABILITY CHECK
   const fetchAppointmentsByDoctorAndDate = async (doctorName, date) => {
     try {
-      const response = await axios.get(`/api/doctorappointments/${doctorName}/${date}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments/${doctorName}/${date}`);
       if (response.data.success) {
         return response.data.appointments;
       }
@@ -400,7 +400,7 @@ const PatientAppointmentBooking = () => {
 
   const handleConfirmCancel = async () => {
     try {
-      const response = await axios.put(`/api/doctorappointments/${cancelConfirmation}/cancel`);
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/doctorappointments/${cancelConfirmation}/cancel`);
 
       if (response.data.success) {
         // Refresh appointments list
