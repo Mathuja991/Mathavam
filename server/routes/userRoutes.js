@@ -7,7 +7,8 @@ const {
   loginUser,
   updateUsername,
   updatePassword,
-  getDashboardStats, // 🟢 NEW IMPORT
+  getDashboardStats, 
+  checkDoctor, // ✅ checkDoctor නිවැරදිව import කර ඇත.
 } = require('../controllers/userController');
 
 const authMiddleware = require('../middleware/authMiddleware');
@@ -33,6 +34,10 @@ router.get(
     checkRole(['Super Admin', 'Admin']),
     getAllUsers
 );
+
+// @route   GET /api/users/check-doctor/:idNumber
+// @desc    Check if an ID number corresponds to a doctor (Public or specific use case)
+// මෙය දැන් නිවැරදිව function එකක් ලෙස හඳුනාගනු ඇත.
 router.get('/check-doctor/:idNumber', checkDoctor);
 
 // @route   POST /api/users/login
@@ -54,6 +59,3 @@ router.put('/update-username', authMiddleware, updateUsername);
 router.put('/update-password', authMiddleware, updatePassword);
 
 module.exports = router;
-
-
-
