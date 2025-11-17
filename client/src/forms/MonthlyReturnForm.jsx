@@ -388,23 +388,26 @@ if (response.ok) {
   };
 
   const handleDeleteReturn = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this six-month return?')) return;
-    
-    try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`${API_URL}/monthlyreturns/${id}`, {
-  headers: { "x-auth-token": token }
-});
+  if (!window.confirm('Are you sure you want to delete this six-month return?')) return;
 
-      if (response.status === 200) {
-        setMessage('✅ Six-month return deleted successfully!');
-        fetchSubmittedReturns();
-      }
-    } catch (err) {
-      console.error('Error deleting six-month return:', err);
-      setMessage('🚨 Error deleting six-month return.');
+  try {
+    const token = localStorage.getItem("token");
+
+    // Assign the axios response to a variable
+    const response = await axios.delete(`${API_URL}/monthlyreturns/${id}`, {
+      headers: { "x-auth-token": token }
+    });
+
+    if (response.status === 200) {
+      setMessage('✅ Six-month return deleted successfully!');
+      fetchSubmittedReturns();
     }
-  };
+  } catch (err) {
+    console.error('Error deleting six-month return:', err);
+    setMessage('🚨 Error deleting six-month return.');
+  }
+};
+
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
