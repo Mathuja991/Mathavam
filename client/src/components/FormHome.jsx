@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+// Heroicons imports (assuming you have @heroicons/react installed)
+import { 
+  AcademicCapIcon, 
+  SparklesIcon, 
+  PuzzlePieceIcon, 
+  ClipboardDocumentCheckIcon, 
+  WrenchScrewdriverIcon, 
+  NewspaperIcon 
+} from '@heroicons/react/24/outline'; // 24/outline icons used for better visibility
 
 // Access Permissions Key:
 // C: Create (Start New Assessment)
@@ -10,7 +19,7 @@ import { Link } from "react-router-dom";
 const forms = [
   {
     name: "Skill Assessment Flow",
-    icon: "🧠",
+    icon: AcademicCapIcon, // Replaced 🧠 with AcademicCapIcon (Learning/Skills)
     desc: "Detailed evaluation of core developmental skills.",
     newPath: "../skill-assessment",
     previousPath: "../therapy-assessments-list",
@@ -26,7 +35,7 @@ const forms = [
   },
   {
     name: "Sensory Profile",
-    icon: "👃",
+    icon: SparklesIcon, // Replaced 👃 with SparklesIcon (Sensation/Profile)
     desc: "Assessing sensory processing patterns in daily life.",
     newPath: "../sensory-profile-fill-form",
     previousPath: "../sensory-profile-view",
@@ -42,7 +51,7 @@ const forms = [
   },
   {
     name: "Autism Rating Form (CARS)",
-    icon: "🧩",
+    icon: PuzzlePieceIcon, // Replaced 🧩 with PuzzlePieceIcon (Diagnosis/Complexity)
     desc: "Childhood Autism Rating Scale for diagnostic aid.",
     newPath: "../forms/Carsform",
     previousPath: "../forms/carsform-previous-entries",
@@ -57,24 +66,24 @@ const forms = [
     },
   },
   // {
-  //    name: "Mathavam Flowchart",
-  //    icon: "📊",
-  //    desc: "Follow-up developmental milestone tracking.",
-  //    newPath: "../forms/mathavamflowchart",
-  //    previousPath: "../forms/mathavamflowchart-previous-entries",
-  //    progressPath: null,
-  //    color: "pink",
+  //    name: "Mathavam Flowchart",
+  //    icon: "📊", // If Mathavam is added, I suggest using Flowchart/ChartBarIcon
+  //    desc: "Follow-up developmental milestone tracking.",
+  //    newPath: "../forms/mathavamflowchart",
+  //    previousPath: "../forms/mathavamflowchart-previous-entries",
+  //    progressPath: null,
+  //    color: "pink",
   // },
   {
     name: "Behavioral Checklist (BC)",
-    icon: "📝",
+    icon: ClipboardDocumentCheckIcon, // Replaced 📝 with ClipboardDocumentCheckIcon (Checklist/Behavior)
     desc: "Checklist for analyzing and tracking challenging behaviors.",
     newPath: "../forms/behavioral-checklist",
     previousPath: "../forms/bc-previous-entries",
     progressPath: "../forms/bc-progress",
     color: "green",
     access: {
-      Doctors: "View",
+      Doctors: "CRUD",
       Therapists: "CRUD",
       Admin: "View",
       SuperAdmin: "View",
@@ -83,12 +92,12 @@ const forms = [
   },
   {
     name: "DSM5 Form",
-    icon: "📝",
-    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    icon: WrenchScrewdriverIcon, // Replaced 📝 with WrenchScrewdriverIcon (Diagnostic Tool/Manual)
+    desc: "Diagnostic tool based on DSM-5 criteria.", // Updated description to be more specific
     newPath: "../DSM5Form",
     previousPath: "../submitted-dsm5-forms",
     progressPath: null,
-    color: "green",
+    color: "red", // Changed color for distinction from BC
     access: {
       Doctors: "CRUD",
       Therapists: "No need",
@@ -99,12 +108,12 @@ const forms = [
   },
   {
     name: "SNAP Form",
-    icon: "📝",
-    desc: "Checklist for analyzing and tracking challenging behaviors.",
+    icon: NewspaperIcon, // Replaced 📝 with NewspaperIcon (Standard Form/Report)
+    desc: "Standardized screening tool for ADHD.", // Updated description
     newPath: "../SnapForm",
     previousPath: "../snap-submitted-forms",
     progressPath: null,
-    color: "green",
+    color: "orange", // Changed color for distinction
     access: {
       Doctors: "CRUD",
       Therapists: "No need",
@@ -200,6 +209,10 @@ const FormHome = () => {
         return "bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 focus:ring-pink-400";
       case "green":
         return "bg-gradient-to-r from-green-600 to-emerald-700 hover:from-green-700 hover:to-emerald-800 focus:ring-green-400";
+      case "red": // Added Red
+        return "bg-gradient-to-r from-red-600 to-pink-700 hover:from-red-700 hover:to-pink-800 focus:ring-red-400";
+      case "orange": // Added Orange
+        return "bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:ring-orange-400";
       default:
         return "bg-gradient-to-r from-gray-500 to-gray-600 focus:ring-gray-300";
     }
@@ -219,6 +232,10 @@ const FormHome = () => {
         return "text-pink-700 border-pink-400 hover:bg-pink-50 focus:ring-pink-200";
       case "green":
         return "text-green-700 border-green-400 hover:bg-green-50 focus:ring-green-200";
+      case "red": // Added Red
+        return "text-red-700 border-red-400 hover:bg-red-50 focus:ring-red-200";
+      case "orange": // Added Orange
+        return "text-orange-700 border-orange-400 hover:bg-orange-50 focus:ring-orange-200";
       default:
         return "text-gray-700 border-gray-400 hover:bg-gray-50 focus:ring-gray-200";
     }
@@ -233,6 +250,10 @@ const FormHome = () => {
         return "text-violet-700 border-violet-400 hover:bg-violet-50 focus:ring-violet-200";
       case "green":
         return "text-emerald-700 border-emerald-400 hover:bg-emerald-50 focus:ring-emerald-200";
+      case "red": // Added Red
+        return "text-rose-700 border-rose-400 hover:bg-rose-50 focus:ring-rose-200";
+      case "orange": // Added Orange
+        return "text-amber-700 border-amber-400 hover:bg-amber-50 focus:ring-amber-200";
       default:
         return "text-gray-700 border-gray-400 hover:bg-gray-50 focus:ring-gray-200";
     }
@@ -241,7 +262,7 @@ const FormHome = () => {
   return (
     <div className="max-w-7xl mx-auto mt-8 p-6 lg:p-10 bg-white rounded-3xl shadow-2xl font-['Roboto',_sans-serif]">
       <h1 className="text-4xl font-extrabold text-center mb-12 text-indigo-800 tracking-tight leading-snug border-b pb-4">
-        Assessment and Documentation Center 📝
+        Assessment and Documentation Center <ClipboardDocumentCheckIcon className="inline-block w-8 h-8 -mt-1 text-indigo-500" />
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -251,23 +272,19 @@ const FormHome = () => {
             (canCreate(form) || canRead(form)) && (
               <div
                 key={index}
-                className={`bg-gray-50/80 backdrop-blur-sm p-7 rounded-2xl shadow-xl border-t-8 border-${form.color}-500  
-                                 hover:shadow-2xl hover:bg-white transition-all duration-300 ease-in-out 
-                                 flex flex-col justify-between transform hover:scale-[1.02]`}
+                className={`bg-gray-50/80 backdrop-blur-sm p-7 rounded-2xl shadow-xl border-t-8 border-${form.color}-500  
+                  hover:shadow-2xl hover:bg-white transition-all duration-300 ease-in-out 
+                  flex flex-col justify-between transform hover:scale-[1.02]`}
               >
                 <div>
                   <div className="flex items-center mb-3">
-                    <span className="text-3xl mr-3">{form.icon}</span>
+                    {/* Render the Heroicon Component */}
+                    <form.icon className="w-8 h-8 mr-3 text-gray-700" /> 
                     <h2 className={`text-2xl font-bold text-gray-900`}>
                       {form.name}
                     </h2>
                   </div>
                   <p className="text-sm text-gray-600 mb-6">{form.desc}</p>
-                  {/* Displaying Access for Current Role */}
-                  <p className="text-xs text-gray-400 mb-2">
-                    {currentUserRole} Access:{" "}
-                    {form.access[currentUserRole] || "No need"}
-                  </p>
                 </div>
 
                 <div className="flex flex-col space-y-3 mt-auto pt-4 border-t border-gray-100">
@@ -276,10 +293,10 @@ const FormHome = () => {
                     <Link
                       to={form.newPath}
                       className={`w-full text-center py-3 px-6 rounded-xl font-bold text-white shadow-lg 
-                                     transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                                     focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getButtonClass(
-                                       form.color
-                                     )}`}
+                            transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                            focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getButtonClass(
+                              form.color
+                            )}`}
                     >
                       Start New Assessment
                     </Link>
@@ -298,10 +315,10 @@ const FormHome = () => {
                     <Link
                       to={form.previousPath}
                       className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
-                                     bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                                     focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getViewButtonClass(
-                                       form.color
-                                     )}`}
+                            bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                            focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getViewButtonClass(
+                              form.color
+                            )}`}
                     >
                       View Previous Entries
                     </Link>
@@ -312,13 +329,13 @@ const FormHome = () => {
                     <Link
                       to={form.progressPath}
                       className={`w-full text-center py-3 px-6 rounded-xl font-bold border-2 
-                                     bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
-                                     focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getProgressButtonClass(
-                                       form.color,
-                                       true
-                                     )}`}
+                            bg-white/90 shadow-md transition-all duration-300 ease-in-out transform hover:scale-[1.01] active:scale-95 
+                            focus:outline-none focus:ring-4 focus:ring-opacity-75 ${getProgressButtonClass(
+                              form.color,
+                              true
+                            )}`}
                     >
-                      Track Progress 📈
+                      Track Progress
                     </Link>
                   )}
                 </div>

@@ -4,9 +4,18 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
-import { FaQrcode, FaDownload, FaTimes } from "react-icons/fa";
+// Importing required icons (FaQrcode, FaDownload, FaTimes were already imported)
+import { 
+    FaQrcode, 
+    FaDownload, 
+    FaTimes, 
+    FaEye,      // Eye icon for View
+    FaEdit,     // Edit icon for Edit
+    FaTrash,    // Trash icon for Delete
+    FaPlusSquare // Plus icon for 'Add New Record'
+} from "react-icons/fa"; 
 
-// --- Token eka ganna helper function eka ---
+// --- Helper function to get the auth token from localStorage ---
 const getAuthConfig = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -20,21 +29,21 @@ const getAuthConfig = () => {
     };
 };
 
-// --- MEKA ALUTHIN ADD KALE (USER ROLE EKA GANNA) ---
+// --- Helper function to get the logged-in user object (for role check) ---
 const getLoggedInUser = () => {
-    const userString = localStorage.getItem('user'); // 'user' object eka localStorage eken gannawa
+    const userString = localStorage.getItem('user'); // Get 'user' object from localStorage
     if (!userString) {
         console.error('Logged in user object not found in localStorage');
         return null;
     }
     try {
-        return JSON.parse(userString); // JSON string eka object ekak karanawa
+        return JSON.parse(userString); // Convert JSON string to object
     } catch (e) {
         console.error('Error parsing user from localStorage', e);
         return null;
     }
 };
-// --- END OF ALUTH FUNCTION ---
+// --- END OF FUNCTION ---
 
 const PatientRecordList = () => {
     const [records, setRecords] = useState([]);
@@ -43,17 +52,17 @@ const PatientRecordList = () => {
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
     const [selectedChild, setSelectedChild] = useState({ name: "", childNo: "" });
 
-    // --- MEKA ALUTHIN ADD KALE (PERMISSION STATE) ---
-    const [canCRUD, setCanCRUD] = useState(false); // CRUD (Add, Edit, Delete) puluwanda?
+    // --- State for CRUD permission based on user role ---
+    const [canCRUD, setCanCRUD] = useState(false); // Can perform CRUD (Add, Edit, Delete)?
 
     useEffect(() => {
-        // --- ME KOTASA ALUTHIN ADD KALE ---
+        // --- Logic to check user permission on component mount ---
         const loggedInUser = getLoggedInUser();
 
         if (loggedInUser && loggedInUser.userType === 'Super Admin') {
-            setCanCRUD(true); // Super Admin nam CRUD puluwan
+            setCanCRUD(true); // Super Admin has CRUD permission
         }
-        // --- END OF ALUTH KOTASA ---
+        // --- END OF USER PERMISSION CHECK ---
 
         fetchRecords();
     }, []);
@@ -67,17 +76,17 @@ const PatientRecordList = () => {
             );
             
             // ----------------------------------------------------------------------
-            // ✅ PARENT USER සඳහා වාර්තා පෙරීමේ (RECORD FILTERING) LOGIC එක:
+            // ✅ RECORD FILTERING LOGIC FOR PARENT USER:
             // ----------------------------------------------------------------------
             const loggedInUser = getLoggedInUser();
             if (loggedInUser && loggedInUser.userType === 'Parent' && loggedInUser.childRegNo) {
-                // Parent User ගේ childRegNo එකට අදාළ records පමණක් පෙරීම
+                // Filter records relevant only to the Parent User's childRegNo
                 const filteredRecords = response.data.filter(
                     record => record.childNo === loggedInUser.childRegNo
                 );
                 setRecords(filteredRecords);
             } else {
-                // Super Admin, Admin, Doctor, Therapist වැනි අනෙකුත් usersලා සඳහා සියලු records පෙන්වීම
+                // Show all records for Super Admin, Admin, Doctor, Therapist, etc.
                 setRecords(response.data);
             }
             // ----------------------------------------------------------------------
@@ -95,12 +104,12 @@ const PatientRecordList = () => {
     };
 
     const handleDelete = async (id) => {
-        // --- ME CHECK EKA ALUTHIN ADD KALE ---
+        // --- Permission Check before deletion ---
         if (!canCRUD) {
             alert("You do not have permission to delete this record.");
             return;
         }
-        // --- END OF ALUTH CHECK EKA ---
+        // --- END OF PERMISSION CHECK ---
 
         if (
             window.confirm("Are you sure you want to delete this patient record?")
@@ -127,7 +136,8 @@ const PatientRecordList = () => {
 
     const handleGenerateQr = async (record) => {
         try {
-            const qrData = await QRCode.toDataURL(record.childNo, { width: 300 });
+            // Data for the QR code is the child's registration number
+            const qrData = await QRCode.toDataURL(record.childNo, { width: 300 }); 
             setQrCodeDataUrl(qrData);
             setSelectedChild({ name: record.name, childNo: record.childNo });
         } catch (err) {
@@ -136,12 +146,13 @@ const PatientRecordList = () => {
         }
     };
 
+    // Sanitize filename for download
     const sanitizedFileName = selectedChild.name
         ? `qr-code_${selectedChild.name.toLowerCase().replace(/\s+/g, "_")}.png`
         : "qr-code.png";
 
     if (loading) {
-        // Loading UI eka wenas kara natha
+        // Loading UI (no changes)
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl shadow-xl font-['Roboto',_sans-serif]">
                 <svg /* ... loading svg ... */ >
@@ -154,7 +165,7 @@ const PatientRecordList = () => {
     }
 
     if (error) {
-        // Error UI eka wenas kara natha
+        // Error UI (no changes)
         return (
             <div className="max-w-4xl mx-auto mt-10 p-6 bg-red-50 border-2 border-red-400 rounded-xl shadow-xl text-red-800 text-center font-['Roboto',_sans-serif]">
                 <p className="text-xl font-bold mb-2">Data Error</p>
@@ -163,25 +174,24 @@ const PatientRecordList = () => {
         );
     }
 
-    // --- JSX (UI) EKE WENASKAM ---
+    // --- JSX (UI) CHANGES: Emojis replaced with Icons/Text ---
     return (
         <div className="p-8 bg-white rounded-3xl shadow-2xl max-w-7xl mx-auto my-8 font-['Roboto',_sans-serif]">
             <div className="flex flex-col sm:flex-row justify-between items-center pb-6 mb-6 border-b border-gray-100 gap-4">
                 <h1 className="text-4xl font-extrabold text-indigo-800 tracking-tight">
-                    Patient Records List 🧑‍⚕️
+                    Patient Records List
                 </h1>
 
-                {/* --- ME THAMAI WENASA (Add New Record Button) --- */}
-                {/* 'canCRUD' true nam (Super Admin) witharak me link eka pennanna */}
+                {/* --- Add New Record Button: Only visible if canCRUD is true (Super Admin) --- */}
                 {canCRUD && (
                     <Link
                         to="../../dashboard/record-sheet"
                         className="flex items-center px-6 py-2 bg-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-teal-400/50 hover:bg-teal-700 transition duration-300 transform hover:scale-[1.02]"
                     >
-                        <span className="text-xl mr-2">+</span> Add New Record
+                        <FaPlusSquare className="text-xl mr-2" /> Add New Record 
                     </Link>
                 )}
-                {/* --- END OF WENASA --- */}
+                {/* --- END OF BUTTON --- */}
             </div>
 
             {records.length === 0 ? (
@@ -193,7 +203,7 @@ const PatientRecordList = () => {
                 <div className="overflow-x-auto rounded-2xl shadow-xl border border-gray-200">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            {/* Table Header eka wenas kara natha */}
+                            {/* Table Header (no changes to text) */}
                             <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 sticky top-0 z-10 text-white shadow-lg">
                                 <th className="py-4 px-6 font-bold text-lg rounded-tl-2xl">
                                     Child No
@@ -228,39 +238,38 @@ const PatientRecordList = () => {
                                     <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
                                         {record.dateOfInitialAssessment
                                             ? new Date(
-                                                record.dateOfInitialAssessment
-                                                ).toLocaleDateString()
+                                                  record.dateOfInitialAssessment
+                                                  ).toLocaleDateString()
                                             : "N/A"}
                                     </td>
                                     <td className="py-4 px-6 whitespace-nowrap text-center space-x-3">
                                         
-                                        {/* View Button (Okkotama pennanawa) */}
+                                        {/* View Button (Visible to all users) */}
                                         <Link
                                             to={`../patient-records/${record._id}`}
-                                            className="px-4 py-1.5 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-200 transform hover:scale-[1.05] text-sm"
+                                            className="inline-flex items-center gap-1 px-4 py-1.5 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-200 transform hover:scale-[1.05] text-sm"
                                         >
-                                            View 👁️
+                                            <FaEye /> View
                                         </Link>
 
-                                        {/* --- ME THAMAI WENASA (Edit & Delete Buttons) --- */}
-                                        {/* 'canCRUD' true nam (Super Admin) witharak me buttons pennanna */}
+                                        {/* --- Edit & Delete Buttons: Only visible if canCRUD is true (Super Admin) --- */}
                                         {canCRUD && (
                                             <>
                                                 <Link
                                                     to={`../patient-records/edit/${record._id}`}
-                                                    className="px-4 py-1.5 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-200 transform hover:scale-[1.05] text-sm"
+                                                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-200 transform hover:scale-[1.05] text-sm"
                                                 >
-                                                    Edit ✏️
+                                                    <FaEdit /> Edit
                                                 </Link>
                                                 <button
                                                     onClick={() => handleDelete(record._id)}
-                                                    className="px-4 py-1.5 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-[1.05] text-sm"
+                                                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-[1.05] text-sm"
                                                 >
-                                                    Delete 🗑️
+                                                    <FaTrash /> Delete
                                                 </button>
                                             </>
                                         )}
-                                        {/* --- END OF WENASA --- */}
+                                        {/* --- END OF BUTTONS --- */}
 
                                     </td>
                                 </tr>

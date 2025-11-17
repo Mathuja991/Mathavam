@@ -16,6 +16,8 @@ import {
   faNotesMedical, // Medical Records/Docs
   faQrcode, // QR Code
   faExclamationTriangle, // Error icon
+  faBolt, // Icon for Quick Actions header
+  faLink, // Icon for Parent Quick Links header
 } from '@fortawesome/free-solid-svg-icons';
 
 // --- Placeholder Components (Due to Single-File Constraint) ---
@@ -51,6 +53,10 @@ const QuickAction = ({ title, desc, onClick, icon, bgColor }) => (
 // **Note: Please configure this base URL in your environment variables (.env)**
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'; 
 
+/**
+ * Retrieves the authorization configuration with the token from local storage.
+ * @returns {object} Auth headers config.
+ */
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -84,8 +90,8 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   return (
     <div className="p-4 md:p-6 space-y-8">
       {/* --- Statistics Overview (All Staff) --- */}
-      <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2">
-        My Dashboard ({loggedInUser.userType}) 👋
+      <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2 flex items-center gap-2">
+        My Dashboard ({loggedInUser.userType}) <FontAwesomeIcon icon={faUsers} className="text-2xl text-indigo-600" />
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Placeholder Stat Cards - using fetched stats. 'value' will show spinner if null */}
@@ -125,8 +131,8 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
 
       {/* --- Quick Actions --- */}
       <div className="pt-4">
-        <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2">
-          Quick Actions ⚡
+        <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2 flex items-center gap-2">
+          Quick Actions <FontAwesomeIcon icon={faBolt} className="text-2xl text-yellow-500" />
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
@@ -154,7 +160,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
               desc="Add, modify, or delete user accounts"
               onClick={handleManageUsers}
               icon={faUsers}
-              // වර්ණය වෙනස් කර ඇත: Fuchsia/Pink -> Deep Purple/Indigo
+              // Color adjusted: Fuchsia/Pink -> Deep Purple/Indigo
               bgColor="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 shadow-xl"
             />
           )}
@@ -165,7 +171,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
               desc="Upload monthly performance reports"
               onClick={handleMonthlyReturns}
               icon={faChartLine}
-              // වර්ණය වෙනස් කර ඇත: Orange/Red -> Blue/Cyan
+              // Color adjusted: Orange/Red -> Blue/Cyan
               bgColor="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-xl"
             />
           )}
@@ -191,7 +197,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   );
 };
 
-// --- Dashboard Content Components (Parent Role - Color Changes Applied) ---
+// --- Dashboard Content Components (Parent Role) ---
 
 const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
   // Navigation handlers
@@ -225,14 +231,16 @@ const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
 
         {/* Quick Actions for Parents */}
         <section>
-          <h2 className="text-3xl font-bold text-gray-800 mb-6">Parent Quick Links 🔗</h2>
+          <h2 className="text-3xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            Parent Quick Links <FontAwesomeIcon icon={faLink} className="text-2xl text-gray-500" />
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <QuickAction
               title="View Attendance QR"
               desc="Generate and scan your child's attendance QR code for sessions."
               onClick={handleQrAttendance}
               icon={faQrcode}
-              // වර්ණය වෙනස් කර ඇත: Purple/Pink -> Fuchsia/Violet
+              // Color adjusted: Purple/Pink -> Fuchsia/Violet
               bgColor="bg-gradient-to-r from-fuchsia-500 to-violet-600 hover:from-fuchsia-600 hover:to-violet-700 shadow-xl"
             />
             <QuickAction
@@ -261,7 +269,7 @@ const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
               desc="View or start skill assessment forms."
               onClick={handleSkillAssessment}
               icon={faBrain}
-              // වර්ණය වෙනස් කර ඇත: Red/Rose -> Yellow/Amber
+              // Color adjusted: Red/Rose -> Yellow/Amber
               bgColor="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 shadow-xl"
             />
           </div>
@@ -288,7 +296,9 @@ const DashboardHome = ({ loggedInUser }) => {
     navigate(path);
   }, [navigate]);
 
-  // Fetch Dashboard Stats (Updated to use actual API call)
+  /**
+   * Fetches the dashboard statistics from the API for staff roles.
+   */
   useEffect(() => {
     // Only fetch stats for staff members
     if (loggedInUser && loggedInUser.userType !== 'Parent') {
@@ -356,7 +366,7 @@ const DashboardHome = ({ loggedInUser }) => {
         />
       );
     case 'Parent':
-      // The role was changed to 'Parent' in the previous step, resolving the routing error
+      // The Parent role uses a tailored dashboard view
       return (
         <ParentDashboardContent
           handleNavigation={handleNavigation}
@@ -368,12 +378,12 @@ const DashboardHome = ({ loggedInUser }) => {
       return (
         <div className="p-8 bg-red-50 rounded-lg shadow-lg border border-red-300 mx-auto max-w-xl mt-10 text-center">
           <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl text-red-600 mb-4" />
-          <h1 className="text-2xl font-bold text-red-800">ප්‍රවේශ දෝෂය (Access Error)</h1>
+          <h1 className="text-2xl font-bold text-red-800">Access Error</h1>
           <p className="mt-4 text-lg text-red-700">
             Error: No specific dashboard found for user type: <span className="font-extrabold">{userRole}</span>.
           </p>
           <p className="mt-4 text-gray-600">
-            ප්‍රවේශය වින්‍යාස කිරීම සඳහා කරුණාකර Super Admin අමතන්න.
+            Please contact the Super Admin to configure access.
           </p>
         </div>
       );

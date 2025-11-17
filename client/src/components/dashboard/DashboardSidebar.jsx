@@ -68,7 +68,6 @@ const DashboardSidebar = ({
   };
 
   // --- ALUTH PERMISSION CONSTANTS (Obage Rules Table Eka Anuwa) ---
-  // Pahu 'canAccessPatientInfo' saha 'canAccessAdminPanel' meken replace kara atha
   
   const userRole = loggedInUser?.userType; // Obage style eka (optional chaining) use karamin
 
@@ -80,7 +79,7 @@ const DashboardSidebar = ({
   const isTherapist = userRole === 'Therapist' || userRole === 'Resource Person';
   const isParent = userRole === 'Parent';
 
-  // Capability booleans (obage handlers walata anuwa)
+  // Capability booleans
   
   // Rule: Child Info -> View (All)
   const canViewChildInfo = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
@@ -110,6 +109,9 @@ const DashboardSidebar = ({
   // Rule: Manage Users -> CRUD (SA, A)
   const canManageUsers = isSuperAdmin || isAdmin;
 
+  // **NEW RULE** Rule: Manage Staff Details -> CRUD (SA, A)
+  const canManageStaffDetails = isSuperAdmin || isAdmin; 
+
   // Rule: Parental Resources (Upload) -> CRUD (Staff)
   const canUploadParentalResources = isSuperAdmin || isAdmin || isDoctor || isTherapist;
 
@@ -117,7 +119,7 @@ const DashboardSidebar = ({
   const canAccessMonthlyReturns = isSuperAdmin || isAdmin;
   
   // Admin section eka pennanna, e athule thiyena ekak hari access thiyenawanam
-  const canViewAdminSection = canManageUsers || canUploadParentalResources || canAccessMonthlyReturns;
+  const canViewAdminSection = canManageUsers || canUploadParentalResources || canAccessMonthlyReturns || canManageStaffDetails; // **NEW ADDITION**
 
   // --- END OF ALUTH PERMISSIONS ---
   
@@ -222,7 +224,7 @@ const DashboardSidebar = ({
             isActive={isActive('/dashboard/therapy-tracking')}
             color="indigo"
           />
-        )}
+        )}*/}
 
         {/* ALUTH LOGIC: canViewAppointmentsSection */}
         {canViewAppointmentsSection && (
@@ -248,7 +250,7 @@ const DashboardSidebar = ({
           />
         )}
 
-        {/* ALUTH LOGIC: canViewRDHS */}
+        {/* ALUTH LOGIC: canViewRDHS *
         {canViewRDHS && (
           <NavItem
             icon={faHospital}
@@ -259,7 +261,7 @@ const DashboardSidebar = ({
             color="indigo"
           />
         )} 
-
+           */}
         {/* ALUTH LOGIC: canViewParentalResources */}
         {canViewParentalResources && (
           <NavItem
@@ -275,25 +277,29 @@ const DashboardSidebar = ({
         {/* ALUTH ADMIN SECTION LOGIC */}
         {canViewAdminSection && (
           <>
-            <NavItem
-              icon={faUsers}
-              label="Manage Users"
-              isOpen={isSidebarOpen}
-              onClick={handleManageUsers}
-              isActive={isActive('/dashboard/manage-users')}
-              color="blue"
-            />
-           
-            <NavItem
-              icon={faNotesMedical}
-              label="Add doctors "
-              isOpen={isSidebarOpen}
-              onClick={addDoctor}
-              isActive={isActive('/dashboard/forms/add-doctor')}
-              color="blue"
-            />
+            {/* Rule: Manage Users -> SA, A */}
+            {canManageUsers && (
+                <NavItem
+                    icon={faUsers}
+                    label="Manage Users"
+                    isOpen={isSidebarOpen}
+                    onClick={handleManageUsers}
+                    isActive={isActive('/dashboard/manage-users')}
+                    color="blue"
+                />
+            )}
             
-           
+            {/* **UPDATED LOGIC**: Manage Staff Details -> SA, A */}
+            {canManageStaffDetails && (
+                <NavItem
+                    icon={faClipboardList}
+                    label="Manage Staff Details "
+                    isOpen={isSidebarOpen}
+                    onClick={addDoctor}
+                    isActive={isActive('/dashboard/add-doctors')} // **CORRECTED PATH** obage handler එකේ තියෙන path එකට
+                    color="blue"
+                />
+            )}
             
             {/* Rule: Upload Resources -> Staff */}
             {canUploadParentalResources && (
@@ -314,7 +320,7 @@ const DashboardSidebar = ({
                 label="Upload Monthly Returns "
                 isOpen={isSidebarOpen}
                 onClick={handleMonthlyReturns}
-                isActive={isActive('/dashboard/monreturn')} // Obage pahu code eka '/dashboard/forms/monreturn' nemei, '/dashboard/monreturn'
+                isActive={isActive('/dashboard/monreturn')}
                 color="blue"
               />
             )}
