@@ -11,7 +11,7 @@ const checkRole = require('../middleware/checkRoleMiddleware');
 
 // --- Role Arrays ---
 const ROLES_VIEW_ADMIN = ['Super Admin', 'Admin'];
-const ROLES_CRUD_SUPER_ADMIN = ['Super Admin'];
+const ROLES_CRUD_SUPER_ADMIN = ['Super Admin','Admin'];
 
 const router = express.Router();
 
