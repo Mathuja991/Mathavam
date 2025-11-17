@@ -154,7 +154,8 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
               desc="Add, modify, or delete user accounts"
               onClick={handleManageUsers}
               icon={faUsers}
-              bgColor="bg-gradient-to-r from-fuchsia-500 to-pink-600 hover:from-fuchsia-600 hover:to-pink-700 shadow-xl"
+              // වර්ණය වෙනස් කර ඇත: Fuchsia/Pink -> Deep Purple/Indigo
+              bgColor="bg-gradient-to-r from-purple-700 to-indigo-800 hover:from-purple-800 hover:to-indigo-900 shadow-xl"
             />
           )}
 
@@ -164,7 +165,8 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
               desc="Upload monthly performance reports"
               onClick={handleMonthlyReturns}
               icon={faChartLine}
-              bgColor="bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-xl"
+              // වර්ණය වෙනස් කර ඇත: Orange/Red -> Blue/Cyan
+              bgColor="bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 shadow-xl"
             />
           )}
 
@@ -189,7 +191,7 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   );
 };
 
-// --- Dashboard Content Components (Parent Role - No Changes) ---
+// --- Dashboard Content Components (Parent Role - Color Changes Applied) ---
 
 const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
   // Navigation handlers
@@ -229,8 +231,9 @@ const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
               title="View Attendance QR"
               desc="Generate and scan your child's attendance QR code for sessions."
               onClick={handleQrAttendance}
-              icon={faQrcode} // <-- faQrcode is now imported and correctly used
-              bgColor="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-xl"
+              icon={faQrcode}
+              // වර්ණය වෙනස් කර ඇත: Purple/Pink -> Fuchsia/Violet
+              bgColor="bg-gradient-to-r from-fuchsia-500 to-violet-600 hover:from-fuchsia-600 hover:to-violet-700 shadow-xl"
             />
             <QuickAction
               title="View Patient Records"
@@ -258,7 +261,8 @@ const ParentDashboardContent = ({ handleNavigation, loggedInUser }) => {
               desc="View or start skill assessment forms."
               onClick={handleSkillAssessment}
               icon={faBrain}
-              bgColor="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-xl"
+              // වර්ණය වෙනස් කර ඇත: Red/Rose -> Yellow/Amber
+              bgColor="bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-600 hover:to-amber-700 shadow-xl"
             />
           </div>
         </section>

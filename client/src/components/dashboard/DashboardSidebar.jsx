@@ -258,25 +258,13 @@ const DashboardSidebar = ({
             isActive={isActive('/dashboard/rdhs')}
             color="indigo"
           />
-        )}
-
-        {/* ALUTH LOGIC: canViewParentalTraining */}
-        {canViewParentalTraining && (
-          <NavItem
-            icon={faUserGraduate}
-            label="Parental Training"
-            isOpen={isSidebarOpen}
-            onClick={handleParentalTraining}
-            isActive={isActive('/dashboard/parental-training')}
-            color="teal"
-          />
-        )}
+        )} 
 
         {/* ALUTH LOGIC: canViewParentalResources */}
         {canViewParentalResources && (
           <NavItem
             icon={faUserGraduate}
-            label="Resources for Parents"
+            label="Parental Training"
             isOpen={isSidebarOpen}
             onClick={handleViewofParentsReadingResources}
             isActive={isActive('/dashboard/viewdocs')}

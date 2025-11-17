@@ -105,11 +105,12 @@ const AdminDashboardHome = ({ loggedInUser }) => {
           icon={faUsers} 
           bgColor="bg-gradient-to-r from-teal-600 to-cyan-700" 
         />
+        {/* Today's Appointments: Red/Pink -> Orange/Amber */}
         <StatCard 
           title="Today's Appointments" 
           value={stats.todayAppointments} // <--- State එකෙන් දත්ත ලබා ගැනීම
           icon={faCalendarAlt} 
-          bgColor="bg-gradient-to-r from-red-500 to-pink-600" 
+          bgColor="bg-gradient-to-r from-amber-500 to-orange-600" 
         />
         <StatCard 
           title="Total Staff" 
@@ -131,11 +132,12 @@ const AdminDashboardHome = ({ loggedInUser }) => {
           Key Operations 🔑
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Manage Appointments: Red -> Purple */}
           <QuickAction
             title="Manage All Appointments (CRUD)"
             desc="Schedule, reschedule, and manage therapy and doctor appointments."
             icon={faCalendarAlt}
-            bgColor="bg-red-500 hover:bg-red-600 shadow-lg"
+            bgColor="bg-purple-600 hover:bg-purple-700 shadow-lg"
             onClick={() => console.log('Navigate to Appointment Management')} // <--- Use navigate() here
           />
           <QuickAction

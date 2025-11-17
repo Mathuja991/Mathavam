@@ -28,154 +28,146 @@ function SensoryProfileReadPage() {
   const [sections, setSections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filterPatientId, setFilterPatientId] = useState("");
 
-  // Function to fetch all individual section documents
+  // ******************************************************************
+  // FIX: Token එක Header එකට ඇතුළත් කිරීමට යාවත්කාලීන කරන ලද ශ්‍රිතය
+  // ******************************************************************
   const fetchAllSections = async () => {
     setIsLoading(true);
     setError(null);
     try {
+      // 1. localStorage වෙතින් Token එක ලබා ගැනීම
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        // Token එකක් නොමැති නම් දෝෂය පෙන්වා නවත්වන්න
+        throw new Error(
+          "Authentication token missing. Please ensure you are logged in."
+        );
+      }
+
+      // 2. Token එක Header එකට ඇතුළත් කර API call එක යැවීම
       const response = await axios.get("/api/assessments/sensory-profile", {
-        params: {
-          patientId: filterPatientId ? filterPatientId.trim() : undefined,
+        headers: {
+          "x-auth-token": token, // ⬅️ මෙතැනදී Token එක එකතු කර ඇත
         },
       });
-      // The API already sorts by testDate, but we can re-sort by updatedAt for most recent submissions
-      const sortedSections = (response.data || []).sort(
-        (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)
-      );
-      setSections(sortedSections);
+
+      setSections(response.data);
     } catch (err) {
-      setError("Failed to fetch assessment sections.");
       console.error("Error fetching sections:", err);
-      setSections([]);
+      // දෝෂ පණිවිඩය සකස් කිරීම
+      const errorMessage =
+        err.response?.data?.msg ||
+        err.message ||
+        "Failed to load previous entries.";
+      setError(`Error fetching sections: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch data when the component first loads
   useEffect(() => {
     fetchAllSections();
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    fetchAllSections();
-  };
-
-  const handlePrintSection = (section) => {
-    if (!section) return;
-    printSensorySection({
-      baseInfo: {
-        patientId: section.patientId,
-        examinerId: section.examinerId,
-        testDate: section.testDate,
-        ageGroup: section.ageGroup,
-      },
-      sectionData: {
-        category: section.category,
-        responses: section.responses,
-        rawScore: section.rawScore,
-        comments: section.comments,
-      },
-    });
-  };
-
   if (isLoading) {
     return (
-      <div className="text-center p-10 text-lg font-medium">
-        Loading Submitted Sections...
+      <div className="text-center p-10">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
+        <p className="mt-4 text-lg text-indigo-700">Loading previous entries...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-10 text-red-600 font-bold">
-        Error: {error}
+      <div className="text-center p-10 bg-red-100 border border-red-400 text-red-700 rounded-lg max-w-xl mx-auto mt-10">
+        <h2 className="text-xl font-bold mb-2">Data Fetch Error</h2>
+        <p>{error}</p>
+        <p className="mt-4 text-sm">Please try logging out and logging back in.</p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">
-          Submitted Sensory Profile Sections
-        </h1>
-      </div>
+    <div className="max-w-6xl mx-auto p-6 bg-white shadow-xl rounded-2xl">
+      <h1 className="text-3xl font-extrabold text-gray-800 mb-8 border-b pb-3">
+        Sensory Profile Assessment Entries
+      </h1>
 
-      {/* Search Form */}
-      <form
-        onSubmit={handleSearch}
-        className="mb-6 flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
-      >
-        <input
-          type="text"
-          value={filterPatientId}
-          onChange={(e) => setFilterPatientId(e.target.value)}
-          placeholder="Search by Patient ID..."
-          className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
-        >
-          Search
-        </button>
-      </form>
-
-      <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-lg">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Patient ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Examiner ID
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                Section Category
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Test Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Submitted
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Submitted By
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {sections.length === 0 ? (
               <tr>
-                <td colSpan="5" className="text-center py-8 text-gray-500">
-                  No sections have been submitted yet.
+                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  No previous Sensory Profile entries found.
                 </td>
               </tr>
             ) : (
               sections.map((section) => {
-                const canEdit = section.updatedAt && isEditable(section.updatedAt);
-                const assessmentId = section.assessmentId || section._id; // Use group ID if available, otherwise fall back to its own ID
+                const assessmentId = section._id;
+                const canEdit = isEditable(section.createdAt);
 
                 return (
-                  <tr key={section._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                      {section.patientId}
+                  <tr key={assessmentId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {section.patientId || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {section.examinerId}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                        section.category === 'Child' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'
+                      }`}>
+                        {section.category || "N/A"}
+                      </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-700 font-semibold whitespace-normal break-words max-w-xs">
-                      {section.category}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDisplayDateTime(section.testDate)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {section.updatedAt ? formatDisplayDateTime(section.updatedAt) : "N/A"}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {section.examinerId || "Unknown"}
+                      <div className="text-xs text-gray-400">
+                        {formatDisplayDateTime(section.createdAt)}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
+                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
                       <button
-                        onClick={() => handlePrintSection(section)}
+                        onClick={() => printSensorySection(section)}
                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
                         title="Print section"
                       >
