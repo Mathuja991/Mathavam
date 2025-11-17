@@ -8,7 +8,8 @@ const {
   getAllUsers,
   loginUser,
   updateUsername,
-  updatePassword
+  updatePassword,
+  checkDoctor
 } = require('../controllers/userController');
 
 // --- 2. Auth Middleware Import කිරීම ---
@@ -45,4 +46,6 @@ router.put('/update-username', authMiddleware, updateUsername);
 // @desc    Update logged-in user's password
 // @access  Private
 router.put('/update-password', authMiddleware, updatePassword,);
+
+router.get('/check-doctor/:idNumber', checkDoctor);
 module.exports = router;

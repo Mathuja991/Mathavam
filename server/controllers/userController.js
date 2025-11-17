@@ -255,3 +255,45 @@ exports.updatePassword = async (req, res) => {
         res.status(500).send('Server error');
     }
 };
+    // @desc    Check if user exists and is a doctor
+// @route   GET /api/users/check-doctor/:idNumber
+// @access  Private
+exports.checkDoctor = async (req, res) => {
+  try {
+    const { idNumber } = req.params;
+
+    const user = await User.findOne({ idNumber }).select('-password');
+    
+    if (!user) {
+      return res.status(404).json({ 
+        isDoctor: false, 
+        message: 'User not found' 
+      });
+    }
+
+    if (user.userType !== 'Doctor') {
+      return res.json({ 
+        isDoctor: false, 
+        user: null,
+        message: 'User is not a doctor' 
+      });
+    }
+
+    res.json({ 
+      isDoctor: true, 
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType
+      }
+    });
+
+  } catch (err) {
+    console.error('Error in checkDoctor:', err.message);
+    res.status(500).json({ 
+      isDoctor: false, 
+      message: 'Server error checking doctor' 
+    });
+  }
+};

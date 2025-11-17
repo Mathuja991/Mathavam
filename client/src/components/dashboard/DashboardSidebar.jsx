@@ -46,6 +46,7 @@ const DashboardSidebar = ({
   const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
   const handleParentsReadingResources = () => handleNavigation('/dashboard/adminuploaddocs');
   const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
+  const addDoctor = () => handleNavigation('/dashboard/add-doctors');
 
 
   // --- Helpers ---
@@ -233,6 +234,14 @@ const DashboardSidebar = ({
               isOpen={isSidebarOpen}
               onClick={handleMonthlyReturns}
               isActive={isActive('/dashboard/forms/monreturn')}
+              color="blue"
+            />
+            <NavItem
+              icon={faNotesMedical}
+              label="Add doctors "
+              isOpen={isSidebarOpen}
+              onClick={addDoctor}
+              isActive={isActive('/dashboard/forms/add-doctor')}
               color="blue"
             />
           </>
