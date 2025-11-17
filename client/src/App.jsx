@@ -167,7 +167,7 @@ function App() {
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
           
-          {/* FIX: Monthly Returns Route එක /forms/ monreturn සිට /monreturn වෙත වෙනස් කරන ලදි */}
+         
           <Route path="monreturn" element={<MonthlyReturnForm />} />
           
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />

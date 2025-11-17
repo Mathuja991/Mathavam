@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
-// Authorization Header එක සකස් කරගැනීම සඳහා helper function එකක්
+
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
-    // Auth token එකක් නොමැති නම් error එකක් log කර හිස් header එකක් දෙන්න
+    
     console.error('Auth token not found in localStorage. Cannot fetch documents.');
     return { headers: {} };
   }
   return {
     headers: {
-      'x-auth-token': token, // 🛡️ FIX: Auth token එක header එකට එක් කිරීම
+      'x-auth-token': token, 
     },
   };
 };
@@ -20,7 +20,7 @@ const UserViewDocuments = () => {
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null); // Error state එකක් එකතු කරමු
+  const [fetchError, setFetchError] = useState(null); 
   
   // Filter states
   const [titleFilter, setTitleFilter] = useState("");
@@ -33,20 +33,20 @@ const UserViewDocuments = () => {
 
     const config = getAuthConfig();
 
-    fetch('http://localhost:5000/api/documents', config)
+    fetch(`${API_URL}/documents`, config)
       .then(res => {
         if (!res.ok) {
-            // 401 (Unauthorized) වැනි දෝෂ සඳහා
+            
             if (res.status === 401) {
                 throw new Error("Unauthorized: Please log in again.");
             }
-            // අනෙකුත් දෝෂ
+            
             return res.json().then(error => { throw new Error(error.error || `Server Error: ${res.status}`); });
         }
         return res.json();
       })
       .then(data => {
-        // 🛡️ FIX: දත්ත array එකක් දැයි පරීක්ෂා කිරීම
+       
         if (!Array.isArray(data)) {
             console.error("API response is not an array:", data);
             setFetchError("Received unexpected data from the server. Try logging in again.");
@@ -72,7 +72,7 @@ const UserViewDocuments = () => {
   }, [titleFilter, dateFilter, sortBy, documents]);
 
   const applyFilters = () => {
-    // 🛡️ FIX: documents array එකක් දැයි පරීක්ෂා කිරීම
+    
     if (!Array.isArray(documents)) return;
 
     let filtered = [...documents];
@@ -289,8 +289,7 @@ const UserViewDocuments = () => {
         </div>
       </div>
 
-      {/* Documents List */}
-      {/* 🛡️ FIX: filteredDocuments array එකක් දැයි පරීක්ෂා කිරීම */}
+     
       {Array.isArray(filteredDocuments) && filteredDocuments.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <div className="text-6xl mb-4">📭</div>
@@ -311,7 +310,7 @@ const UserViewDocuments = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {/* 🛡️ FIX: Array check එක උඩින් තිබෙන නිසා මෙහිදී ආරක්ෂිතයි */}
+         
           {filteredDocuments.map(doc => (
             <div
               key={doc._id}
