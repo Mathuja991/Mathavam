@@ -58,95 +58,109 @@ const PatientAppointmentBooking = () => {
   });
 
   // 🔥 FETCH DOCTORS AND AVAILABILITY FROM DATABASE
-  useEffect(() => {
-    const fetchDoctorsAndAvailability = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch all availability data to get doctors
-        const response = await axios.post('/api/availability/doctors', {
-          doctorIds: [] // Empty array to get ALL doctors
-        });
-         console.log('🟢 API RESPONSE RECEIVED:', response);
-      console.log('🟢 Response status:', response.status);
-      console.log('🟢 Response data:', response.data);
+ useEffect(() => {
+  const fetchDoctorsAndAvailability = async () => {
+    try {
+      setLoading(true);
 
-        if (response.data.success) {
-          const availabilityData = response.data.data || [];
-          
-          // Extract unique doctors from availability data
-          const uniqueDoctorsMap = new Map();
-          
-          availabilityData.forEach(slot => {
-            if (!uniqueDoctorsMap.has(slot.doctorId)) {
-              uniqueDoctorsMap.set(slot.doctorId, {
-                _id: slot.doctorId,
-                name: slot.doctorName,
-                specialization: "General Practice"
-              });
-            }
-          });
-          
-          const doctorsList = Array.from(uniqueDoctorsMap.values());
-          setDoctors(doctorsList);
-          
-          // Organize availability by doctorId
-          const availabilityByDoctor = {};
-          availabilityData.forEach(slot => {
-            if (!availabilityByDoctor[slot.doctorId]) {
-              availabilityByDoctor[slot.doctorId] = [];
-            }
-            availabilityByDoctor[slot.doctorId].push({
+      // Fetch all doctors
+      const response = await axios.get('/api/availability/doctors/all');
+      console.log('🟢 API RESPONSE RECEIVED:', response.data.data);
+
+      if (response.data.success) {
+        const availabilityData = response.data.data || [];
+
+        // Map unique doctors
+        const uniqueDoctorsMap = new Map();
+        availabilityData.forEach(doc => {
+          if (!uniqueDoctorsMap.has(doc._id)) {
+            uniqueDoctorsMap.set(doc._id, {
+              _id: doc._id,
+              name: doc.name,
+              specialization: "General Practice"
+            });
+          }
+        });
+
+        const doctorsList = Array.from(uniqueDoctorsMap.values());
+        setDoctors(doctorsList);
+
+        // Fetch availability for all doctor IDs
+        const doctorIds = doctorsList.map(d => d._id);
+        const res = await axios.post('/api/availability/doctors', { doctorIds });
+
+        const availability = res.data.data || [];
+        const availabilityByDoctor = {};
+
+        for (const doctorDoc of availability) {
+          const doctorId = doctorDoc.doctorId;
+
+          if (!availabilityByDoctor[doctorId]) {
+            availabilityByDoctor[doctorId] = [];
+          }
+
+          for (const slot of doctorDoc.availabilitySlots) {
+            availabilityByDoctor[doctorId].push({
               day: slot.day,
               startTime: slot.startTime,
               endTime: slot.endTime
             });
-          });
-          
-          setDoctorAvailability(availabilityByDoctor);
+          }
         }
-      } catch (error) {
-        console.error('Error fetching doctors and availability:', error);
-        // Fallback to empty arrays if API fails
-        setDoctors([]);
-        setDoctorAvailability({});
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchDoctorsAndAvailability();
-  }, []);
+        console.log('🟢 Availability by Doctor:', availabilityByDoctor);
+        setDoctorAvailability(availabilityByDoctor);
+      }
+    } catch (error) {
+      console.error('Error fetching doctors and availability:', error);
+      setDoctors([]);
+      setDoctorAvailability({});
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDoctorsAndAvailability();
+}, []);
+
 
   // Generate dates for next 2 months based on available days
-  const generateAvailableDates = () => {
-    if (!selectedDoctorId) return [];
+ const SL_OFFSET = 5.5 * 60; // 5 hours 30 minutes in minutes
 
-    const availability = doctorAvailability[selectedDoctorId] || [];
-    const availableDays = [...new Set(availability.map(slot => slot.day))];
-    
-    const dates = [];
-    const today = new Date();
-    
-    // Generate dates for next 2 months (60 days)
-    for (let i = 1; i <= 60; i++) {
-      const date = new Date();
-      date.setDate(today.getDate() + i);
-      
-      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-      
-      if (availableDays.includes(dayName)) {
-        const dateString = date.toISOString().split('T')[0];
-        dates.push({
-          date: dateString,
-          day: dayName,
-          appointmentCount: existingAppointments[dateString] || 0
-        });
-      }
+const generateAvailableDates = () => {
+  if (!selectedDoctorId) return [];
+
+  const availability = doctorAvailability[selectedDoctorId] || [];
+  const availableDays = [...new Set(availability.map(slot => slot.day))];
+  
+  const dates = [];
+  const now = new Date();
+
+  for (let i = 1; i <= 60; i++) {
+    // Add i days
+    const utcTime = now.getTime() + i * 24 * 60 * 60 * 1000;
+
+    // Apply Sri Lanka offset
+    const slTime = new Date(utcTime + SL_OFFSET * 60 * 1000);
+
+    const year = slTime.getFullYear();
+    const month = String(slTime.getMonth() + 1).padStart(2, '0');
+    const day = String(slTime.getDate()).padStart(2, '0');
+    const dateString = `${year}-${month}-${day}`;
+
+    const dayName = slTime.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Colombo' });
+
+    if (availableDays.includes(dayName)) {
+      dates.push({
+        date: dateString,
+        day: dayName,
+        appointmentCount: existingAppointments[dateString] || 0
+      });
     }
-    
-    return dates;
-  };
+  }
+
+  return dates;
+};
 
   // Generate calendar for current month
   const generateCalendar = () => {
