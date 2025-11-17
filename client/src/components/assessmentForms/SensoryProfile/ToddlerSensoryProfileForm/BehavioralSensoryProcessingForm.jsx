@@ -1,98 +1,87 @@
-import axios from 'axios';
+import React, { useImperativeHandle, forwardRef, useRef } from "react";
 import BaseForm from "../BaseForm";
-import { useState } from 'react';
-import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
-function ToddlerBehavioralSensoryProcessingForm({
-  patientId,
-  examinerId,
-  testDate,
-  initialResponses,
-  initialComments,
-  onFormSubmit, 
-  isSubmitting: isSubmittingProp, 
-}) {
-
-  const [isCreating, setIsCreating] = useState(false);
-
-  const isSubmitting = isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
-  
-  const questions = [
+const ToddlerBehavioralSensoryProcessingForm = forwardRef(
+  (
     {
-      qid: 49,
-      text: "has temper tantrums.",
-      quadrant: "AV",
-    },
-    {
-      qid: 50,
-      text: "is clingy.",
-      quadrant: "",
-    },
-    {
-      qid: 51,
-      text: "stays calm only when being held.",
-      quadrant: "",
-    },
-    {
-      qid: 52,
-      text: "is fussy or irritable.",
-      quadrant: "SN",
-    },
-    {
-      qid: 53,
-      text: "is bothered by new settings.",
-      quadrant: "AV",
-    },
-    {
-      qid: 54,
-      text: "becomes so upset in new settings that it's hard to calm down.",
-      quadrant: "AV",
-    },
-  ];
-
-  const handleFormSubmit = async (formSpecificData) => {
-    if (onFormSubmit) {
-      onFormSubmit(formSpecificData);
-      return;
-    }
-
-    if (isCreating) return;
-    setIsCreating(true);
-
-    const sharedData = {
+      onSubmit,
+      initialResponses,
+      initialComments,
+      disabled,
       patientId,
-      examinerId,
       testDate,
-      ageGroup: "Toddler",
-    };
+    },
+    ref
+  ) => {
+    const baseFormRef = useRef();
+    const {
+      resolvedResponses,
+      resolvedComments,
+      isLocked: autoLocked,
+    } = useSensorySectionLock({
+      patientId,
+      testDate,
+      category: "Behavioral Associated with Sensory Processing",
+      initialResponses,
+      initialComments,
+    });
+    const finalDisabled = disabled || autoLocked;
 
-    const formData = createSensoryProfilePayload(formSpecificData, sharedData);
+    const questions = [
+      {
+        qid: 49,
+        text: "has temper tantrums.",
+        quadrant: "AV",
+      },
+      {
+        qid: 50,
+        text: "is clingy.",
+        quadrant: "",
+      },
+      {
+        qid: 51,
+        text: "stays calm only when being held.",
+        quadrant: "",
+      },
+      {
+        qid: 52,
+        text: "is fussy or irritable.",
+        quadrant: "SN",
+      },
+      {
+        qid: 53,
+        text: "is bothered by new settings.",
+        quadrant: "AV",
+      },
+      {
+        qid: 54,
+        text: "becomes so upset in new settings that it's hard to calm down.",
+        quadrant: "AV",
+      },
+    ];
 
-    try {
-      const result = await axios.post(
-        "/api/assessments/sensory-profile",
-        formData
-      );
-      console.log("Form Submitted Successfully:", result.data);
-      alert("Assessment saved!");
-    } catch (error) {
-      console.error("There was an error submitting the form:", error);
-      alert("Error: Could not save the assessment.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
+    useImperativeHandle(ref, () => ({
+      getFormData: () => {
+        if (baseFormRef.current) {
+          return baseFormRef.current.getFormData();
+        }
+        return null;
+      },
+    }));
 
-  return (
-    <BaseForm
-      questions={questions}
-      onSubmit={handleFormSubmit}
-      formTitle="Behavioral Responses Associated with Sensory Processing"
-      isSubmitting={isSubmitting}
-      initialResponses={initialResponses}
-      initialComments={initialComments}
-    />
-  );
-}
+    return (
+      <BaseForm
+        ref={baseFormRef}
+        questions={questions}
+        onSubmit={onSubmit}
+        formTitle="Behavioral Sensory Processing"
+        initialResponses={resolvedResponses || initialResponses}
+        initialComments={resolvedComments}
+        disabled={finalDisabled}
+      />
+    );
+  }
+);
 
 export default ToddlerBehavioralSensoryProcessingForm;

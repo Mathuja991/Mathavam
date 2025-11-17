@@ -1,117 +1,85 @@
-import axios from 'axios';
+import React, { useImperativeHandle, forwardRef, useRef } from "react";
 import BaseForm from "../BaseForm";
-import { useState } from 'react';
-import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
-function ToddlerGeneralProcessingForm({
-  patientId,
-  examinerId,
-  testDate,
-  initialResponses,
-  initialComments,
-  onFormSubmit,
-  isSubmitting: isSubmittingProp,
-}) {
-  const [isCreating, setIsCreating] = useState(false);
-
-  const isSubmitting =
-    isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
-
-  const questions = [
+const ToddlerGeneralProcessingForm = forwardRef(
+  (
     {
-      qid: 1,
-      text: "needs a routine to stay content or calm.",
-      quadrant: "SN",
-    },
-    {
-      qid: 2,
-      text: "acts in a way that interferes with family schedules and plans.",
-      quadrant: "SN",
-    },
-    {
-      qid: 3,
-      text: "resists playing among other children.",
-      quadrant: "AV",
-    },
-    {
-      qid: 4,
-      text: "takes longer than same-aged children to respond to questions or actions.",
-      quadrant: "",
-    },
-    {
-      qid: 5,
-      text: "withdraws from situations.",
-      quadrant: "",
-    },
-    {
-      qid: 6,
-      text: "has an unpredictable sleeping pattern.",
-      quadrant: "",
-    },
-    {
-      qid: 7,
-      text: "has an unpredictable eating pattern.",
-      quadrant: "",
-    },
-    {
-      qid: 8,
-      text: "is easily awakened.",
-      quadrant: "",
-    },
-    {
-      qid: 9,
-      text: "misses eye contact with me during everyday interactions.",
-      quadrant: "RG",
-    },
-    {
-      qid: 10,
-      text: "gets anxious in new situations.",
-      quadrant: "AV",
-    },
-  ];
-
-  const handleFormSubmit = async (formSpecificData) => {
-    if (onFormSubmit) {
-      onFormSubmit(formSpecificData);
-      return;
-    }
-
-    if (isCreating) return;
-    setIsCreating(true);
-
-    const sharedData = {
+      onSubmit,
+      initialResponses,
+      initialComments,
+      disabled,
       patientId,
-      examinerId,
       testDate,
-      ageGroup: "Toddler",
-    };
+    },
+    ref
+  ) => {
 
-    const formData = createSensoryProfilePayload(formSpecificData, sharedData);
+    const baseFormRef = useRef();
+    const {
+      resolvedResponses,
+      resolvedComments,
+      isLocked: autoLocked,
+    } = useSensorySectionLock({
+      patientId,
+      testDate,
+      category: "General Processing",
+      initialResponses,
+      initialComments,
+    });
+    const finalDisabled = disabled || autoLocked;
 
-    try {
-      const result = await axios.post(
-        "/api/assessments/sensory-profile",
-        formData
-      );
-      console.log("Form Submitted Successfully:", result.data);
-      alert("Assessment saved!");
-    } catch (error) {
-      console.error("There was an error submitting the form:", error);
-      alert("Error: Could not save the assessment.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
+    const questions = [
+      {
+        qid: 1,
+        text: "needs a routine to stay content or calm.",
+        quadrant: "SN",
+      },
+      {
+        qid: 2,
+        text: "acts in a way that interferes with family schedules and plans.",
+        quadrant: "SN",
+      },
+      { qid: 3, text: "resists playing among other children.", quadrant: "AV" },
+      {
+        qid: 4,
+        text: "takes longer than same-aged children to respond to questions or actions.",
+        quadrant: "",
+      },
+      { qid: 5, text: "withdraws from situations.", quadrant: "" },
+      { qid: 6, text: "has an unpredictable sleeping pattern.", quadrant: "" },
+      { qid: 7, text: "has an unpredictable eating pattern.", quadrant: "" },
+      { qid: 8, text: "is easily awakened.", quadrant: "" },
+      {
+        qid: 9,
+        text: "misses eye contact with me during everyday interactions.",
+        quadrant: "RG",
+      },
+      { qid: 10, text: "gets anxious in new situations.", quadrant: "AV" },
+    ];
 
-  return (
-    <BaseForm
-      questions={questions}
-      onSubmit={handleFormSubmit}
-      formTitle="General Processing"
-      isSubmitting={isSubmitting}
-      initialResponses={initialResponses}
-      initialComments={initialComments}
-    />
-  );
-}
+  
+    useImperativeHandle(ref, () => ({
+      getFormData: () => {
+        if (baseFormRef.current) {
+          return baseFormRef.current.getFormData();
+        }
+        return null;
+      },
+    }));
+
+    return (
+      <BaseForm
+        ref={baseFormRef}
+        questions={questions}
+        onSubmit={onSubmit} 
+        formTitle="General Processing"
+        initialResponses={resolvedResponses || initialResponses} 
+        initialComments={resolvedComments}
+        disabled={finalDisabled} 
+      />
+    );
+  }
+);
+
 export default ToddlerGeneralProcessingForm;

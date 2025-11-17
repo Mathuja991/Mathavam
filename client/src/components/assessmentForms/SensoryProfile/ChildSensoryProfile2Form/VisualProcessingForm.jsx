@@ -2,6 +2,7 @@ import axios from "axios";
 import BaseForm from "../BaseForm";
 import { useState } from "react";
 import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
 function VisualProcessingForm({
   patientId,
@@ -11,11 +12,27 @@ function VisualProcessingForm({
   initialComments,
   onFormSubmit,
   isSubmitting: isSubmittingProp,
+  disabled = false,
 }) {
   const [isCreating, setIsCreating] = useState(false);
 
   const isSubmitting =
     isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
+  const hasInitialFromParent =
+    Array.isArray(initialResponses) && initialResponses.length > 0;
+  const {
+    resolvedResponses,
+    resolvedComments,
+    isLocked: autoLocked,
+    refreshSection,
+  } = useSensorySectionLock({
+    patientId,
+    testDate,
+    category: "Visual Processing",
+    initialResponses,
+    initialComments,
+  });
+  const finalDisabled = disabled || autoLocked;
 
   const questions = [
     {
@@ -50,7 +67,7 @@ function VisualProcessingForm({
     },
     {
       qid: 15, //not part of visual raw score
-      text: "is bothered by bright lights (for example, hides from sunlight through car window).",
+      text: "is bothered by bright lights (for example, hides from sunlight through car window).*",
       quadrant: "AV",
       excludeFromScore: true,
     },
@@ -80,6 +97,9 @@ function VisualProcessingForm({
         formData
       );
       console.log("Form Submitted Successfully:", result.data);
+      if (!hasInitialFromParent) {
+        await refreshSection();
+      }
       alert("Assessment saved!");
     } catch (error) {
       console.error("There was an error submitting the form:", error);
@@ -96,8 +116,9 @@ function VisualProcessingForm({
         onSubmit={handleFormSubmit}
         formTitle="Visual Processing"
         isSubmitting={isSubmitting}
-        initialResponses={initialResponses}
-        initialComments={initialComments}
+        initialResponses={resolvedResponses || initialResponses}
+        initialComments={resolvedComments}
+        disabled={finalDisabled}
       />
       <p>* - Item/s is/are not part of the VISUAL Raw Score.</p>
     </>

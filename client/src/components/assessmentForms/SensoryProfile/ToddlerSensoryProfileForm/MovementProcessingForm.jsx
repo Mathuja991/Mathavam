@@ -1,102 +1,88 @@
-import axios from "axios";
+import React, { useImperativeHandle, forwardRef, useRef } from "react";
 import BaseForm from "../BaseForm";
-import { useState } from "react";
-import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
-function ToddlerMovementProcessingForm({
-  patientId,
-  examinerId,
-  testDate,
-  initialResponses,
-  initialComments,
-  onFormSubmit,
-  isSubmitting: isSubmittingProp,
-}) {
-  const [isCreating, setIsCreating] = useState(false);
-
-  const isSubmitting =
-    isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
-
-  const questions = [
+const ToddlerMovementProcessingForm = forwardRef(
+  (
     {
-      qid: 36,
-      text: "enjoys physical activity (for example, bouncing, being held up high in the air).",
-      quadrant: "SK",
-    },
-    {
-      qid: 37,
-      text: "enjoys rhythmical activities (for example, swinging, rocking, car rides).",
-      quadrant: "SK",
-    },
-    {
-      qid: 38,
-      text: "takes movement or climbing risks.",
-      quadrant: "SK",
-    },
-    {
-      qid: 39,
-      text: "becomes upset when placed on the back (for example, at changing times).",
-      quadrant: "SN",
-    },
-    {
-      qid: 40,
-      text: "seems accident-prone or clumsy.",
-      quadrant: "RG",
-    },
-    {
-      qid: 41,
-      text: "fusses when moved around (for example, walking around, when being handed over to another person).",
-      quadrant: "SN",
-      excludeFromScore: true,
-    },
-  ];
-
-  const handleFormSubmit = async (formSpecificData) => {
-    if (onFormSubmit) {
-      onFormSubmit(formSpecificData);
-      return;
-    }
-
-    if (isCreating) return;
-    setIsCreating(true);
-
-    const sharedData = {
+      onSubmit,
+      initialResponses,
+      initialComments,
+      disabled,
       patientId,
-      examinerId,
       testDate,
-      ageGroup: "Toddler",
-    };
+    },
+    ref
+  ) => {
+    const baseFormRef = useRef();
+    const {
+      resolvedResponses,
+      resolvedComments,
+      isLocked: autoLocked,
+    } = useSensorySectionLock({
+      patientId,
+      testDate,
+      category: "Movement Processing",
+      initialResponses,
+      initialComments,
+    });
+    const finalDisabled = disabled || autoLocked;
 
-    const formData = createSensoryProfilePayload(formSpecificData, sharedData);
+    const questions = [
+      {
+        qid: 36,
+        text: "enjoys physical activity (for example, bouncing, being held up high in the air).",
+        quadrant: "SK",
+      },
+      {
+        qid: 37,
+        text: "enjoys rhythmical activities (for example, swinging, rocking, car rides).",
+        quadrant: "SK",
+      },
+      {
+        qid: 38,
+        text: "takes movement or climbing risks.",
+        quadrant: "SK",
+      },
+      {
+        qid: 39,
+        text: "becomes upset when placed on the back (for example, at changing times).",
+        quadrant: "SN",
+      },
+      {
+        qid: 40,
+        text: "seems accident-prone or clumsy.",
+        quadrant: "RG",
+      },
+      {
+        qid: 41,
+        text: "fusses when moved around (for example, walking around, when being handed over to another person).*",
+        quadrant: "SN",
+        excludeFromScore: true,
+      },
+    ];
 
-    try {
-      const result = await axios.post(
-        "/api/assessments/sensory-profile",
-        formData
-      );
-      console.log("Form Submitted Successfully:", result.data);
-      alert("Assessment saved!");
-    } catch (error) {
-      console.error("There was an error submitting the form:", error);
-      alert("Error: Could not save the assessment.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
+    useImperativeHandle(ref, () => ({
+      getFormData: () => {
+        if (baseFormRef.current) {
+          return baseFormRef.current.getFormData();
+        }
+        return null;
+      },
+    }));
 
-  return (
-    <>
+    return (
       <BaseForm
+        ref={baseFormRef}
         questions={questions}
-        onSubmit={handleFormSubmit}
+        onSubmit={onSubmit}
         formTitle="Movement Processing"
-        isSubmitting={isSubmitting}
-        initialResponses={initialResponses}
-        initialComments={initialComments}
+        initialResponses={resolvedResponses || initialResponses}
+        initialComments={resolvedComments}
+        disabled={finalDisabled}
       />
-      <p>* - Item/s is/are not part of the MOVEMENT Raw Score.</p>
-    </>
-  );
-}
+    );
+  }
+);
 
 export default ToddlerMovementProcessingForm;

@@ -2,6 +2,7 @@ import axios from "axios";
 import BaseForm from "../BaseForm";
 import { useState } from "react";
 import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
 function BodyPositionProcessingForm({
   patientId,
@@ -11,10 +12,26 @@ function BodyPositionProcessingForm({
   initialComments,
   onFormSubmit,
   isSubmitting: isSubmittingProp,
+  disabled = false,
 }) {
   const [isCreating, setIsCreating] = useState(false);
 
   const isSubmitting = isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
+  const hasInitialFromParent =
+    Array.isArray(initialResponses) && initialResponses.length > 0;
+  const {
+    resolvedResponses,
+    resolvedComments,
+    isLocked: autoLocked,
+    refreshSection,
+  } = useSensorySectionLock({
+    patientId,
+    testDate,
+    category: "Body Position Processing",
+    initialResponses,
+    initialComments,
+  });
+  const finalDisabled = disabled || autoLocked;
 
   const questions = [
     {
@@ -34,7 +51,7 @@ function BodyPositionProcessingForm({
     },
     {
       qid: 38,
-      text: "props to support seff (for example, holds head in hands, leans against a wall).",
+      text: "props to support self (for example, holds head in hands, leans against a wall).",
       quadrant: "RG",
     },
     {
@@ -83,6 +100,9 @@ function BodyPositionProcessingForm({
         formData
       );
       console.log("Form Submitted Successfully:", result.data);
+      if (!hasInitialFromParent) {
+        await refreshSection();
+      }
       alert("Assessment saved!");
     } catch (error) {
       console.error("There was an error submitting the form:", error);
@@ -98,8 +118,9 @@ function BodyPositionProcessingForm({
       onSubmit={handleFormSubmit}
       formTitle="Body Position Processing"
       isSubmitting={isSubmitting}
-      initialResponses={initialResponses}
-      initialComments={initialComments}
+      initialResponses={resolvedResponses || initialResponses}
+      initialComments={resolvedComments}
+      disabled={finalDisabled}
     />
   );
 }

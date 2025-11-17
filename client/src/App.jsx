@@ -14,8 +14,10 @@ import ViewTherapyAssessment from './pages/SpeechAndTheropyAssessment/ViewTherap
 //varsha parts
 import "./App.css";
 import SensoryProfileCreatePage from "./pages/SensoryProfile/SensoryProfileCreatePage";
+import SensoryProfileSectionsPage from "./pages/SensoryProfile/SensoryProfileSectionsPage";
 import SensoryProfileReadPage from "./pages/SensoryProfile/SensoryProfileReadPage";
 import SensoryProfileEditPage from "./pages/SensoryProfile/SensoryProfileEditPage";
+import SensoryProfileProgressPage from "./pages/SensoryProfile/SensoryProfileProgressPage";
 import ServiceQrPage from "./pages/QrAttendance/ServiceQRPage";
 import ChildManagementPage from "./pages/QrAttendance/ChildManagementPage";
 import ParentQrViewPage from "./pages/QrAttendance/ParentQrViewPage";
@@ -122,8 +124,16 @@ function App() {
             element={<SensoryProfileCreatePage />}
           />
           <Route
+            path="sensory-profile-sections"
+            element={<SensoryProfileSectionsPage />}
+          />
+          <Route
             path="sensory-profile-view"
             element={<SensoryProfileReadPage />}
+          />
+          <Route
+            path="sensory-profile-progress"
+            element={<SensoryProfileProgressPage />}
           />
           <Route
             path="sensory-profile/edit/:id"

@@ -18,7 +18,7 @@ const forms = [
     name: "Sensory Profile", 
     newPath: "../sensory-profile-fill-form", 
     previousPath: "../sensory-profile-view", 
-    progressPath: null 
+    progressPath: "../sensory-profile-progress" 
   },
   { 
     name: "Autism Rating Form (CARS)", 
@@ -92,12 +92,7 @@ const FormHome = () => {
                   to={form.progressPath}
                   className={`w-full text-center py-3 px-6 rounded-full font-semibold text-purple-800 border-2 border-purple-400 
                               bg-white hover:bg-purple-50 transition-all duration-300 ease-in-out transform hover:scale-105 active:scale-95 
-                              shadow-md focus:outline-none focus:ring-4 focus:ring-purple-200 focus:ring-opacity-75
-                              ${
-                                form.progressPath === "/cars-progress" || form.progressPath === "/bc-progress"
-                                  ? "" // Enable for these existing paths
-                                  : "cursor-not-allowed text-gray-400 hover:text-gray-400 border-gray-300 bg-gray-50" // Example: disable if no specific progress route
-                              }`}
+                              shadow-md focus:outline-none focus:ring-4 focus:ring-purple-200 focus:ring-opacity-75`}
                 >
                   View Progress
                 </Link>
