@@ -33,6 +33,7 @@ router.get(
     checkRole(['Super Admin', 'Admin']),
     getAllUsers
 );
+router.get('/check-doctor/:idNumber', checkDoctor);
 
 // @route   POST /api/users/login
 // @access  Public
@@ -53,3 +54,6 @@ router.put('/update-username', authMiddleware, updateUsername);
 router.put('/update-password', authMiddleware, updatePassword);
 
 module.exports = router;
+
+
+
