@@ -147,7 +147,7 @@ const AppointmentManagement = () => {
           icon="fas fa-user-md"
           title="Book Doctor Appointment"
           description="Schedule consultations with medical doctors or specialists."
-          allowed={isParent || isAdmin}
+          allowed={isParent}
         />
 
         {/* Service Booking Card */}
@@ -164,8 +164,8 @@ const AppointmentManagement = () => {
           type="doctor"
           icon="fas fa-users"
           title="Patient Appoinments"
-          description="Schedule participation in group sessions or specific topic workshops."
-          allowed={isParent || isAdmin || isResourcePerson || isPractitioner}
+          description="Appointment Overview & Patient Information"
+          allowed={isPractitioner }
         />
 
         {/* Practitioner's Personal Schedule */}
@@ -188,7 +188,7 @@ const AppointmentManagement = () => {
         <AppointmentCard
           type="manage-availability"
           icon="fas fa-list-alt"
-          title="Manage Availability"
+          title="Manage Availability of Doctors and Manage Appointments"
           description="Oversee, filter, and manage all system appointments and bookings."
           allowed={isAdmin}
         />

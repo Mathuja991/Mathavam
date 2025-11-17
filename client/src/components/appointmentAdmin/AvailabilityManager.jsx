@@ -100,7 +100,8 @@ const AvailabilityManager = ({
   // Update slot directly in database
   const handleUpdateSlot = async () => {
     if (!editTimeSlots.startTime || !editTimeSlots.endTime) return;
-    
+      console.log('Editing Slot ID:', editingSlot);
+  console.log('Time slots to update:', editTimeSlots);
     // Check if end time is after start time
     if (editTimeSlots.startTime >= editTimeSlots.endTime) {
       alert('End time must be after start time');

@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Session = require("../models/Session");
+const sessionController = require("../controllers/sessionController");
 
 // --- GET /api/admin/sessions (filtered list + pagination)
 router.get("/sessions", async (req, res) => {
@@ -107,5 +108,8 @@ router.get("/sessions/stats/summary", async (req, res) => {
     res.status(500).json({ error: "Failed to calculate summary" });
   }
 });
+
+// --- GET /api/admin/sessions/export.csv (CSV export using existing controller)
+router.get("/sessions/export.csv", sessionController.exportCsv);
 
 module.exports = router;

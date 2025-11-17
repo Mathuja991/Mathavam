@@ -1,103 +1,92 @@
-import axios from "axios";
+import React, { useImperativeHandle, forwardRef, useRef } from "react";
 import BaseForm from "../BaseForm";
-import { useState } from "react";
-import { createSensoryProfilePayload } from "../../../../utills/apiUtils";
+import { useSensorySectionLock } from "../../../../hooks/useSensorySectionLock";
 
-function ToddlerOralSensoryProcessingForm({
-  patientId,
-  examinerId,
-  testDate,
-  initialResponses,
-  initialComments,
-  onFormSubmit,
-  isSubmitting: isSubmittingProp,
-}) {
-  const [isCreating, setIsCreating] = useState(false);
-
-  const isSubmitting =
-    isSubmittingProp !== undefined ? isSubmittingProp : isCreating;
-
-  const questions = [
+const ToddlerOralSensoryProcessingForm = forwardRef(
+  (
     {
-      qid: 42,
-      text: "shows a clear dislike for all but a few food choices.",
-      quadrant: "AV",
-    },
-    {
-      qid: 43,
-      text: "drools.",
-      quadrant: "",
-    },
-    {
-      qid: 44,
-      text: "prefers one texture of food (for example, smooth, crunchy).",
-      quadrant: "SN",
-    },
-    {
-      qid: 45,
-      text: "uses drinking to calm self.",
-      quadrant: "RG",
-    },
-    {
-      qid: 46,
-      text: "gags on foods or drink.",
-      quadrant: "SN",
-    },
-    {
-      qid: 47,
-      text: "holds food in cheeks before swallowing.",
-      quadrant: "",
-    },
-    {
-      qid: 48,
-      text: "has difficulty weaning to chunky foods.",
-      quadrant: "SN",
-    },
-  ];
-
-  const handleFormSubmit = async (formSpecificData) => {
-    if (onFormSubmit) {
-      onFormSubmit(formSpecificData);
-      return;
-    }
-
-    if (isCreating) return;
-    setIsCreating(true);
-
-    const sharedData = {
+      onSubmit,
+      initialResponses,
+      initialComments,
+      disabled,
       patientId,
-      examinerId,
       testDate,
-      ageGroup: "Toddler",
-    };
+    },
+    ref
+  ) => {
+    const baseFormRef = useRef();
+    const {
+      resolvedResponses,
+      resolvedComments,
+      isLocked: autoLocked,
+    } = useSensorySectionLock({
+      patientId,
+      testDate,
+      category: "Oral Sensory Processing",
+      initialResponses,
+      initialComments,
+    });
+    const finalDisabled = disabled || autoLocked;
 
-    const formData = createSensoryProfilePayload(formSpecificData, sharedData);
+    const questions = [
+      {
+        qid: 42,
+        text: "shows a clear dislike for all but a few food choices.",
+        quadrant: "AV",
+      },
+      {
+        qid: 43,
+        text: "drools.",
+        quadrant: "",
+      },
+      {
+        qid: 44,
+        text: "prefers one texture of food (for example, smooth, crunchy).",
+        quadrant: "SN",
+      },
+      {
+        qid: 45,
+        text: "uses drinking to calm self.",
+        quadrant: "RG",
+      },
+      {
+        qid: 46,
+        text: "gags on foods or drink.",
+        quadrant: "SN",
+      },
+      {
+        qid: 47,
+        text: "holds food in cheeks before swallowing.",
+        quadrant: "",
+      },
+      {
+        qid: 48,
+        text: "has difficulty weaning to chunky foods.",
+        quadrant: "SN",
+      },
+    ];
 
-    try {
-      const result = await axios.post(
-        "/api/assessments/sensory-profile",
-        formData
-      );
-      console.log("Form Submitted Successfully:", result.data);
-      alert("Assessment saved!");
-    } catch (error) {
-      console.error("There was an error submitting the form:", error);
-      alert("Error: Could not save the assessment.");
-    } finally {
-      setIsCreating(false);
-    }
-  };
+    useImperativeHandle(ref, () => ({
+      getFormData: () => {
+        if (baseFormRef.current) {
+          return baseFormRef.current.getFormData();
+        }
+        return null;
+      },
+    }));
 
-  return (
-    <BaseForm
-      questions={questions}
-      onSubmit={handleFormSubmit}
-      formTitle="Oral Sensory Processing"
-      isSubmitting={isSubmitting}
-      initialResponses={initialResponses}
-      initialComments={initialComments}
-    />
-  );
-}
+    return (
+      <BaseForm
+        ref={baseFormRef}
+        questions={questions}
+        onSubmit={onSubmit}
+        formTitle="Oral Sensory Processing"
+        initialResponses={resolvedResponses || initialResponses}
+        initialComments={resolvedComments}
+        disabled={finalDisabled}
+      />
+    );
+  }
+);
 
 export default ToddlerOralSensoryProcessingForm;

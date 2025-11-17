@@ -170,7 +170,9 @@ export default function AdminQrAttendance() {
                         : "bg-gray-50 text-gray-700 border-gray-200"
                     }`}
                   >
-                    {r.status || "completed"}
+                    {r.status
+                      ? r.status.charAt(0).toUpperCase() + r.status.slice(1)
+                      : "Completed"}
                   </span>
                 </td>
               </tr>

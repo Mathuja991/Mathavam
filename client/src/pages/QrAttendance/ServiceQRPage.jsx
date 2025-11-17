@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   FaQrcode,
   FaCheckCircle,
@@ -6,7 +6,14 @@ import {
   FaClock,
 } from "react-icons/fa";
 import QrScanner from "../../components/QrScanner";
-import { getChildByChildNo, createSessionLog } from "../../services/qrService";
+import {
+  getChildByChildNo,
+  createSessionLog,
+  getTodaySessions,
+  updateSessionLog,
+} from "../../services/qrService";
+
+const ACTIVE_SESSION_STORAGE_KEY = "serviceQrActiveSession";
 
 function ServiceQrPage() {
   const [showScanner, setShowScanner] = useState(false);
@@ -19,7 +26,10 @@ function ServiceQrPage() {
   const [lastAction, setLastAction] = useState({ type: "", message: "" });
   const [isLoading, setIsLoading] = useState(false);
   const [scannedChild, setScannedChild] = useState(null);
-
+  const [existingSessionToday, setExistingSessionToday] = useState(null);
+  const [reassessmentAction, setReassessmentAction] = useState(null);
+  const [sessionToUpdateId, setSessionToUpdateId] = useState(null);
+  const [showReassessmentPrompt, setShowReassessmentPrompt] = useState(false);
   const loggedInStaff = useMemo(
     () => ({
       id: "staff_123",
@@ -28,6 +38,43 @@ function ServiceQrPage() {
     }),
     []
   );
+  const loadTodaySessions = useCallback(async () => {
+    try {
+      const response = await getTodaySessions({ staffId: loggedInStaff.id });
+      const items = Array.isArray(response.data) ? response.data : [];
+      const sorted = [...items].sort(
+        (a, b) =>
+          new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()
+      );
+      setCompletedSessions(sorted);
+    } catch (err) {
+      console.error("Failed to load today's sessions", err);
+      setCompletedSessions([]);
+    }
+  }, [loggedInStaff.id]);
+
+  const checkExistingSessionForToday = async (childData) => {
+    try {
+      const response = await getTodaySessions({ staffId: loggedInStaff.id });
+      const existing = Array.isArray(response.data)
+        ? response.data.find((s) => s.childNo === childData.childNo)
+        : null;
+      if (existing) {
+        setExistingSessionToday(existing);
+        setReassessmentAction(null);
+        setShowReassessmentPrompt(true);
+      } else {
+        setExistingSessionToday(null);
+        setReassessmentAction("new");
+        setShowReassessmentPrompt(false);
+        setSessionToUpdateId(null);
+      }
+    } catch (err) {
+      console.error("Failed to verify existing sessions", err);
+      setExistingSessionToday(null);
+      setReassessmentAction("new");
+    }
+  };
 
   const handleScanSuccess = async (scannedId) => {
     setShowScanner(false);
@@ -38,6 +85,7 @@ function ServiceQrPage() {
     try {
       const response = await getChildByChildNo(scannedId);
       setScannedChild(response.data);
+      await checkExistingSessionForToday(response.data);
     } catch (error) {
       if (error?.response?.status === 404) {
         setLastAction({
@@ -57,20 +105,75 @@ function ServiceQrPage() {
 
   const handleConfirmSession = () => {
     if (!scannedChild) return;
+    if (existingSessionToday && !reassessmentAction) {
+      setShowReassessmentPrompt(true);
+      return;
+    }
+    const shouldUpdate =
+      reassessmentAction === "update" && existingSessionToday;
+    const startingNotes = shouldUpdate
+      ? existingSessionToday?.notes || ""
+      : "";
     setActiveSession(scannedChild);
     setSessionStartAt(new Date());
     setElapsedSeconds(0);
-    setNotes("");
+    setNotes(startingNotes);
+    setSessionToUpdateId(shouldUpdate ? existingSessionToday?._id : null);
     setScannedChild(null);
+    setExistingSessionToday(null);
+    setReassessmentAction(null);
+    setShowReassessmentPrompt(false);
     setLastAction({
       type: "success",
-      message: `Session started for ${scannedChild.name}.`,
+      message: shouldUpdate
+        ? `Updating the earlier record for ${scannedChild.name}.`
+        : `Session started for ${scannedChild.name}.`,
     });
   };
 
   const handleCancelCheckIn = () => {
     setScannedChild(null);
+    setExistingSessionToday(null);
+    setReassessmentAction(null);
+    setShowReassessmentPrompt(false);
     setLastAction({ type: "", message: "" });
+  };
+
+  const handleReassessmentChoice = (choice) => {
+    if (!existingSessionToday) {
+      setShowReassessmentPrompt(false);
+      return;
+    }
+    if (choice === "cancel") {
+      setShowReassessmentPrompt(false);
+      setScannedChild(null);
+      setExistingSessionToday(null);
+      setReassessmentAction(null);
+      setSessionToUpdateId(null);
+      setLastAction({
+        type: "error",
+        message: "Re-assessment cancelled.",
+      });
+      return;
+    }
+    if (choice === "update") {
+      setReassessmentAction("update");
+      setShowReassessmentPrompt(false);
+      setLastAction({
+        type: "success",
+        message: "You chose to update the previous entry.",
+      });
+      return;
+    }
+    if (choice === "new") {
+      setReassessmentAction("new");
+      setSessionToUpdateId(null);
+      setShowReassessmentPrompt(false);
+      setLastAction({
+        type: "success",
+        message: "This will be saved as a new entry.",
+      });
+    }
   };
 
   useEffect(() => {
@@ -78,6 +181,56 @@ function ServiceQrPage() {
     const t = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [activeSession]);
+
+  // Restore any pending session when returning to this page
+  useEffect(() => {
+    loadTodaySessions();
+  }, [loadTodaySessions]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed?.child && parsed?.startedAt) {
+        const start = new Date(parsed.startedAt);
+        setActiveSession(parsed.child);
+        setSessionStartAt(start);
+        setElapsedSeconds(
+          Math.max(0, Math.floor((Date.now() - start.getTime()) / 1000))
+        );
+        setNotes(parsed.notes || "");
+        setSessionToUpdateId(
+          parsed.sessionMode === "update" ? parsed.sessionId || null : null
+        );
+        setLastAction({
+          type: "success",
+          message: "Resumed in-progress session.",
+        });
+      }
+    } catch (err) {
+      console.error("Failed to restore session state", err);
+      localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+    }
+  }, []);
+
+  // Persist session progress so it survives navigation away from this page
+  useEffect(() => {
+    if (activeSession && sessionStartAt) {
+      localStorage.setItem(
+        ACTIVE_SESSION_STORAGE_KEY,
+        JSON.stringify({
+          child: activeSession,
+          startedAt: sessionStartAt.toISOString(),
+          notes,
+          sessionMode: sessionToUpdateId ? "update" : "new",
+          sessionId: sessionToUpdateId,
+        })
+      );
+    } else {
+      localStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY);
+    }
+  }, [activeSession, sessionStartAt, notes, sessionToUpdateId]);
 
   const formatHms = (total) => {
     const h = Math.floor(total / 3600)
@@ -104,27 +257,31 @@ function ServiceQrPage() {
       startedAt: sessionStartAt.toISOString(),
       endedAt: endedAt.toISOString(),
       durationSeconds: elapsedSeconds,
+      status: "completed",
       notes: notes?.trim() || "",
     };
 
     try {
-      const res = await createSessionLog(payload);
-      const logId = res?.data?._id || crypto.randomUUID();
-      setCompletedSessions((list) => [
-        {
-          id: logId,
-          ...payload,
-        },
-        ...list,
-      ]);
+      let savedSession;
+      if (sessionToUpdateId) {
+        const res = await updateSessionLog(sessionToUpdateId, payload);
+        savedSession = res?.data || { ...payload, _id: sessionToUpdateId };
+      } else {
+        const res = await createSessionLog(payload);
+        savedSession = res?.data || { ...payload };
+      }
       setLastAction({
         type: "success",
-        message: "Session ended and saved successfully!",
+        message: sessionToUpdateId
+          ? "Session updated successfully!"
+          : "Session ended and saved successfully!",
       });
+      await loadTodaySessions();
       setActiveSession(null);
       setSessionStartAt(null);
       setElapsedSeconds(0);
       setNotes("");
+      setSessionToUpdateId(null);
     } catch (e) {
       setLastAction({
         type: "error",
@@ -177,6 +334,41 @@ function ServiceQrPage() {
                   {scannedChild.gender}
                 </p>
               </div>
+              {existingSessionToday && (
+                <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm space-y-2">
+                  <p className="font-semibold">
+                    Heads up! You already checked this child today at{" "}
+                    {new Date(
+                      existingSessionToday.startedAt
+                    ).toLocaleTimeString()}.
+                  </p>
+                  {reassessmentAction ? (
+                    <div className="flex flex-col gap-2">
+                      <p>
+                        Current selection:{" "}
+                        <span className="font-bold">
+                          {reassessmentAction === "update"
+                            ? "Update the existing entry"
+                            : "Add as a separate entry"}
+                        </span>
+                      </p>
+                      <button
+                        onClick={() => setShowReassessmentPrompt(true)}
+                        className="self-start text-sm font-semibold text-amber-900 underline"
+                      >
+                        Change choice
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setShowReassessmentPrompt(true)}
+                      className="text-sm font-semibold text-amber-900 underline"
+                    >
+                      Choose how to save this re-assessment
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={handleConfirmSession}
@@ -328,7 +520,7 @@ function ServiceQrPage() {
             ) : (
               completedSessions.map((s) => (
                 <div
-                  key={s.id}
+                  key={s._id || s.id}
                   className="border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between"
                 >
                   <div>
@@ -356,6 +548,46 @@ function ServiceQrPage() {
             )}
           </div>
         </footer>
+        {showReassessmentPrompt && existingSessionToday && (
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full space-y-4 border border-amber-200">
+              <h3 className="text-2xl font-bold text-gray-800">
+                Already assessed today
+              </h3>
+              <p className="text-gray-600">
+                You already checked{" "}
+                <span className="font-semibold">
+                  {existingSessionToday.childName}
+                </span>{" "}
+                earlier today (started at{" "}
+                {new Date(
+                  existingSessionToday.startedAt
+                ).toLocaleTimeString()}
+                ). How do you want to save this re-assessment?
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => handleReassessmentChoice("cancel")}
+                  className="w-full px-4 py-3 rounded-lg border border-red-200 text-red-700 font-semibold hover:bg-red-50 transition"
+                >
+                  1. Cancel
+                </button>
+                <button
+                  onClick={() => handleReassessmentChoice("update")}
+                  className="w-full px-4 py-3 rounded-lg border border-amber-300 text-amber-800 font-semibold hover:bg-amber-50 transition"
+                >
+                  2. Update the existing one
+                </button>
+                <button
+                  onClick={() => handleReassessmentChoice("new")}
+                  className="w-full px-4 py-3 rounded-lg border border-emerald-300 text-emerald-700 font-semibold hover:bg-emerald-50 transition"
+                >
+                  3. Add as a separate entry
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

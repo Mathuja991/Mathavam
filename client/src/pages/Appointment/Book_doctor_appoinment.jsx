@@ -12,43 +12,27 @@ const PatientAppointmentBooking = () => {
   // REAL doctors data from availability database
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // REAL availability data from database
   const [doctorAvailability, setDoctorAvailability] = useState({});
+  const [appointmentData, setAppointmentData] = useState(null);
 
-  // Mock existing appointments count for each date
-  const [existingAppointments] = useState({
-    "2024-01-15": 3,
-    "2024-01-16": 1,
-  });
-
-  // Mock appointment history data
-  const [appointmentHistory, setAppointmentHistory] = useState([
-    {
-      id: 1,
-      serialNo: 1,
-      doctorId: "1",
-      doctorName: "Dr. John Smith",
-      date: "2024-02-20",
-      time: "10:00 - 11:00",
-      status: "upcoming",
-      createdAt: "2024-01-05"
-    },
-  ]);
-
+  // Appointment states
+  const [appointments, setAppointments] = useState([]);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTime, setSelectedTime] = useState("");
   const [availableDates, setAvailableDates] = useState([]);
   const [availableTimeRanges, setAvailableTimeRanges] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [patientEmail, setPatientEmail] = useState("");
+  const [patientName, setPatientName] = useState("");
   const [patientNote, setPatientNote] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [activeTab, setActiveTab] = useState("book");
   const [cancelConfirmation, setCancelConfirmation] = useState(null);
-  
+  const [appointmentNumber, setAppointmentNumber] = useState("");
+
   // Filter states for appointment history
   const [historyFilters, setHistoryFilters] = useState({
     doctorName: "",
@@ -57,145 +41,190 @@ const PatientAppointmentBooking = () => {
     status: "all"
   });
 
-  // 🔥 FETCH DOCTORS AND AVAILABILITY FROM DATABASE
- useEffect(() => {
-  const fetchDoctorsAndAvailability = async () => {
-    try {
-      setLoading(true);
+  // Simple day name helper
+  const getDayName = (date) => {
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[date.getDay()];
+  };
 
-      // Fetch all doctors
-      const response = await axios.get('/api/availability/doctors/all');
-      console.log('🟢 API RESPONSE RECEIVED:', response.data.data);
+  //  FETCH DOCTORS AND AVAILABILITY FROM DATABASE
+  useEffect(() => {
+    const fetchDoctorsAndAvailability = async () => {
+      try {
+        setLoading(true);
 
-      if (response.data.success) {
-        const availabilityData = response.data.data || [];
+        // Fetch all doctors
+        const response = await axios.get('/api/availability/doctors/all');
+        console.log(' API RESPONSE RECEIVED:', response.data.data);
 
-        // Map unique doctors
-        const uniqueDoctorsMap = new Map();
-        availabilityData.forEach(doc => {
-          if (!uniqueDoctorsMap.has(doc._id)) {
-            uniqueDoctorsMap.set(doc._id, {
-              _id: doc._id,
-              name: doc.name,
-              specialization: "General Practice"
-            });
+        if (response.data.success) {
+          const availabilityData = response.data.data || [];
+
+          // Map unique doctors
+          const uniqueDoctorsMap = new Map();
+          availabilityData.forEach(doc => {
+            if (!uniqueDoctorsMap.has(doc._id)) {
+              uniqueDoctorsMap.set(doc._id, {
+                _id: doc._id,
+                name: doc.name,
+                specialization: "General Practice"
+              });
+            }
+          });
+
+          const doctorsList = Array.from(uniqueDoctorsMap.values());
+          setDoctors(doctorsList);
+
+          // Fetch availability for all doctor IDs
+          const doctorIds = doctorsList.map(d => d._id);
+          const res = await axios.post('/api/availability/doctors', { doctorIds });
+
+          const availability = res.data.data || [];
+          const availabilityByDoctor = {};
+
+          for (const doctorDoc of availability) {
+            const doctorId = doctorDoc.doctorId;
+
+            if (!availabilityByDoctor[doctorId]) {
+              availabilityByDoctor[doctorId] = [];
+            }
+
+            for (const slot of doctorDoc.availabilitySlots) {
+              availabilityByDoctor[doctorId].push({
+                day: slot.day,
+                startTime: slot.startTime,
+                endTime: slot.endTime
+              });
+            }
           }
-        });
 
-        const doctorsList = Array.from(uniqueDoctorsMap.values());
-        setDoctors(doctorsList);
-
-        // Fetch availability for all doctor IDs
-        const doctorIds = doctorsList.map(d => d._id);
-        const res = await axios.post('/api/availability/doctors', { doctorIds });
-
-        const availability = res.data.data || [];
-        const availabilityByDoctor = {};
-
-        for (const doctorDoc of availability) {
-          const doctorId = doctorDoc.doctorId;
-
-          if (!availabilityByDoctor[doctorId]) {
-            availabilityByDoctor[doctorId] = [];
-          }
-
-          for (const slot of doctorDoc.availabilitySlots) {
-            availabilityByDoctor[doctorId].push({
-              day: slot.day,
-              startTime: slot.startTime,
-              endTime: slot.endTime
-            });
-          }
+          console.log('🟢 Availability by Doctor:', availabilityByDoctor);
+          setDoctorAvailability(availabilityByDoctor);
         }
+      } catch (error) {
+        console.error('Error fetching doctors and availability:', error);
+        setDoctors([]);
+        setDoctorAvailability({});
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        console.log('🟢 Availability by Doctor:', availabilityByDoctor);
-        setDoctorAvailability(availabilityByDoctor);
+    fetchDoctorsAndAvailability();
+  }, []);
+
+  //  FETCH APPOINTMENTS FROM BACKEND
+  const fetchAppointments = async () => {
+    try {
+      const response = await axios.get('/api/doctorappointments');
+      if (response.data.success) {
+        setAppointments(response.data.appointments);
       }
     } catch (error) {
-      console.error('Error fetching doctors and availability:', error);
-      setDoctors([]);
-      setDoctorAvailability({});
-    } finally {
-      setLoading(false);
+      console.error('Error fetching appointments:', error);
     }
   };
 
-  fetchDoctorsAndAvailability();
-}, []);
-
+  // 🔥 FETCH APPOINTMENTS BY DOCTOR AND DATE FOR AVAILABILITY CHECK
+  const fetchAppointmentsByDoctorAndDate = async (doctorName, date) => {
+    try {
+      const response = await axios.get(`/api/doctorappointments/${doctorName}/${date}`);
+      if (response.data.success) {
+        return response.data.appointments;
+      }
+      return [];
+    } catch (error) {
+      console.error('Error fetching appointments by doctor and date:', error);
+      return [];
+    }
+  };
+  // Load appointments when component mounts
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
   // Generate dates for next 2 months based on available days
- const SL_OFFSET = 5.5 * 60; // 5 hours 30 minutes in minutes
+  const generateAvailableDates = () => {
+    if (!selectedDoctorId) return [];
 
-const generateAvailableDates = () => {
-  if (!selectedDoctorId) return [];
+    const availability = doctorAvailability[selectedDoctorId] || [];
+    const availableDays = [...new Set(availability.map(slot => slot.day))];
 
-  const availability = doctorAvailability[selectedDoctorId] || [];
-  const availableDays = [...new Set(availability.map(slot => slot.day))];
-  
-  const dates = [];
-  const now = new Date();
+    const dates = [];
+    const today = new Date();
 
-  for (let i = 1; i <= 60; i++) {
-    // Add i days
-    const utcTime = now.getTime() + i * 24 * 60 * 60 * 1000;
+    for (let i = 1; i <= 60; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() + i);
 
-    // Apply Sri Lanka offset
-    const slTime = new Date(utcTime + SL_OFFSET * 60 * 1000);
+      // Use simple local date format
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
 
-    const year = slTime.getFullYear();
-    const month = String(slTime.getMonth() + 1).padStart(2, '0');
-    const day = String(slTime.getDate()).padStart(2, '0');
-    const dateString = `${year}-${month}-${day}`;
+      // Use simple getDay() method for consistency
+      const dayName = getDayName(date);
 
-    const dayName = slTime.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'Asia/Colombo' });
-
-    if (availableDays.includes(dayName)) {
-      dates.push({
-        date: dateString,
-        day: dayName,
-        appointmentCount: existingAppointments[dateString] || 0
-      });
+      if (availableDays.includes(dayName)) {
+        dates.push({
+          date: dateString,
+          day: dayName,
+          appointmentCount: 0 // Will be updated when date is selected
+        });
+      }
     }
-  }
 
-  return dates;
-};
+    return dates;
+  };
 
   // Generate calendar for current month
   const generateCalendar = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
-    
+
     const calendar = [];
     const availableDatesList = generateAvailableDates();
-    
+
     // Add previous month's trailing days
     const firstDayOfWeek = firstDay.getDay();
     const prevMonthLastDay = new Date(year, month, 0).getDate();
     for (let i = firstDayOfWeek - 1; i >= 0; i--) {
       const date = new Date(year, month - 1, prevMonthLastDay - i);
+
+      // Use same local date format as generateAvailableDates
+      const yearPrev = date.getFullYear();
+      const monthPrev = String(date.getMonth() + 1).padStart(2, '0');
+      const dayPrev = String(date.getDate()).padStart(2, '0');
+      const dateString = `${yearPrev}-${monthPrev}-${dayPrev}`;
+
       calendar.push({
         date,
         isCurrentMonth: false,
         isAvailable: false,
         appointmentCount: 0,
-        dateString: date.toISOString().split('T')[0]
+        dateString
       });
     }
-    
+
     // Add current month's days
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      const dateString = date.toISOString().split('T')[0];
+
+      // Use same local date format as generateAvailableDates
+      const yearCurr = date.getFullYear();
+      const monthCurr = String(date.getMonth() + 1).padStart(2, '0');
+      const dayCurr = String(date.getDate()).padStart(2, '0');
+      const dateString = `${yearCurr}-${monthCurr}-${dayCurr}`;
+
       const availableDate = availableDatesList.find(d => d.date === dateString);
       const isAvailable = !!availableDate;
       const appointmentCount = availableDate ? availableDate.appointmentCount : 0;
-      
+
       calendar.push({
         date,
         isCurrentMonth: true,
@@ -204,20 +233,27 @@ const generateAvailableDates = () => {
         dateString
       });
     }
-    
+
     // Add next month's leading days
     const totalCells = 42;
     while (calendar.length < totalCells) {
       const date = new Date(year, month + 1, calendar.length - daysInMonth - firstDayOfWeek + 1);
+
+      // Use same local date format as generateAvailableDates
+      const yearNext = date.getFullYear();
+      const monthNext = String(date.getMonth() + 1).padStart(2, '0');
+      const dayNext = String(date.getDate()).padStart(2, '0');
+      const dateString = `${yearNext}-${monthNext}-${dayNext}`;
+
       calendar.push({
         date,
         isCurrentMonth: false,
         isAvailable: false,
         appointmentCount: 0,
-        dateString: date.toISOString().split('T')[0]
+        dateString
       });
     }
-    
+
     return calendar;
   };
 
@@ -245,11 +281,11 @@ const generateAvailableDates = () => {
     }
 
     const dateObj = new Date(selectedDate);
-    const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayName = getDayName(dateObj);
     const availability = doctorAvailability[selectedDoctorId] || [];
-    
+
     const timeRanges = availability.filter(slot => slot.day === dayName);
-    
+
     setAvailableTimeRanges(timeRanges);
     setSelectedTime("");
     setShowConfirmation(false);
@@ -261,7 +297,7 @@ const generateAvailableDates = () => {
     setSelectedDate("");
     setSelectedTime("");
     setAvailableTimeRanges([]);
-    setPatientEmail("");
+    setPatientName("");
     setPatientNote("");
     setShowConfirmation(false);
     setShowSuccess(false);
@@ -285,57 +321,100 @@ const generateAvailableDates = () => {
   };
 
   const handleConfirmBooking = () => {
+    if (!patientName.trim()) {
+      alert('Please enter patient name');
+      return;
+    }
     setShowConfirmation(true);
   };
 
-  const handleYesConfirm = () => {
-    const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
-    
-    // Add new appointment to history
-    const newAppointment = {
-      id: appointmentHistory.length + 1,
-      serialNo: appointmentHistory.length + 1,
-      doctorId: selectedDoctorId,
-      doctorName: selectedDoctor?.name,
-      date: selectedDate,
-      time: `${selectedTime.startTime} - ${selectedTime.endTime}`,
-      status: "upcoming",
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-    
-    setAppointmentHistory(prev => [newAppointment, ...prev]);
-    setShowConfirmation(false);
-    setShowSuccess(true);
+  // REAL BOOKING FUNCTION
+  const handleYesConfirm = async () => {
+    try {
+      const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
+
+      const appointmentData = {
+        doctorName: selectedDoctor?.name,
+        patientName: patientName.trim(),
+        appointmentDate: selectedDate,
+        timeSlot: {
+          startTime: selectedTime.startTime,
+          endTime: selectedTime.endTime
+        },
+        patientNote: patientNote.trim()
+      };
+
+      console.log("📤 Sending appointment data:", appointmentData);
+
+      const response = await axios.post('/api/doctorappointments/book', appointmentData);
+
+      if (response.data.success) {
+        // Store the complete appointment data from backend
+        setAppointmentData(response.data.appointment);
+        setShowConfirmation(false);
+        setShowSuccess(true);
+
+        // Refresh appointments list
+        await fetchAppointments();
+
+        // Reset form fields only (don't reset selectedTime/selectedDate yet)
+        setPatientName("");
+        setPatientNote("");
+      } else {
+        alert(response.data.message || 'Failed to book appointment');
+        setShowConfirmation(false);
+      }
+    } catch (error) {
+      console.error(' Error booking appointment:', error);
+      if (error.response) {
+        alert(`Failed to book appointment: ${error.response.data.message}`);
+      } else {
+        alert('Failed to book appointment. Please check your connection.');
+      }
+      setShowConfirmation(false);
+    }
+  };
+
+  // Update the handleDone function
+  const handleDone = () => {
+    // Reset everything after success message is closed
+    setSelectedDoctorId("");
+    setSelectedDate("");
+    setSelectedTime("");
+    setAvailableTimeRanges([]);
+    setPatientName("");
+    setPatientNote("");
+    setAppointmentData(null); // Reset appointment data
+    setShowSuccess(false);
+    setActiveTab("upcoming");
   };
 
   const handleNoConfirm = () => {
     setShowConfirmation(false);
   };
 
-  const handleDone = () => {
-    setSelectedDoctorId("");
-    setSelectedDate("");
-    setSelectedTime("");
-    setAvailableTimeRanges([]);
-    setPatientEmail("");
-    setPatientNote("");
-    setShowSuccess(false);
-    setActiveTab("upcoming");
-  };
-
+  //REAL CANCEL APPOINTMENT FUNCTION
   const handleCancelAppointment = (appointmentId) => {
     setCancelConfirmation(appointmentId);
   };
 
-  const handleConfirmCancel = () => {
-    setAppointmentHistory(prev => 
-      prev.map(apt => 
-        apt.id === cancelConfirmation 
-          ? { ...apt, status: "cancelled" }
-          : apt
-      )
-    );
-    setCancelConfirmation(null);
+  const handleConfirmCancel = async () => {
+    try {
+      const response = await axios.put(`/api/doctorappointments/${cancelConfirmation}/cancel`);
+
+      if (response.data.success) {
+        // Refresh appointments list
+        await fetchAppointments();
+        setCancelConfirmation(null);
+      } else {
+        alert(response.data.message || 'Failed to cancel appointment');
+        setCancelConfirmation(null);
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Failed to cancel appointment. Please try again.');
+      setCancelConfirmation(null);
+    }
   };
 
   const handleCancelCancel = () => {
@@ -360,19 +439,21 @@ const generateAvailableDates = () => {
 
   const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
   const calendarDays = generateCalendar();
-  
-  const upcomingAppointments = appointmentHistory.filter(apt => apt.status === "upcoming");
 
-  const filteredHistoryAppointments = appointmentHistory.filter(apt => {
-    const matchesDoctor = historyFilters.doctorName === "" || 
+  // Filter appointments for different tabs
+  const upcomingAppointments = appointments.filter(apt => apt.status === 'upcoming');
+  const historyAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'cancelled');
+
+  const filteredHistoryAppointments = historyAppointments.filter(apt => {
+    const matchesDoctor = historyFilters.doctorName === "" ||
       apt.doctorName.toLowerCase().includes(historyFilters.doctorName.toLowerCase());
-    const matchesDate = historyFilters.date === "" || apt.date.includes(historyFilters.date);
-    const matchesTime = historyFilters.time === "" || apt.time.toLowerCase().includes(historyFilters.time.toLowerCase());
+    const matchesDate = historyFilters.date === "" ||
+      new Date(apt.appointmentDate).toISOString().split('T')[0].includes(historyFilters.date);
+    const matchesTime = historyFilters.time === "" ||
+      apt.timeSlot.startTime.toLowerCase().includes(historyFilters.time.toLowerCase());
     const matchesStatus = historyFilters.status === "all" || apt.status === historyFilters.status;
     return matchesDoctor && matchesDate && matchesTime && matchesStatus;
   });
-
-  const appointmentNumber = (existingAppointments[selectedDate] || 0) + 1;
 
   if (loading) {
     return (
@@ -388,7 +469,7 @@ const generateAvailableDates = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        
+
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
             <h1 className="text-4xl font-bold text-gray-900">Book Doctor Appointment</h1>
@@ -407,8 +488,8 @@ const generateAvailableDates = () => {
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               availableTimeRanges={availableTimeRanges}
-              patientEmail={patientEmail}
-              setPatientEmail={setPatientEmail}
+              patientName={patientName}
+              setPatientName={setPatientName}
               patientNote={patientNote}
               setPatientNote={setPatientNote}
               handleDateSelect={handleDateSelect}
@@ -423,7 +504,13 @@ const generateAvailableDates = () => {
 
           {activeTab === "upcoming" && (
             <UpcomingAppointmentsTab
-              upcomingAppointments={upcomingAppointments}
+              upcomingAppointments={upcomingAppointments.map((apt, index) => ({
+                id: apt._id,
+                serialNo: index + 1,
+                doctorName: apt.doctorName,
+                date: apt.appointmentDate,
+                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`
+              }))}
               handleCancelAppointment={handleCancelAppointment}
               setActiveTab={setActiveTab}
             />
@@ -431,7 +518,14 @@ const generateAvailableDates = () => {
 
           {activeTab === "history" && (
             <AppointmentHistoryTab
-              filteredHistoryAppointments={filteredHistoryAppointments}
+              filteredHistoryAppointments={filteredHistoryAppointments.map((apt, index) => ({
+                id: apt._id,
+                serialNo: index + 1,
+                doctorName: apt.doctorName,
+                date: apt.appointmentDate,
+                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
+                status: apt.status
+              }))}
               historyFilters={historyFilters}
               handleFilterChange={handleFilterChange}
               clearFilters={clearFilters}
@@ -455,12 +549,7 @@ const generateAvailableDates = () => {
 
         {showSuccess && (
           <SuccessMessage
-            selectedDoctor={selectedDoctor}
-            selectedDate={selectedDate}
-            selectedTime={selectedTime}
-            appointmentNumber={appointmentNumber}
-            patientEmail={patientEmail}
-            patientNote={patientNote}
+            appointmentData={appointmentData} // Pass the complete appointment data
             handleDone={handleDone}
           />
         )}

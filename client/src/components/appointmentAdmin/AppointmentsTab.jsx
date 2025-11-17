@@ -14,25 +14,20 @@ const AppointmentsTab = ({
 }) => {
   const filterAppointments = (appointments) => {
     return appointments.filter(apt => {
-      const matchesDoctor = filters.doctorName === "" || 
+      const matchesDoctor = filters.doctorName === "" ||
         apt.doctorName.toLowerCase().includes(filters.doctorName.toLowerCase());
-      
-      const matchesPatient = filters.patientName === "" || 
+
+      const matchesPatient = filters.patientName === "" ||
         apt.patientName.toLowerCase().includes(filters.patientName.toLowerCase());
-      
-      const matchesPatientId = filters.patientId === "" || 
-        apt.patientId.toLowerCase().includes(filters.patientId.toLowerCase());
-      
-      const matchesDate = filters.date === "" || 
+
+      const matchesDate = filters.date === "" ||
         apt.date.includes(filters.date);
-      
-      const matchesTime = filters.time === "" || 
-        apt.time.toLowerCase().includes(filters.time.toLowerCase());
-      
-      const matchesStatus = filters.status === "all" || 
+
+      const matchesStatus = filters.status === "all" ||
         apt.status === filters.status;
-      
-      return matchesDoctor && matchesPatient && matchesPatientId && matchesDate && matchesTime && matchesStatus;
+
+      // REMOVED: matchesTime filter
+      return matchesDoctor && matchesPatient && matchesDate && matchesStatus;
     });
   };
 

@@ -31,6 +31,41 @@ router.get(
     }
 });
 
+// GET /api/patientRecords/child/:childNo - lookup by child number
+router.get('/child/:childNo', async (req, res) => {
+    try {
+        const rawChildNo = (req.params.childNo || "").trim();
+        if (!rawChildNo) {
+            return res.status(400).json({ message: 'Child number is required' });
+        }
+
+        const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const matchRegex = new RegExp(`^${escapeRegex(rawChildNo)}$`, "i");
+
+        const query = {
+            $or: [
+                { childNo: rawChildNo },
+                { childNo: matchRegex },
+                { childno: rawChildNo },
+                { childno: matchRegex },
+            ],
+        };
+
+        const record = await PatientRecord.findOne(query)
+            .collation({ locale: "en", strength: 2 })
+            .setOptions({ strictQuery: false });
+
+        if (!record) {
+            return res.status(404).json({ message: 'Patient record not found' });
+        }
+
+        res.status(200).json(record);
+    } catch (err) {
+        console.error(`Error fetching patient record with childNo ${req.params.childNo}:`, err);
+        res.status(500).json({ message: 'Server error fetching record', error: err.message });
+    }
+});
+
 // GET /api/patientRecords/:id - Get a single patient record by ID
 // Rule: View for all roles
 router.get(

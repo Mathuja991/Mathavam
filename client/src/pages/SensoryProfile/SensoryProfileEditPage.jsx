@@ -12,6 +12,7 @@ function SensoryProfileEditPage() {
   const [initialData, setInitialData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     const fetchAssessment = async () => {
@@ -45,7 +46,8 @@ function SensoryProfileEditPage() {
     try{
         await axios.put(`/api/assessments/sensory-profile/${id}`, formData);
         alert('Assessment updated successfully!');
-        navigate('/sensory-profile-view');
+        setIsEditing(false);
+        navigate('/dashboard/sensory-profile-view');
     } catch (err){
         console.error("Error updating assessment:", err);
 
@@ -79,12 +81,35 @@ function SensoryProfileEditPage() {
 
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold p-8">Edit Sensory Profile</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 p-6">
+        <h1 className="text-3xl font-bold">Sensory Profile</h1>
+        <p className="text-sm text-gray-500">
+          Personal details are view-only. Use the button below to edit section scores.
+        </p>
+      </div>
 
       {initialData && (
         <>
-          <Base onDataChange={() => {}} initialData={initialData} />
+          <div className="relative">
+            <span className="absolute top-4 right-6 z-10 text-xs font-semibold uppercase tracking-wide text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
+              View Only
+            </span>
+            <div className="pointer-events-none opacity-60">
+              <Base onDataChange={() => {}} initialData={initialData} />
+            </div>
+          </div>
+
+          <div className="flex justify-end px-6 -mt-6">
+            <button
+              onClick={() => setIsEditing((prev) => !prev)}
+              className={`px-5 py-2 rounded-lg font-semibold text-white transition ${
+                isEditing ? "bg-gray-600 hover:bg-gray-700" : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isEditing ? "Cancel Edit" : "Edit Scores"}
+            </button>
+          </div>
 
           <div className="max-w-3xl mx-auto mt-8">
             <BaseCards
@@ -97,7 +122,8 @@ function SensoryProfileEditPage() {
               testDate={initialData.testDate}
               initialResponses={initialData.responses}
               initialComments={initialData.comments}
-              onFormSubmit={handleUpdateSubmit}
+              onSubmit={handleUpdateSubmit}
+              disabled={!isEditing}
               
             />
           </div>

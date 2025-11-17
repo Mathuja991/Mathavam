@@ -5,40 +5,53 @@ const {
   addUser,
   getAllUsers,
   loginUser,
-  checkDoctor
-  // ... anith functions
+  updateUsername,
+  updatePassword,
+  getDashboardStats, // 🟢 NEW IMPORT
 } = require('../controllers/userController');
 
 const authMiddleware = require('../middleware/authMiddleware');
-const checkRole = require('../middleware/checkRoleMiddleware'); // <-- Meka import karanna
+const checkRole = require('../middleware/checkRoleMiddleware');
+
+// Staff Roles array (Admin Dashboard එකට පිවිසිය හැකි අය)
+const ROLES_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person'];
 
 // @route   POST /api/users/add
 // @desc    Add a new user (Only Admins)
-// Rule: Implied 'Manage Users'
 router.post(
     '/add',
     authMiddleware,
-    checkRole(['Super Admin', 'Admin']), // <-- MEKA THAMAI RBAC
+    checkRole(['Super Admin', 'Admin']),
     addUser
 );
 
 // @route   GET /api/users
 // @desc    Get all users (Only Admins)
-// Rule: Implied 'Manage Users'
 router.get(
     '/', 
     authMiddleware, 
-    checkRole(['Super Admin', 'Admin']), // <-- MEKA THAMAI RBAC
+    checkRole(['Super Admin', 'Admin']),
     getAllUsers
 );
 router.get('/check-doctor/:idNumber', checkDoctor);
 
 // @route   POST /api/users/login
 // @access  Public
-router.post('/login', loginUser); // Login ekata auth one naha
+router.post('/login', loginUser);
 
-// ... anith routes (updatePassword, etc.) authMiddleware witharak use karanna
-// router.put('/update-password', authMiddleware, updatePassword);
+// 🟢 NEW ROUTE: Dashboard Stats
+// @route   GET /api/users/dashboard/stats
+// @desc    Get dashboard statistics for staff
+router.get(
+    '/dashboard/stats', 
+    authMiddleware, 
+    checkRole(ROLES_STAFF),
+    getDashboardStats
+);
+
+// User Profile Update Routes
+router.put('/update-username', authMiddleware, updateUsername);
+router.put('/update-password', authMiddleware, updatePassword);
 
 module.exports = router;
 

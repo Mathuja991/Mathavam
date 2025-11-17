@@ -1,6 +1,6 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import Base from "../../components/assessmentForms/SensoryProfile/Base";
-import BaseCards from "../../components/assessmentForms/SensoryProfile/BaseCards";
 
 function SensoryProfileCreatePage() {
   const [patientAge, setPatientAge] = useState(null);
@@ -8,103 +8,89 @@ function SensoryProfileCreatePage() {
   const [examinerId, setExaminerId] = useState("");
   const [testDate, setTestDate] = useState("");
 
-  const [expandedCard, setExpandedCard] = useState(null);
+  const [validationMessage, setValidationMessage] = useState("");
+  const navigate = useNavigate();
 
-  
-  const handleBaseDataChange = useCallback((ageInMonths, patientId, examinerId,testDate) => {
-    setPatientAge((currentAge) => {
-      if (currentAge !== ageInMonths) {
-        setExpandedCard(null);
-      }
-      return ageInMonths;
-    });
-    setPatientId(patientId);
-    setExaminerId(examinerId);
-    setTestDate(testDate);
-  }, []);
+  const handleBaseDataChange = useCallback(
+    (ageInMonths, patientId, examinerId, testDate) => {
+      setPatientAge(ageInMonths);
+      setPatientId(patientId);
+      setExaminerId(examinerId);
+      setTestDate(testDate);
+    },
+    []
+  );
 
-  
-  const toggleCard = useCallback((cardName) => {
-    setExpandedCard((currentExpandedCard) =>
-      currentExpandedCard === cardName ? null : cardName
-    );
-  }, []); 
-
-  
   const getFormType = () => {
     if (patientAge === null) return null;
     if (patientAge >= 36 && patientAge <= 179) return "child";
     if (patientAge >= 7 && patientAge <= 35) return "toddler";
-    return "invalid"; 
+    return "invalid";
   };
 
   const formType = getFormType();
 
-  
-  const getFormSections = () => {
-    if (formType === "child") {
-      return [
-        "Auditory Processing",
-        "Visual Processing",
-        "Touch Processing",
-        "Movement Processing",
-        "Body Position Processing",
-        "Oral Sensory Processing",
-        "Conduct Associated with Sensory Processing",
-        "Social Emotional Responses Associated with Sensory Processing",
-        "Attentional Responses Associated with Sensory Processing",
-      ];
-    } else if (formType === "toddler") {
-      return [
-        "General Processing",
-        "Auditory Processing",
-        "Visual Processing",
-        "Touch Processing",
-        "Movement Processing",
-        "Oral Sensory Processing",
-        "Behavioral Associated with Sensory Processing",
-      ];
+  const canProceedToSections =
+    formType &&
+    formType !== "invalid" &&
+    patientId &&
+    examinerId &&
+    testDate;
+
+  const handleNextStep = () => {
+    if (!canProceedToSections) {
+      setValidationMessage(
+        "Please complete the basic details to continue to the assessment forms."
+      );
+      return;
     }
-    return [];
+    setValidationMessage("");
+    navigate("/dashboard/sensory-profile-sections", {
+      state: {
+        patientAge,
+        patientId,
+        examinerId,
+        testDate,
+      },
+    });
   };
 
-  const formSections = getFormSections();
-
   return (
-    <div className="pb-16">
+    <div className="pb-16 px-4 sm:px-6 lg:px-8">
       <Base onDataChange={handleBaseDataChange} />
 
-      {formType && formType !== "invalid" && patientId && examinerId && (
-        <div className="max-w-3xl mx-auto mt-8">
-          <h2 className="text-2xl font-bold text-center mb-6 text-blue-700">
-            {formType === "child"
-              ? "Child Sensory Profile-2"
-              : "Toddler Sensory Profile"}{" "}
-            Assessment Sections
-          </h2>
-
-          {formSections.map((section) => (
-            <BaseCards
-              key={section}
-              sensoryName={section}
-              isExpanded={expandedCard === section}
-              onToggle={() => toggleCard(section)}
-              formType={formType}
-              patientId={patientId}
-              examinerId={examinerId}
-              testDate={testDate}
-            />
-          ))}
+      {patientAge === null && (
+        <div className="text-center p-8 bg-gray-50 rounded-lg mt-12">
+          <p className="text-gray-600 font-medium text-xl">
+            Please enter the patient's date of birth and the test date to begin
+            the assessment.
+          </p>
         </div>
       )}
 
-      {patientAge === null && (
-        <div className="max-w-3xl mx-auto text-center p-6 bg-blue-50 rounded-lg mt-6">
-          <p className="text-blue-600 font-medium text-lg">
-            Please enter the patient's date of birth and test date to view the
-            appropriate assessment forms.
+      {formType === "invalid" && (
+        <div className="text-center p-8 bg-red-50 text-red-700 rounded-lg mt-12">
+          <p className="font-medium text-xl">
+            The patient's age is outside the valid range (7 to 179 months) for
+            this assessment.
           </p>
         </div>
+      )}
+
+      <div className="mt-10 flex justify-end">
+        <button
+          onClick={handleNextStep}
+          className="px-6 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          disabled={!canProceedToSections}
+        >
+          Next
+        </button>
+      </div>
+
+      {validationMessage && (
+        <p className="mt-4 text-right text-red-600 text-sm">
+          {validationMessage}
+        </p>
       )}
     </div>
   );

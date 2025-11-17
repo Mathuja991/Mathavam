@@ -1,94 +1,128 @@
-import React, { useState } from "react";
-import { Calendar, Clock, User, Filter, Search, X, Phone, Mail } from "lucide-react";
-
-
-// Simplified mock data for appointments
-const mockAppointments = [
-  {
-    id: 1,
-    serialNo: 1,
-    doctorId: "1",
-    patientId: "P001",
-    patientName: "John Doe",
-    patientEmail: "john.doe@email.com",
-    patientPhone: "+1-555-0101",
-    date: "2024-02-20",
-    time: "10:00",
-    status: "upcoming",
-    type: "Consultation"
-  },
-  {
-    id: 2,
-    serialNo: 2,
-    doctorId: "1",
-    patientId: "P002",
-    patientName: "Jane Smith",
-    patientEmail: "jane.smith@email.com",
-    patientPhone: "+1-555-0102",
-    date: "2024-02-20",
-    time: "14:00",
-    status: "upcoming",
-    type: "Follow-up"
-  },
-   
-];
+import React, { useState, useEffect } from "react";
+import { Calendar, Clock, User, Filter, Search, X, Phone, Mail, AlertCircle } from "lucide-react";
+import axios from "axios";
 
 const DoctorDashboard = () => {
   const [activeTab, setActiveTab] = useState("today");
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [cancelConfirmation, setCancelConfirmation] = useState(null);
-  
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   // Filter states
   const [filters, setFilters] = useState({
     status: "all",
-    type: "all",
     date: ""
   });
 
-  // Mock doctor data
-  const currentDoctor = {
-    _id: "1",
-    name: "Dr. John Smith",
-    specialization: "Cardiologist"
+  // 🔥 GET ACTUAL LOGGED-IN DOCTOR FROM LOCALSTORAGE
+  const getCurrentDoctor = () => {
+    try {
+      const userData = localStorage.getItem("user");
+
+      if (userData) {
+        const user = JSON.parse(userData);
+        console.log("👤 Current user:", user);
+
+        // Check if user is a doctor
+        const isDoctor = user.userType === "Doctor";
+
+        if (isDoctor) {
+          const doctorInfo = {
+            _id: user._id,
+            name: `Dr. ${user.firstName} ${user.lastName}`,
+            specialization: user.specialization || "General Practitioner",
+            email: user.email,
+            phone: user.phone
+          };
+          console.log("✅ Doctor info:", doctorInfo);
+          return doctorInfo;
+        }
+      }
+    } catch (error) {
+      console.error("Error getting current doctor:", error);
+    }
+
+    return null;
   };
 
-  // Filter appointments for current doctor
-  const doctorAppointments = mockAppointments.filter(apt => apt.doctorId === currentDoctor._id);
+  const currentDoctor = getCurrentDoctor();
+
+  // 🔥 FETCH APPOINTMENTS FROM DOCTORAPPOINTMENTS DATABASE
+  const fetchAppointments = async () => {
+    if (!currentDoctor) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setError(null);
+      const token = localStorage.getItem("token");
+      const response = await axios.get('/api/doctorappointments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setAppointments(response.data.appointments || []);
+        console.log("✅ Appointments loaded:", response.data.appointments?.length || 0);
+      } else {
+        setError('Failed to fetch appointments: ' + (response.data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+      setError(`Failed to load appointments: ${error.response?.data?.message || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load appointments when component mounts or doctor changes
+  useEffect(() => {
+    if (currentDoctor) {
+      fetchAppointments();
+    } else {
+      setLoading(false);
+    }
+  }, [currentDoctor]);
 
   // Get today's date in YYYY-MM-DD format
   const today = new Date().toISOString().split('T')[0];
 
-  // Calculate counts for the boxes
-  const todayAppointmentsCount = doctorAppointments.filter(apt => 
-    apt.date === today && apt.status === "upcoming"
-  ).length;
+  // Filter appointments for current doctor
+  const doctorAppointments = appointments.filter(apt =>
+    currentDoctor && apt.doctorName === currentDoctor.name
+  );
 
-  const upcomingAppointmentsCount = doctorAppointments.filter(apt => 
+  // Calculate counts for the boxes
+  const todayAppointmentsCount = doctorAppointments.filter(apt => {
+    const appointmentDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
+    return appointmentDate === today && apt.status === "upcoming";
+  }).length;
+
+  const upcomingAppointmentsCount = doctorAppointments.filter(apt =>
     apt.status === "upcoming"
   ).length;
 
   // Sort appointments based on tab
   const getSortedAppointments = (appointments, tab) => {
     const sorted = [...appointments];
-    
+
     if (tab === "today") {
-      // For today's appointments: order by appointment number (serialNo)
-      return sorted.sort((a, b) => a.serialNo - b.serialNo);
+      return sorted.sort((a, b) => a.timeSlot.startTime.localeCompare(b.timeSlot.startTime));
     } else if (tab === "upcoming") {
-      // For upcoming appointments: order by date (recent first), then by appointment number
       return sorted.sort((a, b) => {
-        const dateCompare = new Date(a.date) - new Date(b.date);
+        const dateCompare = new Date(a.appointmentDate) - new Date(b.appointmentDate);
         if (dateCompare === 0) {
-          return a.serialNo - b.serialNo; // Same date, order by appointment number
+          return a.timeSlot.startTime.localeCompare(b.timeSlot.startTime);
         }
-        return dateCompare; // Earlier dates first
+        return dateCompare;
       });
     } else if (tab === "history") {
-      // For history: order by date (recent first)
-      return sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+      return sorted.sort((a, b) => new Date(b.appointmentDate) - new Date(a.appointmentDate));
     }
-    
+
     return sorted;
   };
 
@@ -98,7 +132,10 @@ const DoctorDashboard = () => {
 
     // Apply tab filter
     if (activeTab === "today") {
-      filtered = filtered.filter(apt => apt.date === today);
+      filtered = filtered.filter(apt => {
+        const appointmentDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
+        return appointmentDate === today;
+      });
     } else if (activeTab === "upcoming") {
       filtered = filtered.filter(apt => apt.status === "upcoming");
     } else if (activeTab === "history") {
@@ -108,8 +145,7 @@ const DoctorDashboard = () => {
     // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(apt =>
-        apt.patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        apt.patientId.toLowerCase().includes(searchTerm.toLowerCase())
+        apt.patientName.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
@@ -118,14 +154,12 @@ const DoctorDashboard = () => {
       filtered = filtered.filter(apt => apt.status === filters.status);
     }
 
-    // Apply type filter
-    if (filters.type !== "all") {
-      filtered = filtered.filter(apt => apt.type === filters.type);
-    }
-
     // Apply date filter
     if (filters.date) {
-      filtered = filtered.filter(apt => apt.date === filters.date);
+      filtered = filtered.filter(apt => {
+        const appointmentDate = new Date(apt.appointmentDate).toISOString().split('T')[0];
+        return appointmentDate === filters.date;
+      });
     }
 
     // Apply sorting based on active tab
@@ -146,13 +180,26 @@ const DoctorDashboard = () => {
     setCancelConfirmation(appointmentId);
   };
 
-  const handleConfirmCancel = () => {
-    // In a real application, you would make an API call here
-    console.log(`Appointment ${cancelConfirmation} cancelled`);
-    setCancelConfirmation(null);
-    
-    // For demo purposes, we'll just show an alert
-    alert("Appointment cancelled successfully!");
+  const handleConfirmCancel = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.put(`/api/doctorappointments/${cancelConfirmation}/cancel`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        await fetchAppointments();
+        setCancelConfirmation(null);
+        alert("Appointment cancelled successfully!");
+      } else {
+        alert(response.data.message || 'Failed to cancel appointment');
+        setCancelConfirmation(null);
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Failed to cancel appointment. Please try again.');
+      setCancelConfirmation(null);
+    }
   };
 
   const handleCancelCancel = () => {
@@ -169,7 +216,6 @@ const DoctorDashboard = () => {
   const clearFilters = () => {
     setFilters({
       status: "all",
-      type: "all",
       date: ""
     });
     setSearchTerm("");
@@ -181,9 +227,9 @@ const DoctorDashboard = () => {
       completed: { color: "bg-green-100 text-green-800 border border-green-200", text: "Completed" },
       cancelled: { color: "bg-red-100 text-red-800 border border-red-200", text: "Cancelled" }
     };
-    
+
     const config = statusConfig[status] || statusConfig.upcoming;
-    
+
     return (
       <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
         {config.text}
@@ -191,10 +237,52 @@ const DoctorDashboard = () => {
     );
   };
 
+  // Show access denied if not a doctor
+  if (!currentDoctor && !loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
+          <h3 className="text-xl font-bold text-gray-700 mb-2">Access Denied</h3>
+          <p className="text-gray-500">This dashboard is for doctors only.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading appointments...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
+          <h3 className="text-xl font-bold text-gray-700 mb-2">Error Loading Dashboard</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <button
+            onClick={fetchAppointments}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-6">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Doctor Dashboard</h1>
@@ -204,7 +292,7 @@ const DoctorDashboard = () => {
         <div className="flex mb-8">
           <div className="grid grid-cols-2 gap-6 w-1/2">
             {/* Today's Appointments Box */}
-            <div 
+            <div
               className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 cursor-pointer hover:shadow-xl transition-all duration-200 hover:border-blue-300"
               onClick={() => setActiveTab("today")}
             >
@@ -219,7 +307,7 @@ const DoctorDashboard = () => {
             </div>
 
             {/* Upcoming Appointments Box */}
-            <div 
+            <div
               className="bg-white rounded-2xl shadow-lg border border-gray-200 p-3 cursor-pointer hover:shadow-xl transition-all duration-200 hover:border-green-300"
               onClick={() => setActiveTab("upcoming")}
             >
@@ -240,31 +328,28 @@ const DoctorDashboard = () => {
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab("today")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "today"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "today"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Today's Appointments
             </button>
             <button
               onClick={() => setActiveTab("upcoming")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "upcoming"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "upcoming"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Upcoming Appointments
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "history"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "history"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Appointment History
             </button>
@@ -278,7 +363,7 @@ const DoctorDashboard = () => {
               <Filter size={20} className="text-gray-600" />
               <h3 className="text-lg font-semibold text-gray-900">Filter Appointments</h3>
             </div>
-            
+
             <div className="flex flex-col lg:flex-row gap-4 w-full lg:w-auto">
               {/* Search */}
               <div className="relative">
@@ -291,7 +376,7 @@ const DoctorDashboard = () => {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full lg:w-64"
                 />
               </div>
-              
+
               {/* Filters */}
               <div className="flex flex-wrap gap-2">
                 <select
@@ -304,24 +389,14 @@ const DoctorDashboard = () => {
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
-                
-                <select
-                  value={filters.type}
-                  onChange={(e) => handleFilterChange("type", e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="all">All Types</option>
-                  <option value="Consultation">Consultation</option>
-                  <option value="Follow-up">Follow-up</option>
-                </select>
-                
+
                 <input
                   type="date"
                   value={filters.date}
                   onChange={(e) => handleFilterChange("date", e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
-                
+
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-semibold transition-colors text-sm"
@@ -355,9 +430,6 @@ const DoctorDashboard = () => {
                       Patient
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">
-                      Patient ID
-                    </th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">
                       Date
                     </th>
                     <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">
@@ -374,11 +446,11 @@ const DoctorDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredAppointments.map((appointment) => (
-                    <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+                  {filteredAppointments.map((appointment, index) => (
+                    <tr key={appointment._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-left align-middle border-b">
                         <div className="text-gray-900 font-bold text-left">
-                          #{appointment.serialNo}
+                          #{appointment.appointmentNumber || index + 1}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-left align-middle border-b">
@@ -392,13 +464,8 @@ const DoctorDashboard = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-left align-middle border-b">
-                        <div className="text-gray-900 font-medium text-left">
-                          {appointment.patientId}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-left align-middle border-b">
                         <div className="text-gray-900 font-semibold text-left">
-                          {new Date(appointment.date).toLocaleDateString('en-US', {
+                          {new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric'
@@ -407,7 +474,7 @@ const DoctorDashboard = () => {
                       </td>
                       <td className="px-6 py-4 text-left align-middle border-b">
                         <div className="text-gray-900 font-semibold text-left">
-                          {appointment.time}
+                          {appointment.timeSlot.startTime} - {appointment.timeSlot.endTime}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-left align-middle border-b">
@@ -425,7 +492,7 @@ const DoctorDashboard = () => {
                           )}
                           {activeTab === "upcoming" && (
                             <button
-                              onClick={() => handleCancelAppointment(appointment.id)}
+                              onClick={() => handleCancelAppointment(appointment._id)}
                               className="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg font-semibold transition-colors text-sm"
                             >
                               Cancel Appointment
@@ -443,10 +510,18 @@ const DoctorDashboard = () => {
               <Calendar size={48} className="mx-auto mb-4 text-gray-400" />
               <h3 className="text-xl font-bold text-gray-700 mb-2">No Appointments Found</h3>
               <p className="text-gray-500">
-                {activeTab === "today" 
-                  ? "No appointments scheduled for today." 
+                {activeTab === "today"
+                  ? "No appointments scheduled for today."
                   : "No appointments match your current filters."}
               </p>
+              {(searchTerm || filters.status !== "all" || filters.date) && (
+                <button
+                  onClick={clearFilters}
+                  className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                >
+                  Clear Filters
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -467,7 +542,7 @@ const DoctorDashboard = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div>
@@ -475,34 +550,32 @@ const DoctorDashboard = () => {
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium text-gray-500 text-left block">Appointment No.</label>
-                      <p className="text-gray-900 font-bold text-left">#{selectedAppointment.serialNo}</p>
+                      <p className="text-gray-900 font-bold text-left">#{selectedAppointment.appointmentNumber}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500 text-left block">Full Name</label>
                       <p className="text-gray-900 font-semibold text-left">{selectedAppointment.patientName}</p>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-500 text-left block">Patient ID</label>
-                      <p className="text-gray-900 font-semibold text-left">{selectedAppointment.patientId}</p>
+                      <label className="text-sm font-medium text-gray-500 text-left block">Doctor</label>
+                      <p className="text-gray-900 font-semibold text-left">{selectedAppointment.doctorName}</p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
-                      <p className="text-gray-900 text-left">{selectedAppointment.patientEmail}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone size={16} className="text-gray-400" />
-                      <p className="text-gray-900 text-left">{selectedAppointment.patientPhone}</p>
-                    </div>
+                    {selectedAppointment.patientNote && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500 text-left block">Patient Notes</label>
+                        <p className="text-gray-900 text-left">{selectedAppointment.patientNote}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                
+
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900 mb-4">Appointment Details</h4>
                   <div className="space-y-3">
                     <div>
                       <label className="text-sm font-medium text-gray-500 text-left block">Date</label>
                       <p className="text-gray-900 font-semibold text-left">
-                        {new Date(selectedAppointment.date).toLocaleDateString('en-US', {
+                        {new Date(selectedAppointment.appointmentDate).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
@@ -512,20 +585,18 @@ const DoctorDashboard = () => {
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500 text-left block">Time</label>
-                      <p className="text-gray-900 text-left">{selectedAppointment.time}</p>
+                      <p className="text-gray-900 text-left">
+                        {selectedAppointment.timeSlot.startTime} - {selectedAppointment.timeSlot.endTime}
+                      </p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-gray-500 text-left block">Status</label>
                       <div className="mt-1 text-left">{getStatusBadge(selectedAppointment.status)}</div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 text-left block">Type</label>
-                      <p className="text-gray-900 text-left">{selectedAppointment.type}</p>
-                    </div>
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-200">
                 <button
                   onClick={handleCloseDetails}
@@ -559,7 +630,7 @@ const DoctorDashboard = () => {
                 </button>
               </div>
             </div>
-            
+
             <div className="p-6">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -570,7 +641,7 @@ const DoctorDashboard = () => {
                   Are you sure you want to cancel this appointment? This action cannot be undone.
                 </p>
               </div>
-              
+
               <div className="flex gap-4">
                 <button
                   onClick={handleCancelCancel}

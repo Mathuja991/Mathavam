@@ -26,6 +26,7 @@ const monthReturnRoutes =require('./routes/monthReturnRoutes.js');
 const availabilityRoutes = require('./routes/availabilityRoutes');
 
 
+
 const documentRoutes = require('./routes/documentRoutes.js');
 const authRoutes = require('./routes/authRoutes'); 
 
@@ -66,13 +67,14 @@ app.use(fileUpload());
 
 app.use('/api/documents', documentRoutes);
 
-
 //Kujinsika's routes
 app.use("/api/snapforms", require("./routes/SnapRoutes"));
 app.use("/api/dsm5forms", require("./routes/DSM5Routes"));
 app.use('/api/doctors', require('./routes/doctorRoutes'));
-
+app.use('/api/appointments', require('./routes/appointments'));
 app.use('/api/availability', availabilityRoutes);
+app.use('/api/doctorappointments', require('./routes/DoctorAppointment'));
+
 
 //varsha's qr routes
 app.use("/api/adminqr", adminQrRoutes);

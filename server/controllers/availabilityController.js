@@ -1,8 +1,6 @@
 const Availability = require('../models/Availability');
 
-// @desc    Get all availability slots for a doctor
-// @route   GET /api/availability/doctor/:doctorId
-// @access  Private
+// Get all availability slots for a doctor
 const getDoctorAvailability = async (req, res) => {
   try {
     const { doctorId } = req.params;
@@ -25,9 +23,7 @@ const getDoctorAvailability = async (req, res) => {
   }
 };
 
-// @desc    Create or update availability slots
-// @route   POST /api/availability
-// @access  Private
+//   Create or update availability slots
 const setAvailability = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
@@ -82,10 +78,7 @@ const setAvailability = async (req, res) => {
   }
 };
 
-// @desc    Add new availability slots (without deleting existing ones)
-// @route   POST /api/availability/add
-// @access  Private
-// Simple test version - remove all validation temporarily
+//  Add new availability slots (without deleting existing ones)
 const addAvailabilitySlots = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
@@ -122,9 +115,7 @@ const addAvailabilitySlots = async (req, res) => {
 };
 
 
-// @desc    Delete a specific availability slot (using URL params)
-// @route   DELETE /api/availability/:slotId
-// @access  Private
+//   Delete a specific availability slot (using URL params)
 const deleteAvailabilitySlot = async (req, res) => {
   try {
     const { slotId } = req.params;
@@ -153,10 +144,7 @@ const deleteAvailabilitySlot = async (req, res) => {
   }
 };
 
-// ⭐️ NEW: Delete slot using request body (for frontend compatibility)
 // @desc    Delete a specific availability slot (using request body)
-// @route   DELETE /api/availability/delete
-// @access  Private
 const deleteAvailabilitySlotBody = async (req, res) => {
   try {
     const { slotId } = req.body;
@@ -315,9 +303,6 @@ const updateAvailabilitySlotBody = async (req, res) => {
   }
 };
 
-// @desc    Get all doctors from availability data
-// @route   GET /api/availability/doctors/all
-// @access  Private
 const getAllDoctorsFromAvailability = async (req, res) => {
   try {
     const allAvailability = await Availability.find({}, "doctorId doctorName");
@@ -349,16 +334,6 @@ const getAllDoctorsFromAvailability = async (req, res) => {
     });
   }
 };
-
-
-// @desc    Get availability for multiple doctors
-// @route   POST /api/availability/doctors
-// @access  Private
-const Availability = require('../models/Availability');
-
-// @desc    Get availability for multiple doctors
-// @route   POST /api/availability/doctors
-// @access  Private
 const getMultipleDoctorsAvailability = async (req, res) => {
   try {
     const { doctorIds } = req.body;
