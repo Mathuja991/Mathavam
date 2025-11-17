@@ -30,7 +30,7 @@ const forms = [
     desc: "Assessing sensory processing patterns in daily life.",
     newPath: "../sensory-profile-fill-form",
     previousPath: "../sensory-profile-view",
-    progressPath: null,
+    progressPath: "../sensory-profile-progress",
     color: "purple",
     access: {
       Doctors: "View",

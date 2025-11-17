@@ -1,24 +1,32 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import Base from "../../components/assessmentForms/SensoryProfile/Base";
 import BaseCards from "../../components/assessmentForms/SensoryProfile/BaseCards";
 import { createSensoryProfilePayload } from "../../utills/apiUtils";
 
-// Helper function to get the auth token (Duplicated for simplicity; ideally from a central utility)
+// Helpers to fetch auth headers (prefers standalone token, falls back to user.token)
 const getAuthToken = () => {
+  const direct = localStorage.getItem("token");
+  if (direct) return direct;
   const storedUser = localStorage.getItem("user");
-  if (storedUser) {
-    try {
-      const parsedUser = JSON.parse(storedUser);
-      // Assuming the token is stored as 'token' inside the 'user' object
-      return parsedUser.token;
-    } catch (error) {
-      console.error("Error parsing user data for token:", error);
-      return null;
-    }
+  if (!storedUser) return null;
+  try {
+    const parsed = JSON.parse(storedUser);
+    return parsed.token || null;
+  } catch (err) {
+    console.error("Error parsing user token:", err);
+    return null;
   }
-  return null;
+};
+
+const buildAuthHeaders = () => {
+  const token = getAuthToken();
+  if (!token) return null;
+  return {
+    "x-auth-token": token,
+    Authorization: `Bearer ${token}`,
+  };
 };
 
 function SensoryProfileEditPage() {
@@ -34,34 +42,19 @@ function SensoryProfileEditPage() {
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
-        const token = getAuthToken();
-        if (!token) {
-          setError(
-            "Authentication token missing. Please ensure you are logged in."
-          );
+        const headers = buildAuthHeaders();
+        if (!headers) {
+          setError("Authentication token missing. Please ensure you are logged in.");
           setIsLoading(false);
           return;
         }
 
-        const config = {
-          headers: {
-            "x-auth-token": token,
-          },
-        };
-
-        const response = await axios.get(
-          `/api/assessments/sensory-profile/${id}`,
-          config
-        );
+        const response = await axios.get(`/api/assessments/sensory-profile/${id}`, {
+          headers,
+        });
         setInitialData(response.data);
       } catch (err) {
-        if (axios.isAxiosError(err) && err.response?.status === 401) {
-          setError(
-            "Error: Authorization failed (401). You may not have permission to view this."
-          );
-        } else {
-          setError("Failed to load assessment data.");
-        }
+        setError("Failed to load assessment data.");
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -72,18 +65,11 @@ function SensoryProfileEditPage() {
 
   const handleUpdateSubmit = async (formSpecificData) => {
     const { responses, comments, totalScore, formTitle } = formSpecificData;
-
-    const token = getAuthToken();
-    if (!token) {
+    const headers = buildAuthHeaders();
+    if (!headers) {
       alert("Update failed: Authentication token missing. Please log in again.");
       return;
     }
-
-    const config = {
-      headers: {
-        "x-auth-token": token,
-      },
-    };
 
     const formData = createSensoryProfilePayload(
       { responses, comments, totalScore, formTitle },
@@ -91,120 +77,103 @@ function SensoryProfileEditPage() {
         patientId: initialData.patientId,
         examinerId: initialData.examinerId,
         testDate: initialData.testDate,
-        category: initialData.category,
         ageGroup: initialData.ageGroup,
       }
     );
 
     setIsSaving(true);
     try {
-      const response = await axios.put(
-        `/api/assessments/sensory-profile/${id}`,
-        formData,
-        config // Pass the configuration for PUT
-      );
-      setInitialData(response.data);
-      setIsEditing(false); // Disable editing on successful update
+      await axios.put(`/api/assessments/sensory-profile/${id}`, formData, {
+        headers,
+      });
       alert("Assessment updated successfully!");
+      setIsEditing(false);
+      navigate("/dashboard/sensory-profile-view");
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 401) {
-        alert(
-          "Update failed: Authorization failed (401). Please re-login or check permissions."
-        );
-      } else {
-        alert(
-          `Update failed: ${err.response?.data?.message || err.message}`
-        );
+      console.error("Error updating assessment:", err);
+      let errorMessage = "An unexpected error occurred. Please try again.";
+      if (err.response) {
+        if (err.response.status === 409) {
+          errorMessage =
+            err.response.data.message ||
+            "This update would create a duplicate record.";
+        } else if (err.response.status === 404) {
+          errorMessage =
+            "This assessment could not be found. It may have been deleted.";
+        } else if (err.response.data?.message) {
+          errorMessage = err.response.data.message;
+        }
+      } else if (err.request) {
+        errorMessage =
+          "Cannot connect to the server. Please check your network connection.";
       }
-      console.error(err);
+      alert(`Error: ${errorMessage}`);
     } finally {
       setIsSaving(false);
     }
   };
 
   if (isLoading) {
-    return (
-      <div className="p-8 text-center text-xl font-medium text-gray-600">
-        Loading assessment for editing...
-      </div>
-    );
+    return <div>Loading assessment for editing...</div>;
   }
-
   if (error) {
-    return (
-      <div className="p-8 text-center bg-red-100 text-red-800 rounded-lg max-w-xl mx-auto mt-12">
-        <h2 className="text-2xl font-bold mb-4">Error</h2>
-        <p>{error}</p>
-        <button
-          onClick={() => navigate(-1)}
-          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-        >
-          Go Back
-        </button>
-      </div>
-    );
+    return <div className="text-red-500">Error: {error}</div>;
   }
-
   if (!initialData) {
-    return (
-      <div className="p-8 text-center text-xl font-medium text-gray-600">
-        Assessment data not found.
-      </div>
-    );
+    return <div>Assessment not found.</div>;
   }
 
   return (
-    <div className="max-w-7xl mx-auto mt-8 p-6 lg:p-10 bg-white rounded-3xl shadow-2xl font-['Roboto',_sans-serif]">
-      <h1 className="text-4xl font-extrabold text-center mb-6 text-indigo-800 tracking-tight leading-snug">
-        Sensory Profile: Edit Entry
-      </h1>
-      <p className="text-center text-lg text-gray-600 mb-10">
-        Patient ID: <span className="font-semibold">{initialData.patientId}</span> |
-        Assessment Type: <span className="font-semibold capitalize">{initialData.ageGroup}</span>
-      </p>
-
-      {/* View Only Mode (Always visible for reference) */}
-      <div className={`p-6 rounded-2xl border-2 transition-all duration-300 ${isEditing ? 'border-gray-200 bg-gray-50' : 'border-indigo-400 bg-white shadow-xl'}`}>
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">Original Submission (View Only)</h2>
-        <span className="inline-block text-xs font-medium tracking-wide text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
-          View Only
-        </span>
-        <div className="pointer-events-none opacity-60">
-          <Base onDataChange={() => {}} initialData={initialData} />
-        </div>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 p-6">
+        <h1 className="text-3xl font-bold">Sensory Profile</h1>
+        <p className="text-sm text-gray-500">
+          Personal details are view-only. Use the button below to edit section
+          scores.
+        </p>
       </div>
 
-      <div className="flex justify-end px-6 -mt-6">
-        <button
-          onClick={() => setIsEditing((prev) => !prev)}
-          className={`px-5 py-2 rounded-lg font-semibold text-white transition ${
-            isEditing
-              ? "bg-gray-600 hover:bg-gray-700"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {isEditing ? "Cancel Edit" : "Enable Editing"}
-        </button>
-      </div>
+      {initialData && (
+        <>
+          <div className="relative">
+            <span className="absolute top-4 right-6 z-10 text-xs font-semibold uppercase tracking-wide text-gray-500 bg-white/80 px-3 py-1 rounded-full border border-gray-200">
+              View Only
+            </span>
+            <div className="pointer-events-none opacity-60">
+              <Base onDataChange={() => {}} initialData={initialData} />
+            </div>
+          </div>
 
-      <div className={`mt-8 transition-all duration-300 ${isEditing ? 'opacity-100 max-h-screen' : 'opacity-50 max-h-0 overflow-hidden'}`}>
-        <h2 className="text-3xl font-bold text-indigo-700 mb-4">Editable Section</h2>
-        <BaseCards
-          sensoryName={initialData.category}
-          isExpanded={true}
-          onToggle={() => {}}
-          formType={initialData.ageGroup.toLowerCase()}
-          patientId={initialData.patientId}
-          examinerId={initialData.examinerId}
-          testDate={initialData.testDate}
-          initialResponses={initialData.responses}
-          initialComments={initialData.comments}
-          onSubmit={handleUpdateSubmit}
-          disabled={!isEditing || isSaving} // Disable form when not editing or when saving
-          isSaving={isSaving}
-          isEditMode={true}
-        />
-      </div>
+          <div className="flex justify-end px-6 -mt-6">
+            <button
+              onClick={() => setIsEditing((prev) => !prev)}
+              className={`px-5 py-2 rounded-lg font-semibold text-white transition ${
+                isEditing
+                  ? "bg-gray-600 hover:bg-gray-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {isEditing ? "Cancel Edit" : "Edit Scores"}
+            </button>
+          </div>
+
+          <div className="max-w-3xl mx-auto mt-8">
+            <BaseCards
+              sensoryName={initialData.category}
+              isExpanded={true}
+              onToggle={() => {}}
+              formType={initialData.ageGroup.toLowerCase()}
+              patientId={initialData.patientId}
+              examinerId={initialData.examinerId}
+              testDate={initialData.testDate}
+              initialResponses={initialData.responses}
+              initialComments={initialData.comments}
+              onSubmit={handleUpdateSubmit}
+              disabled={!isEditing || isSaving}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

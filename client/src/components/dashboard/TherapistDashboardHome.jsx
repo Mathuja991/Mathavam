@@ -1,6 +1,7 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHandsHelping, faCalendarAlt, faCommentDots, faPuzzlePiece, faRunning } from '@fortawesome/free-solid-svg-icons';
+import { useNavigate } from 'react-router-dom';
 
 // Simple card component
 const StatCard = ({ title, value, icon, bgColor }) => (
@@ -27,6 +28,7 @@ const QuickAction = ({ title, desc, icon, bgColor, onClick }) => (
 );
 
 const TherapistDashboardHome = ({ loggedInUser }) => {
+  const navigate = useNavigate();
   // Mock data
   const mockStats = {
     speechPending: '4',
@@ -57,25 +59,32 @@ const TherapistDashboardHome = ({ loggedInUser }) => {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <QuickAction
-            title="Manage Speech Forms (CRUD)"
+            title="Speech Assessment Forms"
             desc="Create or update Speech Assessment records."
             icon={faCommentDots}
             bgColor="bg-blue-600 hover:bg-blue-700 shadow-lg"
-            onClick={() => console.log('Navigate to Speech Forms')}
+            onClick={() => navigate('/dashboard/skill-assessment')}
           />
           <QuickAction
-            title="Manage Sensory Profiles (CRUD)"
+            title="Sensory Profile Forms"
             desc="Manage Observational (O) and Parent (P) Sensory Profiles."
             icon={faPuzzlePiece}
             bgColor="bg-amber-600 hover:bg-amber-700 shadow-lg"
-            onClick={() => console.log('Navigate to Sensory Profiles')}
+            onClick={() => navigate('/dashboard/sensory-profile-sections')}
           />
           <QuickAction
-            title="Manage Behavioural Checklist (CRUD)"
+            title="Behavioural Checklist"
             desc="Create and update child Behavioural Checklists."
             icon={faRunning}
             bgColor="bg-green-600 hover:bg-green-700 shadow-lg"
-            onClick={() => console.log('Navigate to Behavioural Checklist')}
+            onClick={() => navigate('/dashboard/forms/behavioral-checklist')}
+          />
+          <QuickAction
+            title="All Assessment Forms"
+            desc="Browse the full assessment forms catalog."
+            icon={faHandsHelping}
+            bgColor="bg-slate-700 hover:bg-slate-800 shadow-lg"
+            onClick={() => navigate('/dashboard/forms')}
           />
         </div>
       </div>

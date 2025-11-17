@@ -9,9 +9,9 @@ const checkRole = require('../middleware/checkRoleMiddleware');
 
 // --- Role Arrays ---
 // Rule: View for Doctor, Therapist, Admin, Super Admin. Parent = Restrict
-const ROLES_VIEW_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person'];
+const ROLES_VIEW_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Therapists', 'Resource Person'];
 // Rule: CRUD for "O,P" -> Therapists
-const ROLES_CRUD_THERAPIST = ['Therapist', 'Resource Person'];
+const ROLES_CRUD_THERAPIST = ['Therapist', 'Therapists', 'Resource Person'];
 
 
 // GET all sensory profiles with optional patientId filter

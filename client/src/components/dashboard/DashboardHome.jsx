@@ -68,9 +68,10 @@ const getAuthConfig = () => {
 // --- Dashboard Content Components (Staff Roles) ---
 
 const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
-  const isSuperAdminOrAdmin = ['Super Admin', 'Admin'].includes(loggedInUser.userType);
-  const isDoctor = loggedInUser.userType === 'Doctor';
-  const isTherapist = loggedInUser.userType === 'Therapist';
+  const normalizedRole = (loggedInUser.userType || '').trim().toLowerCase();
+  const isSuperAdminOrAdmin = ['super admin', 'admin'].includes(normalizedRole);
+  const isDoctor = normalizedRole === 'doctor';
+  const isTherapist = normalizedRole === 'therapist' || normalizedRole === 'therapists';
   const canRecord = isDoctor || isTherapist;
 
   // Navigation handlers
@@ -80,6 +81,9 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
   const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
   const handleRDHS = () => handleNavigation('/dashboard/rdhs-dash');
+  const handleServiceQr = () => handleNavigation('/dashboard/service-qr');
+  const handleAssessmentForms = () => handleNavigation('/dashboard/forms');
+  const handleSensoryProfiles = () => handleNavigation('/dashboard/sensory-profile-sections');
 
   return (
     <div className="p-4 md:p-6 space-y-8">
@@ -148,6 +152,26 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
             bgColor="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 shadow-xl"
           />
 
+          {isTherapist && (
+            <QuickAction
+              title="Assessment Forms"
+              desc="Speech, Sensory, and Behavioral checklists"
+              onClick={handleAssessmentForms}
+              icon={faClipboardList}
+              bgColor="bg-gradient-to-r from-slate-700 to-slate-900 hover:from-slate-800 hover:to-black shadow-xl"
+            />
+          )}
+
+          {isTherapist && (
+            <QuickAction
+              title="Sensory Profiles"
+              desc="Create or edit observational/parent sensory profiles"
+              onClick={handleSensoryProfiles}
+              icon={faNotesMedical}
+              bgColor="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 shadow-xl"
+            />
+          )}
+
           {isSuperAdminOrAdmin && (
             <QuickAction
               title="Manage Users"
@@ -176,6 +200,14 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
             onClick={handleRDHS}
             icon={faHospital}
             bgColor="bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 shadow-xl"
+          />
+
+          <QuickAction
+            title="Service QR"
+            desc="Scan or download service QR codes"
+            onClick={handleServiceQr}
+            icon={faQrcode}
+            bgColor="bg-gradient-to-r from-slate-600 to-slate-800 hover:from-slate-700 hover:to-slate-900 shadow-xl"
           />
 
           <QuickAction
@@ -330,9 +362,9 @@ const DashboardHome = ({ loggedInUser }) => {
   }
 
   // --- Role-Based Content Rendering ---
-  const userRole = loggedInUser.userType || 'Unknown';
+  const userRole = (loggedInUser.userType || 'Unknown').trim().toLowerCase();
 
-  if (loading && userRole !== 'Parent' && userRole !== 'Unknown') {
+  if (loading && userRole !== 'parent' && userRole !== 'unknown') {
     return (
       <div className="flex justify-center items-center h-full p-8">
         <FontAwesomeIcon icon={faSpinner} spin className="text-4xl text-indigo-500" />
@@ -343,10 +375,11 @@ const DashboardHome = ({ loggedInUser }) => {
 
   // Determine which dashboard content to render
   switch (userRole) {
-    case 'Super Admin':
-    case 'Admin':
-    case 'Doctor':
-    case 'Therapist':
+    case 'super admin':
+    case 'admin':
+    case 'doctor':
+    case 'therapist':
+    case 'therapists':
       // All staff roles use the same administrative/clinical dashboard view
       return (
         <StaffDashboardContent
@@ -355,7 +388,7 @@ const DashboardHome = ({ loggedInUser }) => {
           loggedInUser={loggedInUser}
         />
       );
-    case 'Parent':
+    case 'parent':
       // The role was changed to 'Parent' in the previous step, resolving the routing error
       return (
         <ParentDashboardContent
