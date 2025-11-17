@@ -13,7 +13,8 @@ const BehaviorChecklist = () => {
   const [previousEntries, setPreviousEntries] = useState([]);
   const [selectedScores, setSelectedScores] = useState({});
   const [severity, setSeverity] = useState(null);
-
+  
+  const API_URL = import.meta.env.VITE_API_URL;
   const [formData, setFormData] = useState({
     childNo: '',
     name: '',
@@ -124,7 +125,7 @@ const BehaviorChecklist = () => {
   setFormData((prev) => ({ ...prev, childNo: value }));
 
   try {
-    const response = await fetch(`http://localhost:5000/api/patientRecords`);
+    const response = await fetch(`${API_URL}/patientRecords`);
     if (!response.ok) throw new Error("Failed to fetch records");
     const data = await response.json();
 
@@ -203,7 +204,7 @@ const BehaviorChecklist = () => {
     const newEntry = { ...formData, scores: selectedScores, severity };
 
     try {
-      const response = await fetch("http://localhost:5000/api/bc/submit", {
+      const response = await fetch(`${API_URL}/bc/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEntry),
@@ -218,11 +219,14 @@ const BehaviorChecklist = () => {
       setPreviousEntries((prev) => [...prev, savedEntry]);
       setIsSubmitted(true);
       alert("Form submitted successfully!");
-      navigate("/forms");
+      navigate("/dashboard/forms");
     } catch (err) {
       console.error(err);
       setErrorMessage("🚨 Submission failed. Please try again.");
     }
+
+      
+
   };
 
   const renderCardOptions = (sectionKey, idx) => (
@@ -242,13 +246,25 @@ const BehaviorChecklist = () => {
       })}
     </div>
   );
+  const handleBack = () => {
+    navigate(`/dashboard/forms`);
+
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto bg-white rounded-xl shadow-md">
+       <button
+          onClick={handleBack}
+          className="flex items-center gap-2 bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back
+        </button>
       <h2 className="text-2xl font-bold mb-6 ">Behavior Checklist</h2>
-
-   
-
+ 
+    
       {/* Child Info */}
       <div className="bg-blue-50 p-6 rounded-xl shadow-sm ml-20">
         <ChildInfoInputs formData={formData} handleChildNoChange={handleChildNoChange} />

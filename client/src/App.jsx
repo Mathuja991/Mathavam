@@ -23,7 +23,7 @@ import ChildManagementPage from "./pages/QrAttendance/ChildManagementPage";
 import ParentQrViewPage from "./pages/QrAttendance/ParentQrViewPage";
 import AdminQrAttendancePage from "./pages/QrAttendance/AdminQrAttendancePage";
 
-//Mathuja parts
+//Mathuja
 
 import AdminDashboard from './components/AdminDashboard';
 import Carsform from './forms/carsform';
@@ -39,13 +39,18 @@ import BcPrevious from './components/BcPrevious';
 import CarsProgress from './components/CarsProgress';
 import BcProgress from './components/BcProgress';
 import EditBcEntry from './components/EditBcEntry';
- import EditMfEntry from './components/EditMfEntry';
+import EditMfEntry from './components/EditMfEntry';
 import ViewPatientRecord from './pages/RecordSheet/ViewPatientRecord';
 
 import AdminUploadDocument from './components/doc_parent/AdminUploadDocument';
 import UserViewDocuments from './components/doc_parent/UserViewDocuments';
 
-
+//kujinsika
+import DSM5Form from './pages/DSM5/DSM5Form';
+import ViewDSM5Form from './pages/DSM5/ViewDSM5Form';
+import SnapForm from './pages/SNAP/SnapForm';
+import SubmittedSnapFormsList from './pages/SNAP/SubmittedSnapFormsList';
+import SubmittedFormsList from './pages/DSM5/SubmittedFormsList';
 
 
 import AppointmentManagement from './pages/Appointment/AppointmentManagement';
@@ -146,8 +151,8 @@ function App() {
           <Route path="qr-attendance" element={<AdminQrAttendancePage />} />
           {/* Mathuja's Parts */}
           <Route path="forms" element={<FormHome />} />
-          <Route path="forms/carsform" element={<Carsform />} />
-          <Route path="carsformprevious-entries" element={<CarsPrevious />} />
+          <Route path="forms/Carsform" element={<Carsform />} />
+          <Route path="forms/carsform-previous-entries" element={<CarsPrevious />} />
           <Route path="editcar/:id" element={<EditCarEntry />} />
           <Route
             path="forms/mathavamflowchart"
@@ -157,15 +162,28 @@ function App() {
             path="mathavamflowchartprevious-entries"
             element={<MFPrevious />}
           />
-          <Route path="forms/bc" element={<Bcform />} />
-          <Route path="bcprevious-entries" element={<BcPrevious />} />
-          <Route path="cars-progress" element={<CarsProgress />} />
-          <Route path="bc-progress" element={<BcProgress />} />
+          <Route path="forms/behavioral-checklist" element={<Bcform />} />
+          <Route path="forms/bc-previous-entries" element={<BcPrevious />} />
+          <Route path="forms/cars-progress" element={<CarsProgress />} />
+          <Route path="forms/bc-progress" element={<BcProgress />} />
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
-          <Route path="forms/monreturn" element={<MonthlyReturnForm />} />
+          
+          {/* FIX: Monthly Returns Route එක /forms/ monreturn සිට /monreturn වෙත වෙනස් කරන ලදි */}
+          <Route path="monreturn" element={<MonthlyReturnForm />} />
+          
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
+
+          {/*Kujinsika*/}
+          <Route path="snap-submitted-forms" element={<SubmittedSnapFormsList />} />
+          <Route path="SnapForm" element={<SnapForm />} />
+          <Route path="SnapForm/:id" element={<SnapForm />} />
+
+          <Route path="submitted-dsm5-forms" element={<SubmittedFormsList />} />
+          <Route path="DSM5Form" element={<DSM5Form />} />
+          <Route path="view-dsm5-form/:id" element={<ViewDSM5Form />} />
+
           {/* Catch-all for routes within Dashboard layout (optional, but good for empty states) */}
           <Route
             path="*"

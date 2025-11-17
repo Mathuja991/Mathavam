@@ -1,19 +1,18 @@
-// MflowchartRoutes.js
-const express = require('express'); // Change: use require
+const express = require('express');
 const {
   submitMFlowchart,
   getMFlowchart,
+  getMFlowchartById,
   deleteEntry,
   updateEntry,
-  getEntryById,
-} = require('../controllers/mflowchartController'); // Change: use require and remove .js extension if not needed
+} = require('../controllers/mflowchartController');
 
 const router = express.Router();
 
-router.post("/submit", submitMFlowchart);
-router.get("/", getMFlowchart);
+router.post('/submit', submitMFlowchart);
+router.get('/', getMFlowchart);
+router.get('/:id', getMFlowchartById);
 router.delete('/:id', deleteEntry);
 router.put('/entries/:id', updateEntry);
-router.get('/entries/:id', getEntryById);
 
-module.exports = router; // Change: use module.exports
+module.exports = router;

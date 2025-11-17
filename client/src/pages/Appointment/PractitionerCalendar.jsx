@@ -30,7 +30,7 @@ const PractitionerCalendar = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`http://localhost:5000/api/appointments/practitioner/${practitionerId}`);
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/appointments/practitioner/${practitionerId}`);
       // Group appointments by date for easier display
       const groupedAppointments = response.data.data.reduce((acc, appointment) => {
         const date = new Date(appointment.appointmentDate).toLocaleDateString('en-CA'); // 'en-CA' for YYYY-MM-DD
@@ -54,7 +54,7 @@ const PractitionerCalendar = () => {
         return;
     }
     try {
-        await axios.put(`http://localhost:5000/api/appointments/${appointmentId}/status`, { status: newStatus });
+        await axios.put(`${import.meta.env.VITE_API_URL}/appointments/${appointmentId}/status`, { status: newStatus });
         alert('Appointment status updated successfully!');
         // Re-fetch appointments to update the view
         if (currentUser) {

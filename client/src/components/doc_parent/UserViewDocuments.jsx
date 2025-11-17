@@ -1,9 +1,26 @@
 import React, { useEffect, useState } from 'react';
 
+// Authorization Header එක සකස් කරගැනීම සඳහා helper function එකක්
+const getAuthConfig = () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    // Auth token එකක් නොමැති නම් error එකක් log කර හිස් header එකක් දෙන්න
+    console.error('Auth token not found in localStorage. Cannot fetch documents.');
+    return { headers: {} };
+  }
+  return {
+    headers: {
+      'x-auth-token': token, // 🛡️ FIX: Auth token එක header එකට එක් කිරීම
+    },
+  };
+};
+
 const UserViewDocuments = () => {
+   const API_URL = import.meta.env.VITE_API_URL;
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(null); // Error state එකක් එකතු කරමු
   
   // Filter states
   const [titleFilter, setTitleFilter] = useState("");
@@ -12,13 +29,40 @@ const UserViewDocuments = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch('http://localhost:5000/api/documents')
-      .then(res => res.json())
-      .then(data => {
-        setDocuments(data);
-        setFilteredDocuments(data);
+    setFetchError(null); // Clear previous errors
+
+    const config = getAuthConfig();
+
+    fetch('http://localhost:5000/api/documents', config)
+      .then(res => {
+        if (!res.ok) {
+            // 401 (Unauthorized) වැනි දෝෂ සඳහා
+            if (res.status === 401) {
+                throw new Error("Unauthorized: Please log in again.");
+            }
+            // අනෙකුත් දෝෂ
+            return res.json().then(error => { throw new Error(error.error || `Server Error: ${res.status}`); });
+        }
+        return res.json();
       })
-      .catch(err => console.error(err))
+      .then(data => {
+        // 🛡️ FIX: දත්ත array එකක් දැයි පරීක්ෂා කිරීම
+        if (!Array.isArray(data)) {
+            console.error("API response is not an array:", data);
+            setFetchError("Received unexpected data from the server. Try logging in again.");
+            setDocuments([]);
+            setFilteredDocuments([]);
+        } else {
+            setDocuments(data);
+            setFilteredDocuments(data);
+        }
+      })
+      .catch(err => {
+        console.error("Error fetching documents:", err.message);
+        setFetchError(err.message || "Failed to connect to the server.");
+        setDocuments([]);
+        setFilteredDocuments([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,6 +72,9 @@ const UserViewDocuments = () => {
   }, [titleFilter, dateFilter, sortBy, documents]);
 
   const applyFilters = () => {
+    // 🛡️ FIX: documents array එකක් දැයි පරීක්ෂා කිරීම
+    if (!Array.isArray(documents)) return;
+
     let filtered = [...documents];
 
     // Filter by title
@@ -127,6 +174,20 @@ const UserViewDocuments = () => {
       </div>
     );
   }
+  
+  // 🚫 New Error Display
+  if (fetchError) {
+    return (
+      <div className="max-w-4xl mt-10 mx-auto p-6 bg-red-50 rounded-xl shadow-lg border border-red-300">
+        <h2 className="text-2xl font-bold text-red-700 mb-4">Error Loading Resources</h2>
+        <p className="text-red-600">{fetchError}</p>
+        <p className="mt-4 text-sm text-red-500">
+           If this is an "Unauthorized" error, please **log out and log back in** to refresh your session token.
+        </p>
+      </div>
+    );
+  }
+
 
   return (
     <div className="max-w-4xl mt-10 mx-auto p-6 bg-white rounded-xl shadow-lg">
@@ -186,7 +247,7 @@ const UserViewDocuments = () => {
         {/* Results and Clear Filters */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
           <span className="text-sm text-gray-600 font-medium">
-            📊 Showing {filteredDocuments.length} of {documents.length} documents
+            📊 Showing {Array.isArray(filteredDocuments) ? filteredDocuments.length : 0} of {Array.isArray(documents) ? documents.length : 0} documents
           </span>
           {(titleFilter || dateFilter) && (
             <button
@@ -200,7 +261,8 @@ const UserViewDocuments = () => {
       </div>
 
       {/* Documents List */}
-      {filteredDocuments.length === 0 ? (
+      {/* 🛡️ FIX: filteredDocuments array එකක් දැයි පරීක්ෂා කිරීම */}
+      {Array.isArray(filteredDocuments) && filteredDocuments.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <div className="text-6xl mb-4">📭</div>
           <p className="text-gray-500 text-lg font-medium mb-2">
@@ -220,6 +282,7 @@ const UserViewDocuments = () => {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* 🛡️ FIX: Array check එක උඩින් තිබෙන නිසා මෙහිදී ආරක්ෂිතයි */}
           {filteredDocuments.map(doc => (
             <div
               key={doc._id}
@@ -232,7 +295,7 @@ const UserViewDocuments = () => {
                   </div>
                   <div className="flex-1">
                     <a
-                      href={`http://localhost:5000/api/documents/${doc._id}`}
+                      href={`${API_URL}/documents/${doc._id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xl font-semibold text-blue-700 hover:text-blue-900 hover:underline block mb-2"
@@ -259,7 +322,7 @@ const UserViewDocuments = () => {
                 </div>
                 
                 <a
-                  href={`http://localhost:5000/api/documents/${doc._id}`}
+                  href={`${API_URL}/documents/${doc._id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"

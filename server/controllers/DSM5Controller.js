@@ -1,8 +1,8 @@
 const DSMForm = require('../models/DSM5'); 
 
-exports.getAllForms = async (req, res) => {
+const getAllForms = async (req, res) => {
   try {
-    const forms = await DSMForm.find().sort({ createdAt: -1 }); // Sort by creation date, latest first
+    const forms = await DSMForm.find().sort({ createdAt: -1 }); 
     res.json(forms);
   } catch (err) {
     console.error('Error fetching forms:', err.message);
@@ -10,7 +10,7 @@ exports.getAllForms = async (req, res) => {
   }
 };
 
-exports.getFormById = async (req, res) => {
+const getFormById = async (req, res) => {
   try {
     const form = await DSMForm.findById(req.params.id);
     if (!form) {
@@ -26,10 +26,9 @@ exports.getFormById = async (req, res) => {
   }
 };
 
-exports.createForm = async (req, res) => {
+const createForm = async (req, res) => {
   const { patientInfo, answers, severityRatings } = req.body;
 
-  // Basic validation (more robust validation can be added here or with a validation library)
   if (!patientInfo || !answers || !severityRatings) {
     return res.status(400).json({ message: 'Please provide all required form data.' });
   }
@@ -44,7 +43,6 @@ exports.createForm = async (req, res) => {
     res.status(201).json({ message: 'Form submitted successfully!', formId: form._id, form });
   } catch (err) {
     console.error('Error creating form:', err.message);
-    // Check for Mongoose validation errors
     if (err.name === 'ValidationError') {
       let errors = {};
       Object.keys(err.errors).forEach((key) => {
@@ -56,7 +54,7 @@ exports.createForm = async (req, res) => {
   }
 };
 
-exports.updateForm = async (req, res) => {
+const updateForm = async (req, res) => {
   const { patientInfo, answers, severityRatings } = req.body;
   const { id } = req.params;
 
@@ -66,13 +64,11 @@ exports.updateForm = async (req, res) => {
       return res.status(404).json({ message: 'Form not found' });
     }
 
-    // Update fields
     form.patientInfo = patientInfo;
     form.answers = answers;
     form.severityRatings = severityRatings;
-    // The pre-save hook in the model will update `updatedAt`
 
-    await form.save(); // Using save() will trigger pre-save hooks
+    await form.save(); 
     res.json({ message: 'Form updated successfully!', form });
   } catch (err) {
     console.error('Error updating form:', err.message);
@@ -90,7 +86,7 @@ exports.updateForm = async (req, res) => {
   }
 };
 
-exports.deleteForm = async (req, res) => {
+const deleteForm = async (req, res) => {
   const { id } = req.params;
   try {
     const form = await DSMForm.findById(id);
@@ -98,7 +94,7 @@ exports.deleteForm = async (req, res) => {
       return res.status(404).json({ message: 'Form not found' });
     }
 
-    await DSMForm.deleteOne({ _id: id }); // Correct way to delete by ID
+    await DSMForm.deleteOne({ _id: id }); 
 
     res.json({ message: 'Form deleted successfully!' });
   } catch (err) {
@@ -108,4 +104,12 @@ exports.deleteForm = async (req, res) => {
     }
     res.status(500).json({ message: 'Server Error' });
   }
+};
+
+module.exports = {
+  getAllForms,
+  getFormById,
+  createForm,
+  updateForm, 
+  deleteForm
 };

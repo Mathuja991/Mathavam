@@ -1,25 +1,55 @@
-// server/routes/userRoutes.js
+// routes/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const userController = require('../controllers/userController');
+const {
+  addUser,
+  getAllUsers,
+  loginUser,
+  updateUsername,
+  updatePassword,
+  getDashboardStats, // 🟢 NEW IMPORT
+} = require('../controllers/userController');
 
-// --- THIS IS THE FIX ---
-// Add the route for logging in
-router.post('/login', userController.loginUser);
+const authMiddleware = require('../middleware/authMiddleware');
+const checkRole = require('../middleware/checkRoleMiddleware');
 
-// Route to add a new user
-router.post('/add', userController.addUser);
+// Staff Roles array (Admin Dashboard එකට පිවිසිය හැකි අය)
+const ROLES_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person'];
 
-// Route to get all users
-router.get('/', userController.getAllUsers);
+// @route   POST /api/users/add
+// @desc    Add a new user (Only Admins)
+router.post(
+    '/add',
+    authMiddleware,
+    checkRole(['Super Admin', 'Admin']),
+    addUser
+);
 
-// Route to get a single user by ID (optional, but good for editing)
-router.get('/:id', userController.getUserById);
+// @route   GET /api/users
+// @desc    Get all users (Only Admins)
+router.get(
+    '/', 
+    authMiddleware, 
+    checkRole(['Super Admin', 'Admin']),
+    getAllUsers
+);
 
-// Route to update a user by ID
-router.put('/:id', userController.updateUser);
+// @route   POST /api/users/login
+// @access  Public
+router.post('/login', loginUser);
 
-// Route to delete a user by ID
-router.delete('/:id', userController.deleteUser);
+// 🟢 NEW ROUTE: Dashboard Stats
+// @route   GET /api/users/dashboard/stats
+// @desc    Get dashboard statistics for staff
+router.get(
+    '/dashboard/stats', 
+    authMiddleware, 
+    checkRole(ROLES_STAFF),
+    getDashboardStats
+);
+
+// User Profile Update Routes
+router.put('/update-username', authMiddleware, updateUsername);
+router.put('/update-password', authMiddleware, updatePassword);
 
 module.exports = router;
