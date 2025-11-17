@@ -25,10 +25,8 @@ const DashboardSidebar = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- Actions (Navigation handlers) ---
   const handleNavigation = (path) => {
     navigate(path);
-    // Mobile එකේදී sidebar එක close කරන්න
     if (window.innerWidth < 768) {
       toggleSidebar();
     }
@@ -48,8 +46,6 @@ const DashboardSidebar = ({
   const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
   const addDoctor = () => handleNavigation('/dashboard/add-doctors');
 
-
-  // --- Helpers ---
   const isActive = (path) => {
     if (path === '/dashboard/skill-assessment') {
       return (
@@ -67,82 +63,45 @@ const DashboardSidebar = ({
     return location.pathname.startsWith(path);
   };
 
-  // --- ALUTH PERMISSION CONSTANTS (Obage Rules Table Eka Anuwa) ---
-  
-  const userRole = loggedInUser?.userType; // Obage style eka (optional chaining) use karamin
+  const userRole = loggedInUser?.userType;
 
-  // Role booleans
   const isSuperAdmin = userRole === 'Super Admin';
   const isAdmin = userRole === 'Admin';
   const isDoctor = userRole === 'Doctor';
-  // 'Resource Person' wa 'Therapist' widihata salakamu
   const isTherapist = userRole === 'Therapist' || userRole === 'Resource Person';
   const isParent = userRole === 'Parent';
 
-  // Capability booleans
-  
-  // Rule: Child Info -> View (All)
   const canViewChildInfo = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
-  
-  // Rule: Assessment Forms -> Okkoma ayata monawa hari thiyenawa (View/CRUD)
   const canViewAssessmentsSection = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
-  
-  // Rule: Therapy Tracking (Table eke natha, Staff walata witharak damu)
   const canViewTherapyTracking = isSuperAdmin || isAdmin || isDoctor || isTherapist;
-
-  // Rule: Appointments -> Okkoma ayata access thiyenawa
   const canViewAppointmentsSection = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
-  
-  // Rule: QR Attendance -> View (All)
   const canViewQRAttendance = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
-
-  // Rule: RDHS -> View (Staff), Hide (Parents)
   const canViewRDHS = isSuperAdmin || isAdmin;
-
-  // Rule: Parental Training (Table eke natha, okkotama damu)
   const canViewParentalTraining = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
-
-  // Rule: Parental Resources (View) -> View (All)
   const canViewParentalResources = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
 
-  // --- Admin Section Permissions ---
-  // Rule: Manage Users -> CRUD (SA, A)
   const canManageUsers = isSuperAdmin || isAdmin;
-
-  // **NEW RULE** Rule: Manage Staff Details -> CRUD (SA, A)
-  const canManageStaffDetails = isSuperAdmin || isAdmin; 
-
-  // Rule: Parental Resources (Upload) -> CRUD (Staff)
+  const canManageStaffDetails = isSuperAdmin || isAdmin;
   const canUploadParentalResources = isSuperAdmin || isAdmin || isDoctor || isTherapist;
-
-  // Rule: Monthly Returns -> CRUD (SA), View (A)
   const canAccessMonthlyReturns = isSuperAdmin || isAdmin;
-  
-  // Admin section eka pennanna, e athule thiyena ekak hari access thiyenawanam
-  const canViewAdminSection = canManageUsers || canUploadParentalResources || canAccessMonthlyReturns || canManageStaffDetails; // **NEW ADDITION**
 
-  // --- END OF ALUTH PERMISSIONS ---
-  
+  const canViewAdminSection =
+    canManageUsers ||
+    canUploadParentalResources ||
+    canAccessMonthlyReturns ||
+    canManageStaffDetails;
 
   return (
     <aside
-      // Obage Sampurna Style String eka
       className={`bg-gradient-to-b from-blue-700 via-blue-800 to-indigo-900 text-white
         transition-all duration-300 ease-in-out shadow-2xl z-40 h-full flex-shrink-0 
-        
-        // Default (Mobile) styles: Fixed, Full Height, 64w. Slide In/Out via transform.
         fixed top-0 bottom-0 left-0 w-64 flex flex-col
         ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
-        
-        // Desktop/Tablet (md) styles: Overwrite mobile positioning. Use absolute width, keep fixed positioning
-        // md:top-3, md:bottom-3, md:rounded-r-3xl ඉවත් කර ඇත
         md:translate-x-0 md:flex md:flex-col
         ${isSidebarOpen ? 'md:w-80' : 'md:w-20'} 
-        
-        `} 
+        `}
       aria-label="Sidebar Navigation"
     >
-      {/* Obage Header eka */}
       <div className="flex items-center justify-between h-20 px-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           {isSidebarOpen ? (
@@ -168,7 +127,7 @@ const DashboardSidebar = ({
           onClick={toggleSidebar}
           className="ml-2 bg-white/15 backdrop-blur text-white p-2 rounded-xl shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-white/50 active:scale-95"
           aria-label="Toggle Sidebar"
-          title={isSidebarOpen ? "Close Menu" : "Open Menu"}
+          title={isSidebarOpen ? 'Close Menu' : 'Open Menu'}
         >
           {isSidebarOpen && window.innerWidth < 768 ? (
             <FontAwesomeIcon icon={faTimes} />
@@ -178,8 +137,6 @@ const DashboardSidebar = ({
         </button>
       </div>
 
-      {/* Nav Section - ME THANA ALUTH RBAC LOGIC EKA THIYENNE 
-      */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <NavItem
           icon={faHome}
@@ -190,7 +147,6 @@ const DashboardSidebar = ({
           color="blue"
         />
 
-        {/* ME THAMAI WENASA: canViewChildInfo */}
         {canViewChildInfo && (
           <NavItem
             icon={faClipboardList}
@@ -202,7 +158,6 @@ const DashboardSidebar = ({
           />
         )}
 
-        {/* ALUTH LOGIC: canViewAssessmentsSection */}
         {canViewAssessmentsSection && (
           <NavItem
             icon={faNotesMedical}
@@ -214,19 +169,6 @@ const DashboardSidebar = ({
           />
         )}
 
-        {/* ALUTH LOGIC: canViewTherapyTracking */}
-        {/*canViewTherapyTracking && (
-          <NavItem
-            icon={faHeartbeat}
-            label="Therapy Tracking"
-            isOpen={isSidebarOpen}
-            onClick={handleTherapyTracking}
-            isActive={isActive('/dashboard/therapy-tracking')}
-            color="indigo"
-          />
-        )}*/}
-
-        {/* ALUTH LOGIC: canViewAppointmentsSection */}
         {canViewAppointmentsSection && (
           <NavItem
             icon={faCalendarCheck}
@@ -238,7 +180,6 @@ const DashboardSidebar = ({
           />
         )}
 
-        {/* ALUTH LOGIC: canViewQRAttendance */}
         {canViewQRAttendance && (
           <NavItem
             icon={faQrcode}
@@ -250,19 +191,6 @@ const DashboardSidebar = ({
           />
         )}
 
-        {/* ALUTH LOGIC: canViewRDHS *
-        {canViewRDHS && (
-          <NavItem
-            icon={faHospital}
-            label="RDHS"
-            isOpen={isSidebarOpen}
-            onClick={handleRDHS}
-            isActive={isActive('/dashboard/rdhs')}
-            color="indigo"
-          />
-        )} 
-           */}
-        {/* ALUTH LOGIC: canViewParentalResources */}
         {canViewParentalResources && (
           <NavItem
             icon={faUserGraduate}
@@ -273,35 +201,31 @@ const DashboardSidebar = ({
             color="teal"
           />
         )}
-        
-        {/* ALUTH ADMIN SECTION LOGIC */}
+
         {canViewAdminSection && (
           <>
-            {/* Rule: Manage Users -> SA, A */}
             {canManageUsers && (
-                <NavItem
-                    icon={faUsers}
-                    label="Manage Users"
-                    isOpen={isSidebarOpen}
-                    onClick={handleManageUsers}
-                    isActive={isActive('/dashboard/manage-users')}
-                    color="blue"
-                />
+              <NavItem
+                icon={faUsers}
+                label="Manage Users"
+                isOpen={isSidebarOpen}
+                onClick={handleManageUsers}
+                isActive={isActive('/dashboard/manage-users')}
+                color="blue"
+              />
             )}
-            
-            {/* **UPDATED LOGIC**: Manage Staff Details -> SA, A */}
+
             {canManageStaffDetails && (
-                <NavItem
-                    icon={faClipboardList}
-                    label="Manage Staff Details "
-                    isOpen={isSidebarOpen}
-                    onClick={addDoctor}
-                    isActive={isActive('/dashboard/add-doctors')} // **CORRECTED PATH** obage handler එකේ තියෙන path එකට
-                    color="blue"
-                />
+              <NavItem
+                icon={faClipboardList}
+                label="Manage Staff Details "
+                isOpen={isSidebarOpen}
+                onClick={addDoctor}
+                isActive={isActive('/dashboard/add-doctors')}
+                color="blue"
+              />
             )}
-            
-            {/* Rule: Upload Resources -> Staff */}
+
             {canUploadParentalResources && (
               <NavItem
                 icon={faNotesMedical}
@@ -312,8 +236,7 @@ const DashboardSidebar = ({
                 color="blue"
               />
             )}
-            
-            {/* Rule: Monthly Returns -> SA, A */}
+
             {canAccessMonthlyReturns && (
               <NavItem
                 icon={faNotesMedical}
