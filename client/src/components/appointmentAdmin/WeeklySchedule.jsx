@@ -23,7 +23,7 @@ const WeeklySchedule = ({ doctorList, daysOfWeek }) => {
       }
 
       // Use the getMultipleDoctorsAvailability endpoint
-      const response = await axios.post('/api/availability/doctors', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, {
         doctorIds: doctorIds
       });
       

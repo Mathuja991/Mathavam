@@ -2,12 +2,7 @@ import React from "react";
 import { CheckCircle } from "lucide-react";
 
 const SuccessMessage = ({
-  selectedDoctor,
-  selectedDate,
-  selectedTime,
-  appointmentNumber,
-  patientEmail,
-  patientNote,
+  appointmentData, // Receive the full appointment data from backend
   handleDone
 }) => {
   return (
@@ -27,45 +22,44 @@ const SuccessMessage = ({
             <tbody className="space-y-4">
               <tr className="border-b border-gray-200">
                 <td className="py-3 font-semibold text-gray-700 pr-4">Doctor:</td>
-                <td className="py-3 text-gray-900">{selectedDoctor?.name}</td>
+                <td className="py-3 text-gray-900">{appointmentData?.doctorName}</td>
               </tr>
               <tr className="border-b border-gray-200">
-                <td className="py-3 font-semibold text-gray-700 pr-4">Specialization:</td>
-                <td className="py-3 text-gray-900">{selectedDoctor?.specialization}</td>
+                <td className="py-3 font-semibold text-gray-700 pr-4">Patient Name:</td>
+                <td className="py-3 text-gray-900">{appointmentData?.patientName}</td>
               </tr>
               <tr className="border-b border-gray-200">
                 <td className="py-3 font-semibold text-gray-700 pr-4">Date:</td>
                 <td className="py-3 text-gray-900">
-                  {new Date(selectedDate).toLocaleDateString('en-US', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric'
-                  })}
+                  {appointmentData?.appointmentDate ?
+                    new Date(appointmentData.appointmentDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : 'Date not available'
+                  }
                 </td>
               </tr>
               <tr className="border-b border-gray-200">
                 <td className="py-3 font-semibold text-gray-700 pr-4">Time:</td>
                 <td className="py-3 text-gray-900">
-                  {selectedTime.startTime} - {selectedTime.endTime}
+                  {appointmentData?.timeSlot ?
+                    `${appointmentData.timeSlot.startTime} - ${appointmentData.timeSlot.endTime}` :
+                    'Time not available'
+                  }
                 </td>
               </tr>
               <tr className="border-b border-gray-200">
                 <td className="py-3 font-semibold text-gray-700 pr-4">Appointment Number:</td>
                 <td className="py-3 text-purple-600 font-bold text-xl">
-                  #{appointmentNumber}
+                  #{appointmentData?.appointmentNumber}
                 </td>
               </tr>
-              {patientEmail && (
-                <tr className="border-b border-gray-200">
-                  <td className="py-3 font-semibold text-gray-700 pr-4">Confirmation Email:</td>
-                  <td className="py-3 text-gray-900">{patientEmail}</td>
-                </tr>
-              )}
-              {patientNote && (
+              {appointmentData?.patientNote && (
                 <tr>
                   <td className="py-3 font-semibold text-gray-700 pr-4">Additional Notes:</td>
-                  <td className="py-3 text-gray-900">{patientNote}</td>
+                  <td className="py-3 text-gray-900">{appointmentData.patientNote}</td>
                 </tr>
               )}
             </tbody>

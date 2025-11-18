@@ -29,7 +29,7 @@ const AvailabilityManager = ({
   const fetchExistingSlots = async () => {
   try {
     setSlotLoading(true);
-    const response = await axios.post('/api/availability/doctors', {
+    const response = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, {
       doctorIds: [selectedDoctorId]
     });
 
@@ -72,7 +72,7 @@ const AvailabilityManager = ({
     try {
       setLoading(true);
       
-      const response = await axios.post('/api/availability/add', {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/availability/add`, {
         doctorId: selectedDoctorId,
         doctorName: selectedDoctor.name,
         availabilitySlots: [{
@@ -100,7 +100,8 @@ const AvailabilityManager = ({
   // Update slot directly in database
   const handleUpdateSlot = async () => {
     if (!editTimeSlots.startTime || !editTimeSlots.endTime) return;
-    
+      console.log('Editing Slot ID:', editingSlot);
+  console.log('Time slots to update:', editTimeSlots);
     // Check if end time is after start time
     if (editTimeSlots.startTime >= editTimeSlots.endTime) {
       alert('End time must be after start time');
@@ -111,7 +112,7 @@ const AvailabilityManager = ({
       setLoading(true);
       
       // Update the slot in database - FIXED: using params instead of body for slotId
-      const response = await axios.put(`/api/availability/${editingSlot}`, {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/availability/${editingSlot}`, {
         startTime: editTimeSlots.startTime,
         endTime: editTimeSlots.endTime
       });
@@ -141,7 +142,7 @@ const AvailabilityManager = ({
       setLoading(true);
       
       // FIXED: Using params instead of body for DELETE
-      const response = await axios.delete(`/api/availability/${slotId}`);
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/${slotId}`);
 
       if (response.data.success) {
         // Refresh the slots list
@@ -168,7 +169,7 @@ const AvailabilityManager = ({
       setLoading(true);
       
       // FIXED: Using params instead of body
-      const response = await axios.delete(`/api/availability/doctor/${selectedDoctorId}`);
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/doctor/${selectedDoctorId}`);
 
       if (response.data.success) {
         setExistingSlots([]);

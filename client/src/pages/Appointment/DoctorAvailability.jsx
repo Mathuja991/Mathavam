@@ -13,31 +13,18 @@ const DoctorsAvailability = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Mock appointment data for admin view
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      serialNo: 1,
-      doctorId: "1",
-      doctorName: "Dr. John Smith",
-      patientId: "P001",
-      patientName: "John Doe",
-      date: "2024-02-20",
-      time: "10:00 - 11:00",
-      status: "upcoming",
-      createdAt: "2024-01-05"
-    },
-  ]);
+  // Real appointment data from doctorappointments database
+  const [appointments, setAppointments] = useState([]);
 
   const [selectedDoctorId, setSelectedDoctorId] = useState(null);
   const [activeTab, setActiveTab] = useState("availability");
   const [cancelConfirmation, setCancelConfirmation] = useState(null);
-  
+
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const response = await axios.get('/api/doctors');
-        
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctors`);
+
         if (response.data && response.data.success && response.data.data) {
           const transformedDoctors = response.data.data.map(doctor => ({
             _id: doctor._id,
@@ -48,7 +35,7 @@ const DoctorsAvailability = () => {
             qualification: doctor.qualification,
             experience: doctor.experience
           }));
-          
+
           setDoctorList(transformedDoctors);
           setLoading(false);
         } else {
@@ -62,15 +49,30 @@ const DoctorsAvailability = () => {
         setLoading(false);
       }
     };
-    
+
     fetchDoctors();
+  }, []);
+
+  const fetchAppointments = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments`);
+      if (response.data.success) {
+        setAppointments(response.data.appointments);
+      }
+    } catch (error) {
+      console.error('Error fetching appointments:', error);
+    }
+  };
+
+  // Load appointments when component mounts
+  useEffect(() => {
+    fetchAppointments();
   }, []);
 
   // Filter states for appointments
   const [filters, setFilters] = useState({
     doctorName: "",
     patientName: "",
-    patientId: "",
     date: "",
     time: "",
     status: "all"
@@ -92,15 +94,23 @@ const DoctorsAvailability = () => {
     setCancelConfirmation(appointmentId);
   };
 
-  const handleConfirmCancel = () => {
-    setAppointments(prev => 
-      prev.map(apt => 
-        apt.id === cancelConfirmation 
-          ? { ...apt, status: "cancelled" }
-          : apt
-      )
-    );
-    setCancelConfirmation(null);
+  const handleConfirmCancel = async () => {
+    try {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/doctorappointments/${cancelConfirmation}/cancel`);
+
+      if (response.data.success) {
+        // Refresh appointments list
+        await fetchAppointments();
+        setCancelConfirmation(null);
+      } else {
+        alert(response.data.message || 'Failed to cancel appointment');
+        setCancelConfirmation(null);
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Failed to cancel appointment. Please try again.');
+      setCancelConfirmation(null);
+    }
   };
 
   const handleCancelCancel = () => {
@@ -118,7 +128,6 @@ const DoctorsAvailability = () => {
     setFilters({
       doctorName: "",
       patientName: "",
-      patientId: "",
       date: "",
       time: "",
       status: "all"
@@ -127,10 +136,14 @@ const DoctorsAvailability = () => {
 
   const selectedDoctor = doctorList.find(d => d._id === selectedDoctorId);
 
+  // Filter appointments for different tabs
+  const upcomingAppointments = appointments.filter(apt => apt.status === 'upcoming');
+  const historyAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'cancelled');
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50/30 p-6">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -141,43 +154,38 @@ const DoctorsAvailability = () => {
           </div>
         </div>
 
-         {/* Tabs Navigation */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 mb-6">
           <div className="flex border-b border-gray-200">
             <button
               onClick={() => setActiveTab("availability")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "availability"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "availability"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Set Availability
             </button>
             <button
               onClick={() => setActiveTab("upcoming")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "upcoming"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "upcoming"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Upcoming Appointments
             </button>
             <button
               onClick={() => setActiveTab("history")}
-              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${
-                activeTab === "history"
+              className={`flex-1 px-6 py-4 text-lg font-semibold transition-all border-b-2 ${activeTab === "history"
                   ? "border-blue-600 text-blue-600 bg-blue-50"
                   : "border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50"
-              }`}
+                }`}
             >
               Appointment History
             </button>
           </div>
         </div>
 
-        {/* Tab Content */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200">
           {activeTab === "availability" && (
             <>
@@ -186,7 +194,7 @@ const DoctorsAvailability = () => {
                 selectedDoctorId={selectedDoctorId}
                 onSelectDoctor={setSelectedDoctorId}
               />
-              
+
               {selectedDoctorId ? (
                 <AvailabilityManager
                   selectedDoctor={selectedDoctor}
@@ -209,7 +217,15 @@ const DoctorsAvailability = () => {
           {activeTab === "upcoming" && (
             <AppointmentsTab
               title="Upcoming Appointments"
-              appointments={appointments.filter(apt => apt.status === "upcoming")}
+              appointments={upcomingAppointments.map((apt, index) => ({
+                id: apt._id,
+                serialNo: index + 1,
+                doctorName: apt.doctorName,
+                patientName: apt.patientName,
+                date: apt.appointmentDate,
+                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
+                status: apt.status
+              }))}
               filters={filters}
               onFilterChange={handleFilterChange}
               onClearFilters={clearFilters}
@@ -221,7 +237,15 @@ const DoctorsAvailability = () => {
           {activeTab === "history" && (
             <AppointmentsTab
               title="Appointment History"
-              appointments={appointments}
+              appointments={historyAppointments.map((apt, index) => ({
+                id: apt._id,
+                serialNo: index + 1,
+                doctorName: apt.doctorName,
+                patientName: apt.patientName,
+                date: apt.appointmentDate,
+                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
+                status: apt.status
+              }))}
               filters={filters}
               onFilterChange={handleFilterChange}
               onClearFilters={clearFilters}
