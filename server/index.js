@@ -77,6 +77,9 @@ app.use('/api/availability', availabilityRoutes);
 //varsha's qr routes
 app.use("/api/adminqr", adminQrRoutes);
 
+//Varsha's RAG
+app.use("/api/rag", require("./RAG/ragRoutes"));
+
 // Basic Root Route
 app.get('/', (req, res) => {
     res.send('Mathavam Backend API is running!');

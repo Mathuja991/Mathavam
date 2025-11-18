@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComments, faTimes } from '@fortawesome/free-solid-svg-icons';
 
 // Authorization Header එක සකස් කරගැනීම සඳහා helper function එකක්
 const getAuthConfig = () => {
@@ -10,7 +12,7 @@ const getAuthConfig = () => {
   }
   return {
     headers: {
-      'x-auth-token': token, // 🛡️ FIX: Auth token එක header එකට එක් කිරීම
+      'x-auth-token': token,
     },
   };
 };
@@ -26,6 +28,12 @@ const UserViewDocuments = () => {
   const [titleFilter, setTitleFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "title"
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [activeDoc, setActiveDoc] = useState(null); // last selected row document
+  const ragChatEndpoint = `${API_URL || 'http://localhost:5000/api'}/rag/chat`;
 
   useEffect(() => {
     setLoading(true);
@@ -125,6 +133,84 @@ const UserViewDocuments = () => {
     setSortBy("newest");
   };
 
+  const appendMessage = (role, text) => {
+    setChatMessages(prev => [...prev, { role, text }]);
+  };
+
+  const describeDocument = (doc, rowNumber) => {
+    const title = doc.metadata?.title || doc.filename || "Untitled document";
+    const uploaded = formatDate(doc.uploadDate || doc.createdAt);
+    const extension = doc.filename?.split('.').pop()?.toUpperCase();
+    const size = doc.length ? `${Math.round(doc.length / 1024)} KB` : null;
+    const details = [
+      `Row ${rowNumber}: ${title}`,
+      `Uploaded on ${uploaded}`,
+      extension ? `Type: ${extension}` : null,
+      size ? `Size: ${size}` : null,
+    ].filter(Boolean);
+    return details.join(". ");
+  };
+
+  const askRag = async (prompt, doc) => {
+    setChatLoading(true);
+    try {
+      const title = doc?.metadata?.title || doc?.filename;
+      const docHint = doc
+        ? `\n\nFocus only on this document:\nTitle: ${doc.metadata?.title || 'N/A'}\nFilename: ${doc.filename || 'N/A'}\nUploaded: ${formatDate(doc.uploadDate || doc.createdAt)}`
+        : "";
+
+      const response = await fetch(ragChatEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `${prompt}${docHint}`,
+          filename: doc?.filename || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Chat request failed");
+      }
+
+      const data = await response.json();
+      const answer = data?.answer?.trim();
+      appendMessage("assistant", answer || "Details not found.");
+    } catch (err) {
+      appendMessage("assistant", "Details not found.");
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    const prompt = chatInput.trim();
+    if (!prompt) return;
+
+    appendMessage("user", prompt);
+    setChatInput("");
+
+    const rowMatch = prompt.match(/\b(\d+)\b/);
+    if (rowMatch) {
+      const rowNumber = parseInt(rowMatch[1], 10);
+      const targetDoc = Array.isArray(filteredDocuments)
+        ? filteredDocuments[rowNumber - 1]
+        : null;
+
+      if (targetDoc) {
+        setActiveDoc({ doc: targetDoc, rowNumber });
+        appendMessage("assistant", describeDocument(targetDoc, rowNumber));
+        await askRag("Summarize this document and share the main idea in a couple of sentences.", targetDoc);
+      } else {
+        appendMessage("assistant", "Details not found.");
+      }
+      return;
+    }
+
+    const docContext = activeDoc?.doc || null;
+    await askRag(prompt, docContext);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
@@ -158,11 +244,12 @@ const UserViewDocuments = () => {
         return '🖼️';
       case 'zip':
       case 'rar':
-        return '📦';
+        return '🗜️';
       default:
         return '📄';
     }
   };
+
 
   if (loading) {
     return (
@@ -283,13 +370,16 @@ const UserViewDocuments = () => {
       ) : (
         <div className="space-y-4">
           {/* 🛡️ FIX: Array check එක උඩින් තිබෙන නිසා මෙහිදී ආරක්ෂිතයි */}
-          {filteredDocuments.map(doc => (
+          {filteredDocuments.map((doc, idx) => (
             <div
               key={doc._id}
               className="p-5 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
+                  <div className="text-sm font-semibold text-gray-500 w-6 text-right">
+                    {idx + 1}.
+                  </div>
                   <div className="text-3xl mt-1">
                     {getFileIcon(doc.filename)}
                   </div>
@@ -340,8 +430,81 @@ const UserViewDocuments = () => {
         <div className="mt-6 pt-4 border-t border-gray-200">
           <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
             
-           
+            
           </div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setChatOpen(prev => !prev)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center space-x-2"
+      >
+        <FontAwesomeIcon icon={faComments} />
+        <span className="font-semibold">Chat</span>
+      </button>
+
+      {chatOpen && (
+        <div className="fixed bottom-24 right-6 w-80 bg-white border border-gray-200 shadow-2xl rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">Document chat</p>
+              <p className="text-xs text-gray-500">Ask by row number or a general question.</p>
+              {activeDoc?.rowNumber && (
+                <p className="text-[11px] text-blue-600 mt-1">
+                  Currently focusing on row {activeDoc.rowNumber}.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+              aria-label="Close chat"
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {chatMessages.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                I can explain a specific row (e.g. "Row 2") or answer general questions from the uploaded documents.
+              </p>
+            ) : (
+              chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`p-2 rounded-lg text-sm ${msg.role === 'user' ? 'bg-blue-50 text-blue-900' : 'bg-gray-100 text-gray-800'}`}
+                >
+                  <span className="font-semibold mr-1">
+                    {msg.role === 'user' ? 'You' : 'Assistant'}:
+                  </span>
+                  <span>{msg.text}</span>
+                </div>
+              ))
+            )}
+            {chatLoading && (
+              <p className="text-xs text-gray-500">Checking documents...</p>
+            )}
+          </div>
+
+          <form onSubmit={handleChatSubmit} className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask about a row or any topic"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={chatLoading}
+              className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60"
+            >
+              Send
+            </button>
+          </form>
         </div>
       )}
     </div>
