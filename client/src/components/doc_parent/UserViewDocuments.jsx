@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComments, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-// Helper function to set the Authorization header
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -25,17 +24,13 @@ const UserViewDocuments = () => {
 
   const [titleFilter, setTitleFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
-<<<<<<< HEAD
-  const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "title"
+  const [sortBy, setSortBy] = useState("newest");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [chatMessages, setChatMessages] = useState([]);
   const [chatLoading, setChatLoading] = useState(false);
-  const [activeDoc, setActiveDoc] = useState(null); // last selected row document
+  const [activeDoc, setActiveDoc] = useState(null);
   const ragChatEndpoint = `${API_URL || 'http://localhost:5000/api'}/rag/chat`;
-=======
-  const [sortBy, setSortBy] = useState("newest");
->>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
 
   useEffect(() => {
     setLoading(true);
@@ -46,9 +41,7 @@ const UserViewDocuments = () => {
     fetch(`${API_URL}/documents`, config)
       .then(res => {
         if (!res.ok) {
-          if (res.status === 401) {
-            throw new Error("Unauthorized: Please log in again.");
-          }
+          if (res.status === 401) throw new Error("Unauthorized: Please log in again.");
           return res.json().then(error => { 
             throw new Error(error.error || `Server Error: ${res.status}`); 
           });
@@ -149,7 +142,6 @@ const UserViewDocuments = () => {
   const askRag = async (prompt, doc) => {
     setChatLoading(true);
     try {
-      const title = doc?.metadata?.title || doc?.filename;
       const docHint = doc
         ? `\n\nFocus only on this document:\nTitle: ${doc.metadata?.title || 'N/A'}\nFilename: ${doc.filename || 'N/A'}\nUploaded: ${formatDate(doc.uploadDate || doc.createdAt)}`
         : "";
@@ -163,14 +155,12 @@ const UserViewDocuments = () => {
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Chat request failed");
-      }
+      if (!response.ok) throw new Error("Chat request failed");
 
       const data = await response.json();
       const answer = data?.answer?.trim();
       appendMessage("assistant", answer || "Details not found.");
-    } catch (err) {
+    } catch {
       appendMessage("assistant", "Details not found.");
     } finally {
       setChatLoading(false);
@@ -188,9 +178,7 @@ const UserViewDocuments = () => {
     const rowMatch = prompt.match(/\b(\d+)\b/);
     if (rowMatch) {
       const rowNumber = parseInt(rowMatch[1], 10);
-      const targetDoc = Array.isArray(filteredDocuments)
-        ? filteredDocuments[rowNumber - 1]
-        : null;
+      const targetDoc = filteredDocuments[rowNumber - 1];
 
       if (targetDoc) {
         setActiveDoc({ doc: targetDoc, rowNumber });
@@ -221,34 +209,13 @@ const UserViewDocuments = () => {
 
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf':
-        return '';
-      case 'doc':
-      case 'docx':
-        return '';
-      case 'xls':
-      case 'xlsx':
-        return '';
-      case 'ppt':
-      case 'pptx':
-        return '';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return '';
       case 'zip':
       case 'rar':
-<<<<<<< HEAD
         return '🗜️';
-=======
-        return '';
->>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
       default:
         return '';
     }
   };
-
 
   if (loading) {
     return (
@@ -284,8 +251,7 @@ const UserViewDocuments = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download error:", err);
+    } catch {
       alert("Download/View failed");
     }
   };
@@ -296,7 +262,7 @@ const UserViewDocuments = () => {
         <h2 className="text-2xl font-bold text-red-700 mb-4">Error Loading Resources</h2>
         <p className="text-red-600">{fetchError}</p>
         <p className="mt-4 text-sm text-red-500">
-          If this is an "Unauthorized" error, please log out and log back in to refresh your session token.
+          If this is an "Unauthorized" error, please log out and log back in.
         </p>
       </div>
     );
@@ -312,7 +278,6 @@ const UserViewDocuments = () => {
         <h3 className="text-lg font-semibold text-gray-700 mb-4">Find Documents</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Search by Title
@@ -370,7 +335,7 @@ const UserViewDocuments = () => {
         </div>
       </div>
 
-      {Array.isArray(filteredDocuments) && filteredDocuments.length === 0 ? (
+      {filteredDocuments.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <p className="text-gray-500 text-lg font-medium mb-2">
             {documents.length === 0 
@@ -389,12 +354,7 @@ const UserViewDocuments = () => {
         </div>
       ) : (
         <div className="space-y-4">
-<<<<<<< HEAD
-          {/* 🛡️ FIX: Array check එක උඩින් තිබෙන නිසා මෙහිදී ආරක්ෂිතයි */}
           {filteredDocuments.map((doc, idx) => (
-=======
-          {filteredDocuments.map(doc => (
->>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
             <div
               key={doc._id}
               className="p-5 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
@@ -404,6 +364,7 @@ const UserViewDocuments = () => {
                   <div className="text-sm font-semibold text-gray-500 w-6 text-right">
                     {idx + 1}.
                   </div>
+
                   <div className="text-3xl mt-1">
                     {getFileIcon(doc.filename)}
                   </div>
@@ -431,21 +392,15 @@ const UserViewDocuments = () => {
                 >
                   Download
                 </button>
-
               </div>
             </div>
           ))}
         </div>
       )}
-<<<<<<< HEAD
 
-      {/* Quick Stats */}
       {documents.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200">
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600">
-            
-            
-          </div>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600"></div>
         </div>
       )}
 
@@ -474,7 +429,6 @@ const UserViewDocuments = () => {
               type="button"
               onClick={() => setChatOpen(false)}
               className="text-gray-500 hover:text-gray-700"
-              aria-label="Close chat"
             >
               <FontAwesomeIcon icon={faTimes} />
             </button>
@@ -483,13 +437,17 @@ const UserViewDocuments = () => {
           <div className="max-h-64 overflow-y-auto space-y-2">
             {chatMessages.length === 0 ? (
               <p className="text-sm text-gray-500">
-                I can explain a specific row (e.g. "Row 2") or answer general questions from the uploaded documents.
+                I can explain a specific row (e.g. "Row 2") or answer general questions.
               </p>
             ) : (
               chatMessages.map((msg, i) => (
                 <div
                   key={i}
-                  className={`p-2 rounded-lg text-sm ${msg.role === 'user' ? 'bg-blue-50 text-blue-900' : 'bg-gray-100 text-gray-800'}`}
+                  className={`p-2 rounded-lg text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-blue-50 text-blue-900'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
                 >
                   <span className="font-semibold mr-1">
                     {msg.role === 'user' ? 'You' : 'Assistant'}:
@@ -521,8 +479,6 @@ const UserViewDocuments = () => {
           </form>
         </div>
       )}
-=======
->>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
     </div>
   );
 };
