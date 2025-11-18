@@ -37,20 +37,32 @@ const ConfirmationModal = ({ show, onClose, onConfirm, message }) => {
 
 const SubmittedFormsList = () => {
   const [forms, setForms] = useState([]);
+  const [filteredForms, setFilteredForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false); 
-  const [formToDeleteId, setFormToDeleteId] = useState(null);  
+  const [formToDeleteId, setFormToDeleteId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchForms();
   }, []);
 
+  // Filter logic
+  useEffect(() => {
+    const filtered = forms.filter(form => 
+      form.patientInfo.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      form.patientInfo.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredForms(filtered);
+  }, [searchTerm, forms]);
+
   const fetchForms = async () => {
     try {
       const res = await axios.get(`${import.meta.env.VITE_API_URL}/dsm5forms`);
       setForms(res.data);
+      setFilteredForms(res.data);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching forms:", err);
@@ -90,6 +102,10 @@ const SubmittedFormsList = () => {
     navigate(`/dashboard/view-dsm5-form/${id}`);
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   if (loading) {
     return <div className="text-center p-8">Loading forms...</div>;
   }
@@ -105,8 +121,21 @@ const SubmittedFormsList = () => {
           Submitted DSM-5 Forms
         </h1>
 
-        {forms.length === 0 ? (
-          <p className="text-center text-gray-600">No forms submitted yet.</p>
+        {/* Search Filter */}
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search by Patient ID or Name..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        {filteredForms.length === 0 ? (
+          <p className="text-center text-gray-600">
+            {forms.length === 0 ? 'No forms submitted yet.' : 'No forms match your search.'}
+          </p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left table-auto border-collapse">
@@ -120,7 +149,7 @@ const SubmittedFormsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {forms.map((form, index) => (
+                {filteredForms.map((form, index) => (
                   <tr key={form._id} className="text-gray-700">
                     <td className="px-4 py-3 border-b border-gray-200">{index + 1}</td>
                     <td className="px-4 py-3 border-b border-gray-200">{form.patientInfo.id}</td>

@@ -277,7 +277,7 @@ const ViewDSM5Form = () => {
                                 Edit Form
                             </button>
                             <button
-                                onClick={() => navigate('/submitted-dsm5-forms')}
+                                onClick={() => navigate('/dashboard/submitted-dsm5-forms')}
                                 className="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg hover:bg-gray-300 font-semibold cursor-pointer"
                             >
                                 Back to List

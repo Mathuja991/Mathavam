@@ -52,7 +52,7 @@ const SuccessMessage = ({
               </tr>
               <tr className="border-b border-gray-200">
                 <td className="py-3 font-semibold text-gray-700 pr-4">Appointment Number:</td>
-                <td className="py-3 text-purple-600 font-bold text-xl">
+                <td className="py-3 text-purple-600 font-bold ">
                   #{appointmentData?.appointmentNumber}
                 </td>
               </tr>

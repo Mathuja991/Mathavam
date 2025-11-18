@@ -175,11 +175,11 @@ function App() {
 
           {/*Kujinsika*/}
           <Route path="snap-submitted-forms" element={<SubmittedSnapFormsList />} />
-          <Route path="SnapForm" element={<SnapForm />} />
-          <Route path="SnapForm/:id" element={<SnapForm />} />
+          <Route path="snapform" element={<SnapForm />} />
+          <Route path="snapform/:id" element={<SnapForm />} />
 
           <Route path="submitted-dsm5-forms" element={<SubmittedFormsList />} />
-          <Route path="DSM5Form" element={<DSM5Form />} />
+          <Route path="dsm5form" element={<DSM5Form />} />
           <Route path="view-dsm5-form/:id" element={<ViewDSM5Form />} />
 
           <Route path="add-doctors" element={<Add_doctors />} />

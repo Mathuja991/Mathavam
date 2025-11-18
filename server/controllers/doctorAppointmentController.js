@@ -351,7 +351,47 @@ exports.getAppointmentsByDoctorAndDate = async (req, res) => {
         $gte: startOfDay,
         $lte: endOfDay
       },
-      status: { $in: ['upcoming'] }
+      status: { $in: 
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        6['upcoming'] }
     });
 
     res.status(200).json({

@@ -5,18 +5,15 @@ const createForm = async (req, res) => {
     const { studentInfo, answers, totalScore } = req.body;
 
     if (!studentInfo) {
-      return res.status(400).json({ message: "Student information is required." });
+      return res.status(400).json({ message: "Child information is required." });
     }
     if (
       !studentInfo.id ||
       !studentInfo.name ||
       !studentInfo.age ||
-      !studentInfo.class ||
-      !studentInfo.address ||
-      !studentInfo.gender ||
-      !studentInfo.completedBy
+      !studentInfo.gender
     ) {
-      return res.status(400).json({ message: "All student information fields (ID, Name, Age, Class, Address, Gender, Completed By) are required." });
+      return res.status(400).json({ message: "All child information fields (ID, Name, Age, Gender) are required." });
     }
     if (!answers || Object.keys(answers).length === 0) {
       return res.status(400).json({ message: "Answers to questions are required." });
@@ -34,10 +31,7 @@ const createForm = async (req, res) => {
         id: studentInfo.id,
         name: studentInfo.name,
         age: studentInfo.age,
-        class: studentInfo.class,
-        address: studentInfo.address,
         gender: studentInfo.gender,
-        completedBy: studentInfo.completedBy,
       },
       answers,
       totalScore,
@@ -47,7 +41,7 @@ const createForm = async (req, res) => {
     res.status(201).json({ message: "Form created successfully!", data: savedForm });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({ message: `A form with Student ID '${error.keyValue["studentInfo.id"]}' already exists.`, details: error.message });
+      return res.status(409).json({ message: `A form with Child ID '${error.keyValue["studentInfo.id"]}' already exists.`, details: error.message });
     }
     if (error.name === 'ValidationError') {
       let errors = {};
@@ -91,7 +85,7 @@ const updateForm = async (req, res) => {
   try {
     const { studentInfo, answers, totalScore } = req.body;
 
-    if (!studentInfo || !studentInfo.id || !studentInfo.name || !studentInfo.age || !studentInfo.class || !studentInfo.address || !studentInfo.gender || !studentInfo.completedBy || !answers || totalScore === undefined || totalScore === null) {
+    if (!studentInfo || !studentInfo.id || !studentInfo.name || !studentInfo.age || !studentInfo.gender || !answers || totalScore === undefined || totalScore === null) {
       return res.status(400).json({ message: "All required fields must be provided for update." });
     }
 
@@ -106,10 +100,7 @@ const updateForm = async (req, res) => {
           id: studentInfo.id,
           name: studentInfo.name,
           age: studentInfo.age,
-          class: studentInfo.class,
-          address: studentInfo.address,
           gender: studentInfo.gender,
-          completedBy: studentInfo.completedBy,
         },
         answers,
         totalScore,
@@ -123,7 +114,7 @@ const updateForm = async (req, res) => {
     res.status(200).json({ message: "Form updated successfully!", data: updatedForm });
   } catch (error) {
     if (error.code === 11000) {
-      return res.status(409).json({ message: `A form with Student ID '${error.keyValue["studentInfo.id"]}' already exists.`, details: error.message });
+      return res.status(409).json({ message: `A form with Child ID '${error.keyValue["studentInfo.id"]}' already exists.`, details: error.message });
     }
     if (error.name === 'ValidationError') {
       let errors = {};
@@ -161,12 +152,12 @@ const getStudentInfoByStudentId = async (req, res) => {
   try {
     const form = await SnapForm.findOne({ 'studentInfo.id': req.params.studentId }).select('studentInfo -_id'); 
     if (!form) {
-      return res.status(404).json({ message: 'Student information not found for this ID.' });
+      return res.status(404).json({ message: 'Child information not found for this ID.' });
     }
     res.status(200).json(form.studentInfo); 
   } catch (error) {
-    console.error("Error fetching student info:", error);
-    res.status(500).json({ message: "Server error fetching student information.", details: error.message });
+    console.error("Error fetching child info:", error);
+    res.status(500).json({ message: "Server error fetching child information.", details: error.message });
   }
 };
 

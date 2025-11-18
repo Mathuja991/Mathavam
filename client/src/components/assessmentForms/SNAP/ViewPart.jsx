@@ -17,15 +17,15 @@ const ViewPart = ({
   const { studentInfo } = selectedForm;
 
   if (!studentInfo) {
-    return <p className="text-red-500 text-center">Error: Student information not found within the form data.</p>;
+    return <p className="text-red-500 text-center">Error: Child information not found within the form data.</p>;
   }
 
   const handleGoBackToSubmissions = () => {
-    navigate('/snap-submitted-forms');
+    navigate('/dashboard/snap-submitted-forms');
   };
 
   const handleEditForm = () => {
-    navigate(`/SnapForm/${selectedForm._id}?edit=true`);
+    navigate(`/dashboard/snapform/${selectedForm._id}?edit=true`);
   };
 
   return (
@@ -34,9 +34,9 @@ const ViewPart = ({
         {isTranslated ? "Details" : "விவரங்கள்"}
       </h2>
 
-      <div className="bg-blue-50 rounded-xl shadow-lg p-8 border border-blue-200">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-lg p-8 border border-blue-200">
         <h3 className="text-2xl font-bold text-blue-700 mb-6 pb-2 border-b border-blue-100">
-          {isTranslated ? "Student Information" : "மாணவர் தகவல்கள்"}
+          {isTranslated ? "Child Information" : "குழந்தை தகவல்கள்"}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8 text-gray-700 mb-8 text-left">
           <div className="flex flex-col">
@@ -55,27 +55,9 @@ const ViewPart = ({
           </div>
           <div className="flex flex-col">
             <p className="font-semibold text-gray-900">
-              {isTranslated ? "Class:" : "வகுப்பு:"}
-            </p>
-            <p className="font-bold text-lg">{studentInfo.class}</p>
-          </div>
-          <div className="flex flex-col">
-            <p className="font-semibold text-gray-900">
-              {isTranslated ? "Address:" : "முகவரி:"}
-            </p>
-            <p className="font-bold text-lg">{studentInfo.address}</p>
-          </div>
-          <div className="flex flex-col">
-            <p className="font-semibold text-gray-900">
               {isTranslated ? "Gender:" : "பால்:"}
             </p>
             <p className="font-bold text-lg">{studentInfo.gender}</p>
-          </div>
-          <div className="flex flex-col">
-            <p className="font-semibold text-gray-900">
-              {isTranslated ? "Completed By:" : "நிரப்பியது:"}
-            </p>
-            <p className="font-bold text-lg">{studentInfo.completedBy}</p>
           </div>
           <div className="flex flex-col">
             <p className="font-semibold text-gray-900">
@@ -89,14 +71,6 @@ const ViewPart = ({
                 hour: "2-digit",
                 minute: "2-digit",
               })}
-            </p>
-          </div>
-          <div className="flex flex-col">
-            <p className="font-semibold text-gray-900">
-              {isTranslated ? "Total Score:" : "மொத்த மதிப்பெண்:"}
-            </p>
-            <p className="font-bold text-lg">
-              {selectedForm.totalScore}
             </p>
           </div>
         </div>
