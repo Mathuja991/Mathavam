@@ -68,9 +68,7 @@ exports.createAppointment = async (req, res) => {
   }
 };
 
-// --- Status වෙනස් කරන විට Notification යැවීමේ Function එක ---
-// @desc    Update appointment status
-// @access  Private (Assumes route is protected by authMiddleware)
+
 exports.updateAppointmentStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -109,9 +107,7 @@ exports.updateAppointmentStatus = async (req, res) => {
           // Create a meaningful message based on the new status
           let message = `The status of the appointment for ${patientName} (${registrationNumber}) on ${formattedDate} at ${updatedAppointment.startTime} has been updated to ${status}.`;
           
-          // Customize messages further if needed:
-          // if (status === 'Confirmed') message = `Appointment confirmed for ${patientName}...`;
-          // if (status === 'Cancelled') message = `Appointment cancelled for ${patientName}...`;
+
 
           const notification = new Notification({
             patientName: patientName,
@@ -149,8 +145,6 @@ exports.updateAppointmentStatus = async (req, res) => {
 };
 
 
-// --- අනෙකුත් Functions (getAllAppointments, getAppointmentById, etc.) ---
-// --- මේවායේ වෙනසක් අවශ්‍ය නැත ---
 
 exports.getAllAppointments = async (req, res) => {
   try {

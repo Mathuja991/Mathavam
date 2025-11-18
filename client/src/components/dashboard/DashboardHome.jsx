@@ -35,8 +35,11 @@ const DashboardHome = ({ loggedInUser }) => {
    * Fetches the dashboard statistics from the API for staff roles.
    */
   useEffect(() => {
-    // Only fetch stats for staff members
-    if (loggedInUser && loggedInUser.userType !== 'Parent') {
+    // Determine user role in lowercase for consistent checking
+    const userRoleLower = (loggedInUser?.userType || '').trim().toLowerCase();
+
+    // Only fetch stats for staff members (i.e., not 'parent' or empty)
+    if (loggedInUser && userRoleLower !== 'parent' && userRoleLower) {
       const fetchStats = async () => {
         setLoading(true);
         try {
@@ -64,7 +67,7 @@ const DashboardHome = ({ loggedInUser }) => {
       };
       fetchStats();
     } else {
-      // For Parents, no stats needed, just set loading to false
+      // For Parents and Unknowns, no stats needed, just set loading to false
       setLoading(false);
     }
   }, [loggedInUser]);
@@ -74,9 +77,10 @@ const DashboardHome = ({ loggedInUser }) => {
   }
 
   // --- Role-Based Content Rendering ---
+  // The role is converted to lowercase for comparison with 'case' blocks
   const userRole = (loggedInUser.userType || 'Unknown').trim().toLowerCase();
 
-  if (loading && userRole !== 'parent' && userRole !== 'unknown') {
+  if (loading && userRole !== 'parent' && userRole !== 'unknown' && userRole) {
     return (
       <div className="flex justify-center items-center h-full p-8">
         <FontAwesomeIcon icon={faSpinner} spin className="text-4xl text-indigo-500" />
@@ -100,7 +104,7 @@ const DashboardHome = ({ loggedInUser }) => {
           loggedInUser={loggedInUser}
         />
       );
-    case 'Parent':
+    case 'parent': // ✅ FIX: Changed from 'Parent' to 'parent'
       // The Parent role uses a tailored dashboard view
       return (
         <ParentDashboardContent
@@ -109,7 +113,7 @@ const DashboardHome = ({ loggedInUser }) => {
         />
       );
     default:
-      // If the user role is not matched (e.g., 'Unknown' or an unrecognized role)
+      // If the user role is not matched (e.g., 'unknown' or an unrecognized role)
       return (
         <div className="p-8 bg-red-50 rounded-lg shadow-lg border border-red-300 mx-auto max-w-xl mt-10 text-center">
           <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl text-red-600 mb-4" />

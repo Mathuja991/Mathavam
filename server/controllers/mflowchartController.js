@@ -1,6 +1,6 @@
 const MFlowchart = require('../models/MFlowchart');
 
-// 🟩 Submit new entry
+
 const submitMFlowchart = async (req, res) => {
   try {
     const { name, childNo, age, gender, date, ...rest } = req.body;
@@ -19,7 +19,7 @@ const submitMFlowchart = async (req, res) => {
   }
 };
 
-// 🟦 Get all entries
+
 const getMFlowchart = async (req, res) => {
   try {
     const forms = await MFlowchart.find();
@@ -29,7 +29,7 @@ const getMFlowchart = async (req, res) => {
   }
 };
 
-// 🟨 Get single entry
+
 const getMFlowchartById = async (req, res) => {
   try {
     const form = await MFlowchart.findById(req.params.id);
@@ -40,7 +40,7 @@ const getMFlowchartById = async (req, res) => {
   }
 };
 
-// 🟥 Delete an entry
+
 const deleteEntry = async (req, res) => {
   try {
     const deleted = await MFlowchart.findByIdAndDelete(req.params.id);
@@ -51,7 +51,7 @@ const deleteEntry = async (req, res) => {
   }
 };
 
-// 🟩 Update a specific section date
+
 const updateEntry = async (req, res) => {
   try {
     const { id } = req.params;
