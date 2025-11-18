@@ -49,7 +49,7 @@ const SubmittedFormsList = () => {
 
   const fetchForms = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/dsm5forms");
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/dsm5forms`);
       setForms(res.data);
       setLoading(false);
     } catch (err) {
@@ -69,7 +69,7 @@ const SubmittedFormsList = () => {
     setShowDeleteModal(false); 
     if (formToDeleteId) {
       try {
-        await axios.delete(`http://localhost:5000/api/dsm5forms/${formToDeleteId}`);
+        await axios.delete(`${import.meta.env.VITE_API_URL}/dsm5forms/${formToDeleteId}`);
         toast.success("Form deleted successfully!");
         fetchForms(); 
       } catch (err) {

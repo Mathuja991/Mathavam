@@ -1,8 +1,6 @@
 const Availability = require('../models/Availability');
 
-// @desc    Get all availability slots for a doctor
-// @route   GET /api/availability/doctor/:doctorId
-// @access  Private
+// Get all availability slots for a doctor
 const getDoctorAvailability = async (req, res) => {
   try {
     const { doctorId } = req.params;
@@ -25,9 +23,7 @@ const getDoctorAvailability = async (req, res) => {
   }
 };
 
-// @desc    Create or update availability slots
-// @route   POST /api/availability
-// @access  Private
+//   Create or update availability slots
 const setAvailability = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
@@ -82,10 +78,7 @@ const setAvailability = async (req, res) => {
   }
 };
 
-// @desc    Add new availability slots (without deleting existing ones)
-// @route   POST /api/availability/add
-// @access  Private
-// Simple test version - remove all validation temporarily
+//  Add new availability slots (without deleting existing ones)
 const addAvailabilitySlots = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
@@ -122,9 +115,7 @@ const addAvailabilitySlots = async (req, res) => {
 };
 
 
-// @desc    Delete a specific availability slot (using URL params)
-// @route   DELETE /api/availability/:slotId
-// @access  Private
+//   Delete a specific availability slot (using URL params)
 const deleteAvailabilitySlot = async (req, res) => {
   try {
     const { slotId } = req.params;
@@ -153,44 +144,30 @@ const deleteAvailabilitySlot = async (req, res) => {
   }
 };
 
-// ⭐️ NEW: Delete slot using request body (for frontend compatibility)
 // @desc    Delete a specific availability slot (using request body)
-// @route   DELETE /api/availability/delete
-// @access  Private
 const deleteAvailabilitySlotBody = async (req, res) => {
   try {
     const { slotId } = req.body;
 
-    if (!slotId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slot ID is required'
-      });
-    }
+    const availability = await Availability.findOne({ "availabilitySlots._id": slotId });
+    if (!availability) return res.status(404).json({ success: false, message: "Slot not found" });
 
-    const deletedSlot = await Availability.findByIdAndDelete(slotId);
+    const slot = availability.availabilitySlots.id(slotId);
+    slot.remove();
 
-    if (!deletedSlot) {
-      return res.status(404).json({
-        success: false,
-        message: 'Availability slot not found'
-      });
-    }
+    await availability.save();
 
     res.json({
       success: true,
-      message: 'Availability slot deleted successfully',
-      data: deletedSlot
+      message: "Slot deleted successfully",
+      data: slot
     });
   } catch (error) {
-    console.error('Error deleting availability slot:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while deleting availability slot',
-      error: error.message
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
+
 
 // @desc    Delete all availability for a doctor (using URL params)
 // @route   DELETE /api/availability/doctor/:doctorId
@@ -306,50 +283,26 @@ const updateAvailabilitySlotBody = async (req, res) => {
   try {
     const { slotId, startTime, endTime } = req.body;
 
-    if (!slotId || !startTime || !endTime) {
-      return res.status(400).json({
-        success: false,
-        message: 'Slot ID, start time and end time are required'
-      });
-    }
+    const availability = await Availability.findOne({ "availabilitySlots._id": slotId });
+    if (!availability) return res.status(404).json({ success: false, message: "Slot not found" });
 
-    if (startTime >= endTime) {
-      return res.status(400).json({
-        success: false,
-        message: 'End time must be after start time'
-      });
-    }
+    const slot = availability.availabilitySlots.id(slotId);
+    slot.startTime = startTime;
+    slot.endTime = endTime;
 
-    const updatedSlot = await Availability.findByIdAndUpdate(
-      slotId,
-      { startTime, endTime },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedSlot) {
-      return res.status(404).json({
-        success: false,
-        message: 'Availability slot not found'
-      });
-    }
+    await availability.save();
 
     res.json({
       success: true,
-      data: updatedSlot,
-      message: 'Availability slot updated successfully'
+      data: slot,
+      message: "Slot updated successfully"
     });
   } catch (error) {
-    console.error('Error updating availability slot:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error while updating availability slot',
-      error: error.message
-    });
+    console.error(error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
-// @desc    Get all doctors from availability data
-// @route   GET /api/availability/doctors/all
-// @access  Private
+
 const getAllDoctorsFromAvailability = async (req, res) => {
   try {
     const allAvailability = await Availability.find({}, "doctorId doctorName");
@@ -381,11 +334,6 @@ const getAllDoctorsFromAvailability = async (req, res) => {
     });
   }
 };
-
-
-// @desc    Get availability for multiple doctors
-// @route   POST /api/availability/doctors
-// @access  Private
 const getMultipleDoctorsAvailability = async (req, res) => {
   try {
     const { doctorIds } = req.body;
@@ -397,13 +345,21 @@ const getMultipleDoctorsAvailability = async (req, res) => {
       });
     }
 
-    const availability = await Availability.find({ 
-      doctorId: { $in: doctorIds } 
-    }).sort({ doctorId: 1, day: 1, startTime: 1 });
+    // Fetch all availability documents for the given doctorIds
+    const availabilityDocs = await Availability.find({
+      doctorId: { $in: doctorIds }
+    }).sort({ doctorId: 1 });
+
+    // Transform data to match what frontend expects
+    const availabilityData = availabilityDocs.map(doc => ({
+      doctorId: doc.doctorId,
+      doctorName: doc.doctorName,
+      availabilitySlots: doc.availabilitySlots
+    }));
 
     res.json({
       success: true,
-      data: availability,
+      data: availabilityData,
       message: 'Multiple doctors availability fetched successfully'
     });
   } catch (error) {
@@ -415,6 +371,7 @@ const getMultipleDoctorsAvailability = async (req, res) => {
     });
   }
 };
+
 
 // ⭐️ UPDATE YOUR EXPORTS TO INCLUDE NEW FUNCTIONS:
 module.exports = {
