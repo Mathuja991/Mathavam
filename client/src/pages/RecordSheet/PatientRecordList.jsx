@@ -59,7 +59,7 @@ const PatientRecordList = () => {
         // --- Logic to check user permission on component mount ---
         const loggedInUser = getLoggedInUser();
 
-        if (loggedInUser && loggedInUser.userType === 'Super Admin') {
+        if (loggedInUser && loggedInUser.userType === 'Super Admin'|| loggedInUser && loggedInUser.userType === 'Admin') {
             setCanCRUD(true); // Super Admin has CRUD permission
         }
         // --- END OF USER PERMISSION CHECK ---
