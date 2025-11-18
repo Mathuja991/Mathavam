@@ -23,12 +23,11 @@ const getDoctorAvailability = async (req, res) => {
   }
 };
 
-//   Create or update availability slots
+// Create or update availability slots
 const setAvailability = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
 
-    // Validate required fields
     if (!doctorId || !doctorName || !availabilitySlots || !Array.isArray(availabilitySlots)) {
       return res.status(400).json({
         success: false,
@@ -36,7 +35,6 @@ const setAvailability = async (req, res) => {
       });
     }
 
-    // Validate each slot
     for (const slot of availabilitySlots) {
       if (!slot.day || !slot.startTime || !slot.endTime) {
         return res.status(400).json({
@@ -78,7 +76,7 @@ const setAvailability = async (req, res) => {
   }
 };
 
-//  Add new availability slots (without deleting existing ones)
+// Add new availability slots (without deleting existing ones)
 const addAvailabilitySlots = async (req, res) => {
   try {
     const { doctorId, doctorName, availabilitySlots } = req.body;
@@ -86,14 +84,12 @@ const addAvailabilitySlots = async (req, res) => {
     let availability = await Availability.findOne({ doctorId });
 
     if (!availability) {
-      // CREATE NEW DOCUMENT WITH ALL SLOTS
       availability = new Availability({
         doctorId,
         doctorName,
         availabilitySlots
       });
     } else {
-      // PUSH ALL NEW SLOTS
       availability.availabilitySlots.push(...availabilitySlots);
     }
 
@@ -114,8 +110,7 @@ const addAvailabilitySlots = async (req, res) => {
   }
 };
 
-
-//   Delete a specific availability slot (using URL params)
+// Delete a specific availability slot (using URL params) - FOR SINGLE DOCUMENTS
 const deleteAvailabilitySlot = async (req, res) => {
   try {
     const { slotId } = req.params;
@@ -144,34 +139,55 @@ const deleteAvailabilitySlot = async (req, res) => {
   }
 };
 
-// @desc    Delete a specific availability slot (using request body)
+// Delete a specific availability slot (using request body) - FOR NESTED SLOTS
+// Delete a specific availability slot (using request body) - FOR NESTED SLOTS
 const deleteAvailabilitySlotBody = async (req, res) => {
   try {
     const { slotId } = req.body;
+    console.log('Deleting nested slot with ID:', slotId);
 
+    // Find the availability document that contains this slot
     const availability = await Availability.findOne({ "availabilitySlots._id": slotId });
-    if (!availability) return res.status(404).json({ success: false, message: "Slot not found" });
+    
+    if (!availability) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Slot not found" 
+      });
+    }
 
-    const slot = availability.availabilitySlots.id(slotId);
-    slot.remove();
+    console.log('Found availability document:', availability._id);
 
-    await availability.save();
+    // Use $pull to remove the slot from the array (MORE RELIABLE METHOD)
+    const result = await Availability.updateOne(
+      { _id: availability._id },
+      { $pull: { availabilitySlots: { _id: slotId } } }
+    );
+
+    console.log('Delete result:', result);
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Slot not found in availability document" 
+      });
+    }
 
     res.json({
       success: true,
       message: "Slot deleted successfully",
-      data: slot
+      data: { slotId }
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error deleting nested slot:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
 
-
-// @desc    Delete all availability for a doctor (using URL params)
-// @route   DELETE /api/availability/doctor/:doctorId
-// @access  Private
+// Delete all availability for a doctor (using URL params)
 const clearDoctorAvailability = async (req, res) => {
   try {
     const { doctorId } = req.params;
@@ -193,10 +209,7 @@ const clearDoctorAvailability = async (req, res) => {
   }
 };
 
-// ⭐️ NEW: Clear all availability using request body (for frontend compatibility)
-// @desc    Delete all availability for a doctor (using request body)
-// @route   DELETE /api/availability/delete-all
-// @access  Private
+// Clear all availability using request body
 const clearDoctorAvailabilityBody = async (req, res) => {
   try {
     const { doctorId } = req.body;
@@ -225,9 +238,7 @@ const clearDoctorAvailabilityBody = async (req, res) => {
   }
 };
 
-// @desc    Update a specific availability slot (using URL params)
-// @route   PUT /api/availability/:slotId
-// @access  Private
+// Update a specific availability slot (using URL params) - FOR SINGLE DOCUMENTS
 const updateAvailabilitySlot = async (req, res) => {
   try {
     const { slotId } = req.params;
@@ -275,18 +286,42 @@ const updateAvailabilitySlot = async (req, res) => {
   }
 };
 
-// ⭐️ NEW: Update slot using request body (for frontend compatibility)
-// @desc    Update a specific availability slot (using request body)
-// @route   PUT /api/availability/update
-// @access  Private
+// Update slot using request body - FOR NESTED SLOTS
 const updateAvailabilitySlotBody = async (req, res) => {
   try {
     const { slotId, startTime, endTime } = req.body;
+    console.log('Updating nested slot with ID:', slotId);
+
+    if (!startTime || !endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Start time and end time are required'
+      });
+    }
+
+    if (startTime >= endTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'End time must be after start time'
+      });
+    }
 
     const availability = await Availability.findOne({ "availabilitySlots._id": slotId });
-    if (!availability) return res.status(404).json({ success: false, message: "Slot not found" });
+    if (!availability) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Slot not found" 
+      });
+    }
 
     const slot = availability.availabilitySlots.id(slotId);
+    if (!slot) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Slot not found in availability document" 
+      });
+    }
+
     slot.startTime = startTime;
     slot.endTime = endTime;
 
@@ -298,8 +333,11 @@ const updateAvailabilitySlotBody = async (req, res) => {
       message: "Slot updated successfully"
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Error updating nested slot:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
   }
 };
 
@@ -307,7 +345,6 @@ const getAllDoctorsFromAvailability = async (req, res) => {
   try {
     const allAvailability = await Availability.find({}, "doctorId doctorName");
 
-    // Remove duplicates using Map
     const unique = new Map();
 
     allAvailability.forEach(doc => {
@@ -334,6 +371,7 @@ const getAllDoctorsFromAvailability = async (req, res) => {
     });
   }
 };
+
 const getMultipleDoctorsAvailability = async (req, res) => {
   try {
     const { doctorIds } = req.body;
@@ -345,12 +383,10 @@ const getMultipleDoctorsAvailability = async (req, res) => {
       });
     }
 
-    // Fetch all availability documents for the given doctorIds
     const availabilityDocs = await Availability.find({
       doctorId: { $in: doctorIds }
     }).sort({ doctorId: 1 });
 
-    // Transform data to match what frontend expects
     const availabilityData = availabilityDocs.map(doc => ({
       doctorId: doc.doctorId,
       doctorName: doc.doctorName,
@@ -372,18 +408,16 @@ const getMultipleDoctorsAvailability = async (req, res) => {
   }
 };
 
-
-// ⭐️ UPDATE YOUR EXPORTS TO INCLUDE NEW FUNCTIONS:
 module.exports = {
   getDoctorAvailability,
   setAvailability,
   addAvailabilitySlots,
   deleteAvailabilitySlot,
-  deleteAvailabilitySlotBody, // ADD THIS
+  deleteAvailabilitySlotBody,
   clearDoctorAvailability,
-  clearDoctorAvailabilityBody, // ADD THIS
+  clearDoctorAvailabilityBody,
   updateAvailabilitySlot,
-  updateAvailabilitySlotBody, // ADD THIS
+  updateAvailabilitySlotBody,
   getMultipleDoctorsAvailability,
-  getAllDoctorsFromAvailability// Add this
+  getAllDoctorsFromAvailability
 };

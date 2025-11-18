@@ -50,6 +50,8 @@ const AppointmentManagement = () => {
 
     // --- 3. User Type Check ---
     const isPractitioner = ['Doctor', 'Therapist'].includes(currentUserType);
+    const isDoctor = ['Doctor'].includes(currentUserType);
+    const isTherapist = ['Therapist'].includes(currentUserType);
     const isAdmin = ['Admin', 'Super Admin'].includes(currentUserType);
     const isParent = currentUserType === 'Parent';
     const isResourcePerson = currentUserType === 'Resource Person';
@@ -172,7 +174,7 @@ const AppointmentManagement = () => {
                     icon={FaUsers} // Icon component passed as prop
                     title="Patient Appoinments"
                     description="View and manage appointments booked by patients (used for group/workshop scheduling)."
-                    allowed={isPractitioner}
+                    allowed={ isDoctor}
                 />
 
                 {/* Admin Manage Availability View */}

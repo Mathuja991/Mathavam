@@ -12,7 +12,12 @@
  * adminController.getStuff
  * );
  */
+const normalizeRole = (role) => (role || '').trim().toLowerCase();
+
 const checkRole = (allowedRoles) => {
+  // Normalize all allowed roles once for a case/spacing-insensitive comparison
+  const normalizedAllowed = (allowedRoles || []).map(normalizeRole);
+
   return (req, res, next) => {
     // authMiddleware eken 'req.user' object eka set karala thiyenna one
     if (!req.user || !req.user.userType) {
@@ -21,14 +26,17 @@ const checkRole = (allowedRoles) => {
     }
 
     const userRole = req.user.userType;
+    const normalizedUserRole = normalizeRole(userRole);
 
-    // 'allowedRoles' array eke userge role eka thiyenawada balanawa
-    if (allowedRoles.includes(userRole)) {
+    // 'allowedRoles' array eke userge role eka thiyenawada balanawa (case-insensitive)
+    if (normalizedAllowed.includes(normalizedUserRole)) {
       // Role eka hari. Controller ekata yanna denawa.
       next();
     } else {
       // Role eka naha. Access deny karanawa.
-      console.warn(`[${new Date().toISOString()}] CheckRole Middleware: Access DENIED for User ID ${req.user.id} (Role: ${userRole}). Required roles: [${allowedRoles.join(', ')}] for path ${req.originalUrl}.`);
+      console.warn(
+        `[${new Date().toISOString()}] CheckRole Middleware: Access DENIED for User ID ${req.user.id} (Role: ${userRole}). Required roles: [${allowedRoles.join(', ')}] for path ${req.originalUrl}.`
+      );
       return res.status(403).json({ msg: 'Access Denied: You do not have permission to perform this action' });
     }
   };

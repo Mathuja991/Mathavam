@@ -30,14 +30,35 @@ function ServiceQrPage() {
   const [reassessmentAction, setReassessmentAction] = useState(null);
   const [sessionToUpdateId, setSessionToUpdateId] = useState(null);
   const [showReassessmentPrompt, setShowReassessmentPrompt] = useState(false);
-  const loggedInStaff = useMemo(
-    () => ({
-      id: "staff_123",
-      name: "Dr. Anjali",
-      service: "Speech Therapy",
-    }),
-    []
-  );
+  const loggedInStaff = useMemo(() => {
+    let storedUser = null;
+    try {
+      storedUser = JSON.parse(localStorage.getItem("user"));
+    } catch (e) {
+      storedUser = null;
+    }
+
+    const id =
+      storedUser?._id ||
+      storedUser?.id ||
+      storedUser?.userId ||
+      storedUser?.email ||
+      "staff_unknown";
+
+    const name =
+      [storedUser?.firstName, storedUser?.lastName].filter(Boolean).join(" ").trim() ||
+      storedUser?.name ||
+      storedUser?.username ||
+      "Staff Member";
+
+    const service = storedUser?.userType || storedUser?.role || "Service Provider";
+
+    return {
+      id,
+      name,
+      service,
+    };
+  }, []);
   const loadTodaySessions = useCallback(async () => {
     try {
       const response = await getTodaySessions({ staffId: loggedInStaff.id });

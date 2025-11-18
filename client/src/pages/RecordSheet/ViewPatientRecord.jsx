@@ -1,4 +1,4 @@
-// ViewPatientRecord.jsx (Full Data Layout Updated)
+// ViewPatientRecord.jsx (Full Data Layout Updated - Fixed Nested Section Display)
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -70,16 +70,23 @@ const InfoField = ({ label, value }) => {
     );
 };
 
-// 4. Helper component (Section pennanna)
-const InfoSection = ({ title, children }) => (
+// 4. Helper component (Section pennanna) - MODIFIED to support noColumns
+const InfoSection = ({ title, children, noColumns = false }) => (
     <div className="mb-8 p-6 bg-gray-50 rounded-2xl shadow-lg border border-gray-200">
         <h3 className="text-2xl font-bold text-indigo-800 mb-6 pb-2 border-b border-indigo-200">
             {title}
         </h3>
-        {/* Column layout for better readability */}
-        <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
-            {children}
-        </div>
+        {noColumns ? (
+            // Single column layout for nested boxes
+            <div>
+                {children}
+            </div>
+        ) : (
+            // Column layout for better readability (default)
+            <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                {children}
+            </div>
+        )}
     </div>
 );
 
@@ -236,58 +243,71 @@ const ViewPatientRecord = () => {
                 <InfoField label="Referred By" value={record.referredBy} />
             </InfoSection>
 
-            {/* --- Part 2: History --- */}
-            <InfoSection title="Part 2: History">
+            {/* --- Part 2: History (uses noColumns for proper display of nested boxes) --- */}
+            <InfoSection title="Part 2: History" noColumns={true}>
                 {/* Nested Section: Family History */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Family History of Disorders</h4>
-                    <InfoField label="Developmental Disorders" value={record.familyHistoryOfDisorders?.devDisorders} />
-                    <InfoField label="ASD" value={record.familyHistoryOfDisorders?.asd} />
-                    <InfoField label="Speech Disorders" value={record.familyHistoryOfDisorders?.speechDisorders} />
-                    <InfoField label="Psychiatric Illness" value={record.familyHistoryOfDisorders?.psychiatricIllness} />
-                    <InfoField label="Other Family History" value={record.familyHistoryOfDisorders?.other} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Family History of Disorders</h4>
+                    {/* Re-introduce column layout inside the nested box */}
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Developmental Disorders" value={record.familyHistoryOfDisorders?.devDisorders} />
+                        <InfoField label="ASD" value={record.familyHistoryOfDisorders?.asd} />
+                        <InfoField label="Speech Disorders" value={record.familyHistoryOfDisorders?.speechDisorders} />
+                        <InfoField label="Psychiatric Illness" value={record.familyHistoryOfDisorders?.psychiatricIllness} />
+                        <InfoField label="Other Family History" value={record.familyHistoryOfDisorders?.other} />
+                    </div>
                 </div>
                 
                 {/* Nested Section: Birth History */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Birth History</h4>
-                    <InfoField label="Gestational Age (weeks)" value={record.birthHistory?.gestationalAge} />
-                    <InfoField label="Birth Weight (kg)" value={record.birthHistory?.birthWeight} />
-                    <InfoField label="Type of Delivery" value={record.birthHistory?.typeOfDelivery} />
-                    <InfoField label="Mother's Health During Pregnancy/Delivery" value={record.birthHistory?.mothersHealthDuringPregnancyDelivery} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Birth History</h4>
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Gestational Age (weeks)" value={record.birthHistory?.gestationalAge} />
+                        <InfoField label="Birth Weight (kg)" value={record.birthHistory?.birthWeight} />
+                        <InfoField label="Type of Delivery" value={record.birthHistory?.typeOfDelivery} />
+                        <InfoField label="Mother's Health During Pregnancy/Delivery" value={record.birthHistory?.mothersHealthDuringPregnancyDelivery} />
+                    </div>
                 </div>
 
                 {/* Nested Section: Medical History */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Medical History</h4>
-                    <InfoField label="Allergies" value={record.medicalHistory?.allergies} />
-                    <InfoField label="Medications" value={record.medicalHistory?.medications} />
-                    <InfoField label="Past Illnesses" value={record.medicalHistory?.pastIllnesses} />
-                    <InfoField label="Past Surgeries" value={record.medicalHistory?.pastSurgeries} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Medical History</h4>
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Allergies" value={record.medicalHistory?.allergies} />
+                        <InfoField label="Medications" value={record.medicalHistory?.medications} />
+                        <InfoField label="Past Illnesses" value={record.medicalHistory?.pastIllnesses} />
+                        <InfoField label="Past Surgeries" value={record.medicalHistory?.pastSurgeries} />
+                    </div>
                 </div>
 
                 {/* Nested Section: Developmental History */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Developmental History</h4>
-                    <InfoField label="Developmental Delay" value={record.developmentalHistory?.developmentalDelay} />
-                    <InfoField label="Other Developmental Concerns" value={record.developmentalHistory?.otherDevelopmentalConcerns} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Developmental History</h4>
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Developmental Delay" value={record.developmentalHistory?.developmentalDelay} />
+                        <InfoField label="Other Developmental Concerns" value={record.developmentalHistory?.otherDevelopmentalConcerns} />
+                    </div>
                 </div>
 
                 {/* Nested Section: Developmental Milestones */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Developmental Milestones (Age in months)</h4>
-                    <InfoField label="Head Control" value={record.developmentalMilestones?.headControl} />
-                    <InfoField label="Sitting" value={record.developmentalMilestones?.sitting} />
-                    <InfoField label="Walking" value={record.developmentalMilestones?.walking} />
-                    <InfoField label="First Words" value={record.developmentalMilestones?.firstWords} />
-                    <InfoField label="First Sentences" value={record.developmentalMilestones?.firstSentences} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Developmental Milestones (Age in months)</h4>
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Head Control" value={record.developmentalMilestones?.headControl} />
+                        <InfoField label="Sitting" value={record.developmentalMilestones?.sitting} />
+                        <InfoField label="Walking" value={record.developmentalMilestones?.walking} />
+                        <InfoField label="First Words" value={record.developmentalMilestones?.firstWords} />
+                        <InfoField label="First Sentences" value={record.developmentalMilestones?.firstSentences} />
+                    </div>
                 </div>
 
                 {/* Nested Section: Motor Skills */}
-                <div className="mb-4 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid">
-                    <h4 className="text-lg font-bold text-blue-800 mb-3">Motor Skills</h4>
-                    <InfoField label="Gross Motor" value={record.motorSkills?.grossMotor} />
-                    <InfoField label="Fine Motor" value={record.motorSkills?.fineMotor} />
+                <div className="mb-6 p-4 border border-indigo-100 rounded-lg bg-white break-inside-avoid shadow-sm">
+                    <h4 className="text-lg font-bold text-blue-800 mb-3 border-b pb-1">Motor Skills</h4>
+                    <div className="columns-1 md:columns-2 lg:columns-3 gap-x-8">
+                        <InfoField label="Gross Motor" value={record.motorSkills?.grossMotor} />
+                        <InfoField label="Fine Motor" value={record.motorSkills?.fineMotor} />
+                    </div>
                 </div>
             </InfoSection>
 

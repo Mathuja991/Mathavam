@@ -124,6 +124,39 @@ exports.bookAppointment = async (req, res) => {
   }
 };
 
+// Update entire appointment (PUT route)
+exports.updateAppointment = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const updateData = req.body;
+
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      appointmentId,
+      { $set: { ...updateData, updatedAt: Date.now() } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedAppointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found for update'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Appointment updated successfully',
+      appointment: updatedAppointment
+    });
+  } catch (error) {
+    console.error('❌ Error updating entire appointment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error: ' + error.message
+    });
+  }
+};
+
 // Get all appointments
 exports.getAppointments = async (req, res) => {
   try {
@@ -232,7 +265,48 @@ exports.cancelAppointment = async (req, res) => {
   }
 };
 
-// Auto-update appointment status based on date
+// **MISSING FUNCTION ADDED HERE to solve the error**
+// Function to update a single appointment's status (used by the route: PUT /:id/status)
+exports.updateAppointmentStatus = async (req, res) => {
+  try {
+    const appointmentId = req.params.id;
+    const { status } = req.body;
+
+    if (!status || !['upcoming', 'completed', 'cancelled'].includes(status)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Invalid or missing status provided (must be upcoming, completed, or cancelled)'
+        });
+    }
+
+    const updatedAppointment = await Appointment.findByIdAndUpdate(
+      appointmentId,
+      { $set: { status: status, updatedAt: Date.now() } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedAppointment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Appointment not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Appointment status updated to ${status} successfully`,
+      appointment: updatedAppointment
+    });
+  } catch (error) {
+    console.error('❌ Error updating appointment status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error: ' + error.message
+    });
+  }
+};
+
+// Auto-update appointment status based on date (Original function)
 exports.updateAppointmentStatuses = async () => {
   try {
     const now = new Date();

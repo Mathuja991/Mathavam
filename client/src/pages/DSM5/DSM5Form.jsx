@@ -29,11 +29,37 @@ const DSM5Form = () => {
   const isEditing = true; 
   const navigate = useNavigate();
 
-  
-
   useEffect(() => {
     handleReset();
   }, []);
+
+  // Fetch patient data when ID changes
+  useEffect(() => {
+    const fetchPatientData = async () => {
+      if (patientInfo.id.trim()) {
+        try {
+          const response = await axios.get(`${import.meta.env.VITE_API_URL}/child/${patientInfo.id}`);
+          const childData = response.data;
+          
+          setPatientInfo(prev => ({
+            ...prev,
+            name: childData.name || "",
+            dob: childData.dob || ""
+          }));
+        } catch (error) {
+          console.error("Error fetching patient data:", error);
+          // Optional: Clear other fields if patient not found
+          // setPatientInfo(prev => ({
+          //   ...prev,
+          //   name: "",
+          //   dob: ""
+          // }));
+        }
+      }
+    };
+
+    fetchPatientData();
+  }, [patientInfo.id]);
 
   const handlePatientInfoChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -104,7 +130,7 @@ const DSM5Form = () => {
 
       const res = await axios.post(`${import.meta.env.VITE_API_URL}/dsm5forms`, payload);
       toast.success(res.data.message);
-      navigate('submitted-dsm5-forms');
+      navigate('/dashboard/submitted-dsm5-forms');
     } catch (error) {
       toast.error("Submission failed. Please check console for details.");
       console.error("Error submitting DSM-5 form:", error.response ? error.response.data : error.message);
@@ -144,7 +170,7 @@ const DSM5Form = () => {
                 value={patientInfo[field.name]}
                 onChange={handlePatientInfoChange}
                 className="w-full border border-gray-300 rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-                disabled={!isEditing}
+                disabled={!isEditing && field.name !== "id"}
               />
             </div>
           ))}

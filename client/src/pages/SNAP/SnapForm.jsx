@@ -10,14 +10,10 @@ const SnapForm = () => {
     id: "",
     name: "",
     age: "",
-    class: "",
-    address: "",
     gender: "",
-    completedBy: "",
   });
   const [isTranslated, setIsTranslated] = useState(false);
   const [answers, setAnswers] = useState({});
-  const [totalScore, setTotalScore] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false); 
   const [selectedForm, setSelectedForm] = useState(null); 
@@ -36,13 +32,9 @@ const SnapForm = () => {
       id: "",
       name: "",
       age: "",
-      class: "",
-      address: "",
       gender: "",
-      completedBy: "",
     });
     setSelectedForm(null);
-    setTotalScore(0);
     setIsViewingDetails(false);
     setIsEditing(false); 
     window.scrollTo(0, 0);
@@ -60,7 +52,6 @@ const SnapForm = () => {
 
           setStudentInfo(formData.studentInfo || {});
           setAnswers(formData.answers);
-          setTotalScore(formData.totalScore);
           setSelectedForm(formData); 
           setIsSubmitted(false); 
 
@@ -76,7 +67,7 @@ const SnapForm = () => {
         } catch (error) {
           console.error("Error fetching form data:", error);
           toast.error(isTranslated ? "Failed to load form data." : "படிவத் தரவை ஏற்றத் தவறிவிட்டது.");
-          navigate('/dashboard/snap-submitted-forms');
+          navigate('/dashboard/snapforms/snap-submitted-forms');
         }
       };
       fetchSpecificFormData();
@@ -85,6 +76,30 @@ const SnapForm = () => {
     }
   }, [id, navigate, resetForm, location.search, isTranslated]); 
 
+  const fetchChildDetails = async (childId) => {
+    try {
+      const res = await axios.get(`${import.meta.env.VITE_API_URL}/child/${childId}`);
+      const childData = res.data;
+      
+      setStudentInfo(prev => ({
+        ...prev,
+        name: childData.name || "",
+        age: childData.age || "",
+        gender: childData.gender || "",
+      }));
+    } catch (error) {
+      console.error("Error fetching child details:", error);
+    }
+  };
+
+  const handleChildIdChange = (e) => {
+    const childId = e.target.value;
+    setStudentInfo(prev => ({ ...prev, id: childId }));
+    
+    if (childId.length > 2) {
+      fetchChildDetails(childId);
+    }
+  };
 
   const toggleTranslation = () => {
     setIsTranslated(!isTranslated);
@@ -94,12 +109,6 @@ const SnapForm = () => {
     if (isEditing || !id) {
       const updatedAnswers = { ...answers, [index]: Number(value) };
       setAnswers(updatedAnswers);
-
-      let newTotal = 0;
-      for (let key in updatedAnswers) {
-        newTotal += updatedAnswers[key];
-      }
-      setTotalScore(newTotal);
     }
   };
 
@@ -110,12 +119,9 @@ const SnapForm = () => {
       !studentInfo.id ||
       !studentInfo.name ||
       !studentInfo.age ||
-      !studentInfo.class ||
-      !studentInfo.address ||
-      !studentInfo.gender ||
-      !studentInfo.completedBy
+      !studentInfo.gender
     ) {
-      toast.error(isTranslated ? "Please fill in all student information fields." : "மாணவர் தகவல்கள் அனைத்தையும் நிரப்பவும்.");
+      toast.error(isTranslated ? "Please fill in all child information fields." : "குழந்தை தகவல்கள் அனைத்தையும் நிரப்பவும்.");
       return;
     }
 
@@ -128,6 +134,8 @@ const SnapForm = () => {
     }
 
     try {
+      const totalScore = Object.values(answers).reduce((sum, score) => sum + score, 0);
+      
       const formData = {
         studentInfo,
         answers,
@@ -144,7 +152,7 @@ const SnapForm = () => {
       }
 
       setIsSubmitted(true); 
-      navigate('/snap-submitted-forms');
+      navigate('/dashboard/snap-submitted-forms');
 
     } catch (err) {
       let errorMessage = err.response?.data?.message || (isTranslated ? "Error submitting form." : "படிவத்தைச் சமர்ப்பிப்பதில் பிழை.");
@@ -219,7 +227,7 @@ const SnapForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 to-purple-200 py-10 px-4 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100 py-10 px-4 flex justify-center">
       <ToastContainer
         position="top-right"
         autoClose={5000}
@@ -232,7 +240,7 @@ const SnapForm = () => {
         pauseOnHover
         theme="colored"
       />
-      <div className="w-full max-w-full bg-white rounded-2xl shadow-lg p-8 space-y-6 border">
+      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-xl p-8 space-y-8 border border-blue-100">
         {isViewingDetails && selectedForm && !isEditing ? (
           <ViewPart
             selectedForm={selectedForm}
@@ -243,7 +251,7 @@ const SnapForm = () => {
           />
         ) : ( 
           <>
-            <div className="text-center flex-1">
+            <div className="text-center">
               <h2 className="text-4xl font-extrabold text-blue-800 mb-2">
                 SNAP-IV Rating Scale
               </h2>
@@ -254,7 +262,7 @@ const SnapForm = () => {
             <div className="mt-4 flex justify-between items-center">
               <button
                 onClick={toggleTranslation}
-                className="px-6 py-2 bg-blue-600 text-white rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 shadow-md font-semibold"
+                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md font-semibold"
               >
                 {isTranslated ? "Show Tamil (தமிழ்)" : "Translate to English"}
               </button>
@@ -268,25 +276,25 @@ const SnapForm = () => {
               )}
             </div>
 
-
             {currentPage === 0 && (
               <Studentinfo
                 isTranslated={isTranslated}
                 studentInfo={studentInfo}
                 setStudentInfo={setStudentInfo}
-                isEditing={isEditing} 
+                isEditing={isEditing}
+                onChildIdChange={handleChildIdChange}
               />
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {currentQuestions.map((q, index) => {
                 const globalIndex = startIndex + index;
                 return (
                   <div
                     key={globalIndex}
-                    className="bg-blue-50 p-5 rounded-xl shadow-md flex flex-col border border-gray-200 hover:shadow-lg transition-shadow duration-200"
+                    className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl shadow-md border border-blue-100 hover:shadow-lg transition-all duration-200"
                   >
-                    <p className="mb-3 text-gray-800 font-medium text-left text-lg leading-snug">
+                    <p className="mb-4 text-gray-800 font-medium text-left text-lg leading-snug">
                       <span className="font-bold text-blue-700 mr-2">
                         {globalIndex + 1}.
                       </span>{" "}
@@ -299,7 +307,7 @@ const SnapForm = () => {
                           type="button"
                           onClick={() => handleChange(globalIndex, val)}
                           className={`
-                            px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 ease-in-out transform hover:scale-105
+                            px-5 py-2.5 rounded-full border text-sm font-semibold transition-all duration-200 ease-in-out transform hover:scale-105
                             ${answers[globalIndex] === val
                               ? `${getSelectedButtonColorClass(val)} shadow-lg`
                               : `${getDefaultButtonColorClass(val)} hover:shadow-sm`
@@ -340,12 +348,9 @@ const SnapForm = () => {
                         !studentInfo.id ||
                         !studentInfo.name ||
                         !studentInfo.age ||
-                        !studentInfo.class ||
-                        !studentInfo.address ||
-                        !studentInfo.gender ||
-                        !studentInfo.completedBy
+                        !studentInfo.gender
                       ) {
-                        toast.error(isTranslated ? "Please fill in all student information fields to proceed." : "அடுத்து செல்ல மாணவர் தகவல்கள் அனைத்தையும் நிரப்பவும்.");
+                        toast.error(isTranslated ? "Please fill in all child information fields to proceed." : "அடுத்து செல்ல குழந்தை தகவல்கள் அனைத்தையும் நிரப்பவும்.");
                         return;
                       }
                     }
@@ -360,7 +365,7 @@ const SnapForm = () => {
                 <button
                   type="button" 
                   onClick={handleSubmit}
-                  className="ml-auto px-6 py-3 bg-green-600 to-teal-700 text-white rounded-full hover:from-green-700 hover:to-teal-800 transition-all duration-300 shadow-md cursor-pointer font-semibold"
+                  className="ml-auto px-6 py-3 bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-full hover:from-green-700 hover:to-teal-700 transition-all duration-300 shadow-md cursor-pointer font-semibold"
                 >
                   {isTranslated ? "Submit" : "படிவத்தைச் சமர்ப்பி"}
                 </button>

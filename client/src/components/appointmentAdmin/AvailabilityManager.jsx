@@ -4,6 +4,8 @@ import { Loader } from "lucide-react";
 import TimeSlotForm from "./TimeSlotForm";
 import TimeSlotsDisplay from "./TimeSlotsDisplay";
 import WeeklySchedule from "./WeeklySchedule";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const AvailabilityManager = ({
   selectedDoctor,
@@ -19,7 +21,6 @@ const AvailabilityManager = ({
   const [loading, setLoading] = useState(false);
   const [slotLoading, setSlotLoading] = useState(false);
 
-  // Fetch existing slots when doctor or day changes
   useEffect(() => {
     if (selectedDoctorId) {
       fetchExistingSlots();
@@ -27,45 +28,42 @@ const AvailabilityManager = ({
   }, [selectedDoctorId, selectedDay]);
 
   const fetchExistingSlots = async () => {
-  try {
-    setSlotLoading(true);
-    const response = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, {
-      doctorIds: [selectedDoctorId]
-    });
+    try {
+      setSlotLoading(true);
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, {
+        doctorIds: [selectedDoctorId]
+      });
 
-    if (response.data.success) {
-      const allAvailability = response.data.data || [];
+      if (response.data.success) {
+        const allAvailability = response.data.data || [];
+        const doctorAvailability = allAvailability.find(
+          doc => doc.doctorId === selectedDoctorId
+        );
 
-      const doctorAvailability = allAvailability.find(
-        doc => doc.doctorId === selectedDoctorId
-      );
-
-      const daySlots = doctorAvailability?.availabilitySlots?.filter(
-        slot => slot.day === selectedDay
-      ) || [];
-
-      setExistingSlots(daySlots);
+        const daySlots = doctorAvailability?.availabilitySlots?.filter(
+          slot => slot.day === selectedDay
+        ) || [];
+        
+        console.log('Fetched slots:', daySlots);
+        setExistingSlots(daySlots);
+      }
+    } catch (error) {
+      console.error('Error fetching existing slots:', error);
+      toast.error('Error loading existing time slots');
+    } finally {
+      setSlotLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching existing slots:', error);
-    alert('Error loading existing time slots');
-  } finally {
-    setSlotLoading(false);
-  }
-};
+  };
 
-
-  // Add slot directly to database
   const handleAddSlot = async (e) => {
     e.preventDefault();
     if (!timeSlots.startTime || !timeSlots.endTime) {
-      alert('Please enter both start and end time');
+      toast.warning('Please enter both start and end time');
       return;
     }
     
-    // Check if end time is after start time
     if (timeSlots.startTime >= timeSlots.endTime) {
-      alert('End time must be after start time');
+      toast.warning('End time must be after start time');
       return;
     }
 
@@ -83,56 +81,55 @@ const AvailabilityManager = ({
       });
 
       if (response.data.success) {
-        // Clear form
         setTimeSlots({ startTime: "", endTime: "" });
-        // Refresh the slots list
         fetchExistingSlots();
-        alert('Time slot added successfully!');
+        toast.success('Time slot added successfully!');
       }
     } catch (error) {
       console.error('Error adding time slot:', error);
-      alert('Error adding time slot: ' + (error.response?.data?.message || error.message));
+      toast.error('Error adding time slot: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
   };
 
-  // Update slot directly in database
   const handleUpdateSlot = async () => {
     if (!editTimeSlots.startTime || !editTimeSlots.endTime) return;
-      console.log('Editing Slot ID:', editingSlot);
-  console.log('Time slots to update:', editTimeSlots);
-    // Check if end time is after start time
+    
+    console.log('Updating slot ID:', editingSlot);
+    console.log('New times:', editTimeSlots);
+    
     if (editTimeSlots.startTime >= editTimeSlots.endTime) {
-      alert('End time must be after start time');
+      toast.warning('End time must be after start time');
       return;
     }
 
     try {
       setLoading(true);
       
-      // Update the slot in database - FIXED: using params instead of body for slotId
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/availability/${editingSlot}`, {
+      const response = await axios.put(`${import.meta.env.VITE_API_URL}/availability/update`, {
+        slotId: editingSlot,
         startTime: editTimeSlots.startTime,
         endTime: editTimeSlots.endTime
       });
 
+      console.log('Update response:', response.data);
+
       if (response.data.success) {
         setEditingSlot(null);
         setEditTimeSlots({ startTime: "", endTime: "" });
-        // Refresh the slots list
         fetchExistingSlots();
-        alert('Time slot updated successfully!');
+        toast.success('Time slot updated successfully!');
       }
     } catch (error) {
       console.error('Error updating time slot:', error);
-      alert('Error updating time slot: ' + (error.response?.data?.message || error.message));
+      console.error('Error response:', error.response?.data);
+      toast.error('Error updating time slot: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete slot directly from database
   const handleDeleteSlot = async (slotId) => {
     if (!window.confirm("Are you sure you want to delete this time slot?")) {
       return;
@@ -141,23 +138,27 @@ const AvailabilityManager = ({
     try {
       setLoading(true);
       
-      // FIXED: Using params instead of body for DELETE
-      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/${slotId}`);
+      console.log('Deleting slot ID:', slotId);
+      
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/delete-slot`, {
+        data: { slotId }
+      });
+
+      console.log('Delete response:', response.data);
 
       if (response.data.success) {
-        // Refresh the slots list
         fetchExistingSlots();
-        alert('Time slot deleted successfully!');
+        toast.success('Time slot deleted successfully!');
       }
     } catch (error) {
       console.error('Error deleting time slot:', error);
-      alert('Error deleting time slot: ' + (error.response?.data?.message || error.message));
+      console.error('Error response:', error.response?.data);
+      toast.error('Error deleting time slot: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete all availability for this doctor
   const handleDeleteAllAvailability = async () => {
     if (!selectedDoctorId) return;
     
@@ -168,31 +169,44 @@ const AvailabilityManager = ({
     try {
       setLoading(true);
       
-      // FIXED: Using params instead of body
-      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/doctor/${selectedDoctorId}`);
+      const response = await axios.delete(`${import.meta.env.VITE_API_URL}/availability/delete-all`, {
+        data: { doctorId: selectedDoctorId }
+      });
 
       if (response.data.success) {
         setExistingSlots([]);
-        alert('All availability cleared successfully!');
+        toast.success('All availability cleared successfully!');
       }
     } catch (error) {
       console.error('Error clearing availability:', error);
-      alert('Error clearing availability: ' + (error.response?.data?.message || error.message));
+      toast.error('Error clearing availability: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
   };
 
-  // FIXED: Added missing handleEditSlot function
   const handleEditSlot = (slot) => {
-    setEditingSlot(slot._id); // Use _id from database
+    console.log('Editing slot:', slot);
+    setEditingSlot(slot._id);
     setEditTimeSlots({ startTime: slot.startTime, endTime: slot.endTime });
   };
 
   return (
     <div className="p-8">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
-        {/* Doctor Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6">
           <div className="flex justify-between items-center">
             <h2 className="text-2xl font-bold text-white">Set Availability for {selectedDoctor?.name}</h2>
@@ -207,7 +221,6 @@ const AvailabilityManager = ({
         </div>
 
         <div className="p-8">
-          {/* Day Selection */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Day</h3>
             <div className="flex flex-wrap gap-3">
@@ -228,7 +241,6 @@ const AvailabilityManager = ({
             </div>
           </div>
 
-          {/* Time Slot Form */}
           <TimeSlotForm
             selectedDay={selectedDay}
             timeSlots={timeSlots}
@@ -237,7 +249,6 @@ const AvailabilityManager = ({
             loading={loading}
           />
 
-          {/* Time Slots Display */}
           {slotLoading ? (
             <div className="flex justify-center items-center py-8">
               <Loader className="w-6 h-6 text-blue-500 animate-spin" />
@@ -263,7 +274,6 @@ const AvailabilityManager = ({
         </div>
       </div>
 
-      {/* Weekly Schedule Overview */}
       <WeeklySchedule
         doctorList={doctorList}
         daysOfWeek={daysOfWeek}

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
-import { FaPencilAlt, FaLock, FaPrint } from "react-icons/fa"; // Import icons
+import { FaPencilAlt, FaLock, FaPrint } from "react-icons/fa";
 import { printSensorySection } from "../../utills/printSensorySection";
 
 // Helper function to check if a section is still editable (within 5 hours)
@@ -11,6 +11,25 @@ const isEditable = (timestamp) => {
   const submissionTime = new Date(timestamp).getTime();
   const now = new Date().getTime();
   return now - submissionTime < FIVE_HOURS_IN_MS;
+};
+
+// Normalize possible timestamp shapes (string, Date, Mongo {$date})
+const normalizeTimestamp = (value) => {
+  if (!value) return null;
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === "object" && value.$date) {
+    return value.$date;
+  }
+
+  return null;
 };
 
 const formatDisplayDateTime = (value) => {
@@ -28,146 +47,204 @@ function SensoryProfileReadPage() {
   const [sections, setSections] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filterPatientId, setFilterPatientId] = useState("");
 
-  // ******************************************************************
-  // FIX: Token එක Header එකට ඇතුළත් කිරීමට යාවත්කාලීන කරන ලද ශ්‍රිතය
-  // ******************************************************************
+  // Fetch all section documents (with token in header + optional patient filter)
   const fetchAllSections = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      // 1. localStorage වෙතින් Token එක ලබා ගැනීම
       const token = localStorage.getItem("token");
-
       if (!token) {
-        // Token එකක් නොමැති නම් දෝෂය පෙන්වා නවත්වන්න
         throw new Error(
           "Authentication token missing. Please ensure you are logged in."
         );
       }
 
-      // 2. Token එක Header එකට ඇතුළත් කර API call එක යැවීම
       const response = await axios.get("/api/assessments/sensory-profile", {
+        params: {
+          patientId: filterPatientId ? filterPatientId.trim() : undefined,
+        },
         headers: {
-          "x-auth-token": token, // ⬅️ මෙතැනදී Token එක එකතු කර ඇත
+          "x-auth-token": token,
+          Authorization: `Bearer ${token}`,
         },
       });
 
-      setSections(response.data);
+      const sortedSections = (response.data || []).sort((a, b) => {
+        const aTs =
+          normalizeTimestamp(a.submittedAt) ||
+          normalizeTimestamp(a.updatedAt) ||
+          normalizeTimestamp(a.createdAt);
+        const bTs =
+          normalizeTimestamp(b.submittedAt) ||
+          normalizeTimestamp(b.updatedAt) ||
+          normalizeTimestamp(b.createdAt);
+
+        return new Date(bTs || 0) - new Date(aTs || 0);
+      });
+
+      setSections(sortedSections);
     } catch (err) {
       console.error("Error fetching sections:", err);
-      // දෝෂ පණිවිඩය සකස් කිරීම
       const errorMessage =
         err.response?.data?.msg ||
         err.message ||
-        "Failed to load previous entries.";
-      setError(`Error fetching sections: ${errorMessage}`);
+        "Failed to fetch assessment sections.";
+      setError(errorMessage);
+      setSections([]);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Fetch data when the component first loads
   useEffect(() => {
     fetchAllSections();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    fetchAllSections();
+  };
+
+  const handlePrintSection = (section) => {
+    if (!section) return;
+    printSensorySection({
+      baseInfo: {
+        patientId: section.patientId,
+        examinerId: section.examinerId,
+        testDate: section.testDate,
+        ageGroup: section.ageGroup,
+      },
+      sectionData: {
+        category: section.category,
+        responses: section.responses,
+        rawScore: section.rawScore,
+        comments: section.comments,
+      },
+    });
+  };
 
   if (isLoading) {
     return (
-      <div className="text-center p-10">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto"></div>
-        <p className="mt-4 text-lg text-indigo-700">Loading previous entries...</p>
+      <div className="text-center p-10 text-lg font-medium">
+        Loading Submitted Sections...
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="text-center p-10 bg-red-100 border border-red-400 text-red-700 rounded-lg max-w-xl mx-auto mt-10">
-        <h2 className="text-xl font-bold mb-2">Data Fetch Error</h2>
-        <p>{error}</p>
-        <p className="mt-4 text-sm">Please try logging out and logging back in.</p>
+      <div className="text-center p-10 text-red-600 font-bold">
+        Error: {error}
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 bg-white shadow-xl rounded-2xl">
-      <h1 className="text-3xl font-extrabold text-gray-800 mb-8 border-b pb-3">
-        Sensory Profile Assessment Entries
-      </h1>
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Submitted Sensory Profile Sections
+        </h1>
+      </div>
 
-      <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-lg">
+      {/* Search Form */}
+      <form
+        onSubmit={handleSearch}
+        className="mb-6 flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+      >
+        <input
+          type="text"
+          value={filterPatientId}
+          onChange={(e) => setFilterPatientId(e.target.value)}
+          placeholder="Search by Patient ID..."
+          className="flex-grow p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <button
+          type="submit"
+          className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
+        >
+          Search
+        </button>
+      </form>
+
+      <div className="bg-white shadow-md rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Patient ID
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Category
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Examiner ID
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Test Date
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
+                Section Category
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Submitted By
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Last Submitted
               </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="bg-white divide-y divide-gray-200">
             {sections.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
-                  No previous Sensory Profile entries found.
+                <td colSpan="6" className="text-center py-8 text-gray-500">
+                  No sections have been submitted yet.
                 </td>
               </tr>
             ) : (
               sections.map((section) => {
-                const assessmentId = section._id;
-                const canEdit = isEditable(section.createdAt);
+                const rawTimestamp =
+                  section.submittedAt ||
+                  section.updatedAt ||
+                  section.createdAt;
+                const normalizedTs = normalizeTimestamp(rawTimestamp);
+                const canEdit = normalizedTs && isEditable(normalizedTs);
+                const assessmentId = section.assessmentId || section._id;
 
                 return (
-                  <tr key={assessmentId} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {section.patientId || "N/A"}
+                  <tr key={section._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                      {section.patientId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        section.category === 'Child' ? 'bg-teal-100 text-teal-800' : 'bg-purple-100 text-purple-800'
-                      }`}>
-                        {section.category || "N/A"}
-                      </span>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                      {section.examinerId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {formatDisplayDateTime(section.testDate)}
+                    <td className="px-6 py-4 text-gray-700 font-semibold whitespace-normal break-words max-w-xs">
+                      {section.category}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {section.examinerId || "Unknown"}
-                      <div className="text-xs text-gray-400">
-                        {formatDisplayDateTime(section.createdAt)}
-                      </div>
+                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                      {normalizedTs
+                        ? formatDisplayDateTime(normalizedTs)
+                        : "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium space-x-2">
+                    {/* Status token */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {canEdit ? (
+                        <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <FaPencilAlt className="text-xs" />
+                          Editable (within 5 hours)
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 border border-gray-200">
+                          <FaLock className="text-xs" />
+                          Locked
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
                       <button
-                        onClick={() => printSensorySection(section)}
+                        onClick={() => handlePrintSection(section)}
                         className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
                         title="Print section"
                       >

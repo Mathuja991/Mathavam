@@ -5,6 +5,15 @@ import BaseCards from "../../components/assessmentForms/SensoryProfile/BaseCards
 import { createSensoryProfilePayload } from "../../utills/apiUtils";
 import { printSensorySection } from "../../utills/printSensorySection";
 
+const buildAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return {};
+  return {
+    "x-auth-token": token,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 const formatIsoToDisplay = (isoDate) => {
   if (!isoDate) return "";
   const [year, month, day] = isoDate.split("-");
@@ -125,8 +134,13 @@ function SensoryProfileSectionsPage() {
       setIsLoadingSections(true);
       setSectionsError("");
       try {
+        const headers = buildAuthHeaders();
+        if (!headers["x-auth-token"]) {
+          throw new Error("Missing auth token. Please log in again.");
+        }
         const response = await axios.get("/api/assessments/sensory-profile", {
           params: { patientId },
+          headers,
         });
         if (cancelled) return;
 
@@ -177,6 +191,10 @@ function SensoryProfileSectionsPage() {
 
       setSavingSection(true);
       try {
+        const headers = buildAuthHeaders();
+        if (!headers["x-auth-token"]) {
+          throw new Error("Missing auth token. Please log in again.");
+        }
         const payload = createSensoryProfilePayload(formSpecificData, {
           patientId,
           examinerId,
@@ -186,7 +204,8 @@ function SensoryProfileSectionsPage() {
 
         const response = await axios.post(
           "/api/assessments/sensory-profile",
-          payload
+          payload,
+          { headers }
         );
 
         const savedDoc = response.data;

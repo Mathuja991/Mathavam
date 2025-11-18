@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComments, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-// Helper function to set the Authorization header
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
@@ -24,6 +25,12 @@ const UserViewDocuments = () => {
   const [titleFilter, setTitleFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
   const [sortBy, setSortBy] = useState("newest");
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [activeDoc, setActiveDoc] = useState(null);
+  const ragChatEndpoint = `${API_URL || 'http://localhost:5000/api'}/rag/chat`;
 
   useEffect(() => {
     setLoading(true);
@@ -31,12 +38,10 @@ const UserViewDocuments = () => {
 
     const config = getAuthConfig();
 
-    fetch('http://localhost:5000/api/documents', config)
+    fetch(`${API_URL}/documents`, config)
       .then(res => {
         if (!res.ok) {
-          if (res.status === 401) {
-            throw new Error("Unauthorized: Please log in again.");
-          }
+          if (res.status === 401) throw new Error("Unauthorized: Please log in again.");
           return res.json().then(error => { 
             throw new Error(error.error || `Server Error: ${res.status}`); 
           });
@@ -116,6 +121,79 @@ const UserViewDocuments = () => {
     setSortBy("newest");
   };
 
+  const appendMessage = (role, text) => {
+    setChatMessages(prev => [...prev, { role, text }]);
+  };
+
+  const describeDocument = (doc, rowNumber) => {
+    const title = doc.metadata?.title || doc.filename || "Untitled document";
+    const uploaded = formatDate(doc.uploadDate || doc.createdAt);
+    const extension = doc.filename?.split('.').pop()?.toUpperCase();
+    const size = doc.length ? `${Math.round(doc.length / 1024)} KB` : null;
+    const details = [
+      `Row ${rowNumber}: ${title}`,
+      `Uploaded on ${uploaded}`,
+      extension ? `Type: ${extension}` : null,
+      size ? `Size: ${size}` : null,
+    ].filter(Boolean);
+    return details.join(". ");
+  };
+
+  const askRag = async (prompt, doc) => {
+    setChatLoading(true);
+    try {
+      const docHint = doc
+        ? `\n\nFocus only on this document:\nTitle: ${doc.metadata?.title || 'N/A'}\nFilename: ${doc.filename || 'N/A'}\nUploaded: ${formatDate(doc.uploadDate || doc.createdAt)}`
+        : "";
+
+      const response = await fetch(ragChatEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `${prompt}${docHint}`,
+          filename: doc?.filename || undefined,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Chat request failed");
+
+      const data = await response.json();
+      const answer = data?.answer?.trim();
+      appendMessage("assistant", answer || "Details not found.");
+    } catch {
+      appendMessage("assistant", "Details not found.");
+    } finally {
+      setChatLoading(false);
+    }
+  };
+
+  const handleChatSubmit = async (e) => {
+    e.preventDefault();
+    const prompt = chatInput.trim();
+    if (!prompt) return;
+
+    appendMessage("user", prompt);
+    setChatInput("");
+
+    const rowMatch = prompt.match(/\b(\d+)\b/);
+    if (rowMatch) {
+      const rowNumber = parseInt(rowMatch[1], 10);
+      const targetDoc = filteredDocuments[rowNumber - 1];
+
+      if (targetDoc) {
+        setActiveDoc({ doc: targetDoc, rowNumber });
+        appendMessage("assistant", describeDocument(targetDoc, rowNumber));
+        await askRag("Summarize this document and share the main idea in a couple of sentences.", targetDoc);
+      } else {
+        appendMessage("assistant", "Details not found.");
+      }
+      return;
+    }
+
+    const docContext = activeDoc?.doc || null;
+    await askRag(prompt, docContext);
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return 'Unknown date';
     const date = new Date(dateString);
@@ -131,25 +209,9 @@ const UserViewDocuments = () => {
 
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
-      case 'pdf':
-        return '';
-      case 'doc':
-      case 'docx':
-        return '';
-      case 'xls':
-      case 'xlsx':
-        return '';
-      case 'ppt':
-      case 'pptx':
-        return '';
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return '';
       case 'zip':
       case 'rar':
-        return '';
+        return '🗜️';
       default:
         return '';
     }
@@ -189,8 +251,7 @@ const UserViewDocuments = () => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error("Download error:", err);
+    } catch {
       alert("Download/View failed");
     }
   };
@@ -201,7 +262,7 @@ const UserViewDocuments = () => {
         <h2 className="text-2xl font-bold text-red-700 mb-4">Error Loading Resources</h2>
         <p className="text-red-600">{fetchError}</p>
         <p className="mt-4 text-sm text-red-500">
-          If this is an "Unauthorized" error, please log out and log back in to refresh your session token.
+          If this is an "Unauthorized" error, please log out and log back in.
         </p>
       </div>
     );
@@ -217,7 +278,6 @@ const UserViewDocuments = () => {
         <h3 className="text-lg font-semibold text-gray-700 mb-4">Find Documents</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Search by Title
@@ -275,7 +335,7 @@ const UserViewDocuments = () => {
         </div>
       </div>
 
-      {Array.isArray(filteredDocuments) && filteredDocuments.length === 0 ? (
+      {filteredDocuments.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
           <p className="text-gray-500 text-lg font-medium mb-2">
             {documents.length === 0 
@@ -294,13 +354,17 @@ const UserViewDocuments = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {filteredDocuments.map(doc => (
+          {filteredDocuments.map((doc, idx) => (
             <div
               key={doc._id}
               className="p-5 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start space-x-4 flex-1">
+                  <div className="text-sm font-semibold text-gray-500 w-6 text-right">
+                    {idx + 1}.
+                  </div>
+
                   <div className="text-3xl mt-1">
                     {getFileIcon(doc.filename)}
                   </div>
@@ -328,10 +392,91 @@ const UserViewDocuments = () => {
                 >
                   Download
                 </button>
-
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {documents.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-gray-600"></div>
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={() => setChatOpen(prev => !prev)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-blue-700 transition flex items-center space-x-2"
+      >
+        <FontAwesomeIcon icon={faComments} />
+        <span className="font-semibold">Chat</span>
+      </button>
+
+      {chatOpen && (
+        <div className="fixed bottom-24 right-6 w-80 bg-white border border-gray-200 shadow-2xl rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-gray-700">Document chat</p>
+              <p className="text-xs text-gray-500">Ask by row number or a general question.</p>
+              {activeDoc?.rowNumber && (
+                <p className="text-[11px] text-blue-600 mt-1">
+                  Currently focusing on row {activeDoc.rowNumber}.
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setChatOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <FontAwesomeIcon icon={faTimes} />
+            </button>
+          </div>
+
+          <div className="max-h-64 overflow-y-auto space-y-2">
+            {chatMessages.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                I can explain a specific row (e.g. "Row 2") or answer general questions.
+              </p>
+            ) : (
+              chatMessages.map((msg, i) => (
+                <div
+                  key={i}
+                  className={`p-2 rounded-lg text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-blue-50 text-blue-900'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  <span className="font-semibold mr-1">
+                    {msg.role === 'user' ? 'You' : 'Assistant'}:
+                  </span>
+                  <span>{msg.text}</span>
+                </div>
+              ))
+            )}
+            {chatLoading && (
+              <p className="text-xs text-gray-500">Checking documents...</p>
+            )}
+          </div>
+
+          <form onSubmit={handleChatSubmit} className="flex items-center space-x-2">
+            <input
+              type="text"
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              placeholder="Ask about a row or any topic"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={chatLoading}
+              className="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-60"
+            >
+              Send
+            </button>
+          </form>
         </div>
       )}
     </div>
