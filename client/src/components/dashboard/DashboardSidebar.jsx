@@ -38,6 +38,7 @@ const DashboardSidebar = ({
   const handleAppointmentManagement = () => handleNavigation('/dashboard/appointments');
   const handleParentalTraining = () => handleNavigation('/dashboard/parental-training');
   const handleQRAttendance = () => handleNavigation('/dashboard/qr-attendance');
+  const handleQRService = () => handleNavigation('/dashboard/service-qr');
   const handleTherapyTracking = () => handleNavigation('/dashboard/therapy-tracking');
   const handleRDHS = () => handleNavigation('/dashboard/rdhs');
   const handleViewofParentsReadingResources = () => handleNavigation('/dashboard/viewdocs');
@@ -79,6 +80,7 @@ const DashboardSidebar = ({
   const canViewRDHS = isSuperAdmin || isAdmin;
   const canViewParentalTraining = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
   const canViewParentalResources = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
+  const canViewServiceQr = isDoctor || isTherapist;
 
   const canManageUsers = isSuperAdmin || isAdmin;
   const canManageStaffDetails = isSuperAdmin || isAdmin;
@@ -202,6 +204,7 @@ const DashboardSidebar = ({
           />
         )}
 
+        
         {canViewAdminSection && (
           <>
             {canManageUsers && (
@@ -225,6 +228,18 @@ const DashboardSidebar = ({
                 color="blue"
               />
             )}
+
+            {canViewServiceQr && (
+              <NavItem
+                icon={faClipboardList}
+                label="QR Session"
+                isOpen={isSidebarOpen}
+                onClick={handleQRService}
+                isActive={isActive('/dashboard/service-qr')}
+                color="blue"
+              />
+            )}
+
 
             {canUploadParentalResources && (
               <NavItem
