@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const MonthlyReturnForm = () => {
   const API_URL = import.meta.env.VITE_API_URL;
   const [view, setView] = useState('main');
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     period: 'January-June',
     year: '2025',
@@ -40,32 +43,36 @@ const MonthlyReturnForm = () => {
   const fetchSubmittedReturns = async () => {
     setLoadingReturns(true);
     try {
-      const response = await axios.get(`${API_URL}/monthlyreturns`);
-      
-      let returnsData = [];
-      
-      if (Array.isArray(response.data)) {
-        returnsData = response.data;
-      } else if (response.data && Array.isArray(response.data.data)) {
-        returnsData = response.data.data;
-      } else if (response.data && response.data.returns) {
-        returnsData = response.data.returns;
-      } else {
-        console.warn('Unexpected API response structure:', response.data);
-        returnsData = [];
-      }
-      
-      setSubmittedReturns(returnsData);
-      setFilteredReturns(returnsData);
-      
-      if (returnsData.length === 0) {
-        setMessage('ℹ️ No six-month returns found.');
-      }
-    } catch (err) {
-      console.error('Error fetching six-month returns:', err);
-      setMessage('🚨 Error fetching submitted returns. Please check if the server is running.');
-      setSubmittedReturns([]);
-      setFilteredReturns([]);
+      //const response = await axios.get(`${API_URL}/monthlyreturns`);
+      const token = localStorage.getItem("token");
+
+
+const res = await fetch(`${API_URL}/monthlyreturns`, {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+    "x-auth-token": token
+  }
+});
+
+const responseData = await res.json();
+
+let returnsData = [];
+
+if (Array.isArray(responseData)) {
+  returnsData = responseData;
+} else if (responseData && Array.isArray(responseData.data)) {
+  returnsData = responseData.data;
+} else if (responseData && responseData.returns) {
+  returnsData = responseData.returns;
+} else {
+  console.warn('Unexpected API response structure:', responseData);
+  returnsData = [];
+}
+
+setSubmittedReturns(returnsData);
+setFilteredReturns(returnsData);
+
     } finally {
       setLoadingReturns(false);
     }
@@ -197,7 +204,11 @@ const MonthlyReturnForm = () => {
     setMessage('🔄 Fetching assessment data for the 6-month period...');
     
     try {
-      const response = await axios.get(`${API_URL}/patientRecords`);
+     const token = localStorage.getItem("token");
+const response = await axios.get(`${API_URL}/patientRecords`, {
+  headers: { "x-auth-token": token }
+});
+
       const patientRecords = response.data;
 
       // Filter records for the selected 6-month period
@@ -208,7 +219,12 @@ const MonthlyReturnForm = () => {
       const newChildrenCount = filteredRecords.length;
       
       // Fetch CARS assessments
-      const response2 = await axios.get(`${API_URL}/carsform/entries`);
+      // const token = localStorage.getItem("token");
+      const response2 = await axios.get(`${API_URL}/carsform/entries`,
+         {
+  headers: { "x-auth-token": token }
+         }
+      );
       const carsAssessment = response2.data;
 
       const filteredcarsAssessment = carsAssessment.filter(record => 
@@ -217,7 +233,11 @@ const MonthlyReturnForm = () => {
       const carsCount = filteredcarsAssessment.length;
       
       // Fetch behavioral assessments
-      const response3 = await axios.get(`${API_URL}/bc/`);
+      const response3 = await axios.get(`${API_URL}/bc/`,
+         {
+  headers: { "x-auth-token": token }
+}
+      );
       const bcAssessment = response3.data;
 
       const filteredbcAssessment = bcAssessment.filter(record => 
@@ -225,10 +245,17 @@ const MonthlyReturnForm = () => {
       );
       const behavioralCount = filteredbcAssessment.length;
 
-      const sensoryCount = filteredRecords.filter(record => 
+     
+       // Fetch behavioral assessments
+      const response5 = await axios.get(`${API_URL}/bc/`,
+         {
+  headers: { "x-auth-token": token }
+}
+      );
+      const sensoryAssessment = response5.data;
+ const sensoryCount = filteredRecords.filter(record => 
         record.assessments?.sensory || record.sensoryAssessment
       ).length;
-
       setFormData(prevFormData => {
         const updatedEntries = prevFormData.entries.map(entry => {
           switch (entry.service) {
@@ -259,7 +286,9 @@ const MonthlyReturnForm = () => {
   const fetchNewChildrenCount = async () => {
     setLoadingCount(true);
     try {
-      const response = await axios.get(`${API_URL}/patientRecords`);
+      const response = await axios.get(`${API_URL}/patientRecords`, {
+  headers: { "x-auth-token": token }
+});
       const patientRecords = response.data;
 
       const filtered = patientRecords.filter(record => 
@@ -299,18 +328,21 @@ const handleSubmit = async (e) => {
   try {
     console.log('Submitting data:', formData); // Debug log
 
-    const response = await fetch(`${API_URL}/monthlyreturns/submit`, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        period: formData.period,
-        year: formData.year.toString(),
-        entries: formData.entries,
-        signature: formData.signature
-      }),
-    });
+   const token = localStorage.getItem("token");
+const response = await fetch(`${API_URL}/monthlyreturns/submit`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-auth-token": token
+  },
+  body: JSON.stringify({
+    period: formData.period,
+    year: formData.year.toString(),
+    entries: formData.entries,
+    signature: formData.signature
+  }),
+});
+
 
     const result = await response.json();
     console.log('Server response:', result); // Debug log
@@ -319,8 +351,13 @@ const handleSubmit = async (e) => {
       throw new Error(result.message || `HTTP error! status: ${response.status}`);
     }
 
+  
+  // Redirect to /returns or any route you want
+ 
+if (response.ok) {
     setMessage('✅ Six-month return submitted successfully!');
-    
+     navigate('/dashboard/monreturn'); 
+     }
     // Reset form and redirect
     setTimeout(() => {
       setFormData({
@@ -354,7 +391,11 @@ const handleSubmit = async (e) => {
     if (!window.confirm('Are you sure you want to delete this six-month return?')) return;
     
     try {
-      const response = await axios.delete(`${API_URL}/monthlyreturns/${id}`);
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_URL}/monthlyreturns/${id}`, {
+  headers: { "x-auth-token": token }
+});
+
       if (response.status === 200) {
         setMessage('✅ Six-month return deleted successfully!');
         fetchSubmittedReturns();

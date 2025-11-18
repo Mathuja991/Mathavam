@@ -45,7 +45,8 @@ const TherapistDashboardHome = ({ loggedInUser }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Speech Forms Pending (S - CRUD)" value={mockStats.speechPending} icon={faCommentDots} bgColor="bg-gradient-to-r from-blue-600 to-sky-700" />
         <StatCard title="Sensory Profiles Pending (O, P - CRUD)" value={mockStats.sensoryPending} icon={faPuzzlePiece} bgColor="bg-gradient-to-r from-amber-600 to-orange-700" />
-        <StatCard title="Therapy Sessions Today" value={mockStats.sessionsToday} icon={faCalendarAlt} bgColor="bg-gradient-to-r from-red-500 to-pink-600" />
+        {/* Sessions Today: Red/Pink -> Purple/Indigo */}
+        <StatCard title="Therapy Sessions Today" value={mockStats.sessionsToday} icon={faCalendarAlt} bgColor="bg-gradient-to-r from-purple-600 to-indigo-700" />
         <StatCard title="Active Behavioural Plans" value={mockStats.activeTherapyPlans} icon={faRunning} bgColor="bg-gradient-to-r from-green-600 to-teal-700" />
       </div>
 

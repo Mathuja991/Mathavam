@@ -43,10 +43,12 @@ const ParentDashboardHome = ({ loggedInUser }) => {
       
       {/* Child-Specific Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Child Name" value={mockStats.childName} icon={faChild} bgColor="bg-gradient-to-r from-purple-600 to-pink-700" />
+        {/* Child Name: Purple/Pink -> Purple/Deep Purple (retained a deep color) */}
+        <StatCard title="Child Name" value={mockStats.childName} icon={faChild} bgColor="bg-gradient-to-r from-purple-600 to-indigo-700" />
         <StatCard title="Next Appointment" value={mockStats.nextAppointment} icon={faCalendarAlt} bgColor="bg-gradient-to-r from-blue-600 to-sky-700" />
         <StatCard title="QR Code Status" value={mockStats.qrCodeStatus} icon={faQrcode} bgColor="bg-gradient-to-r from-green-600 to-teal-700" />
-        <StatCard title="Available Resources" value={mockStats.resourcesAvailable} icon={faBookReader} bgColor="bg-gradient-to-r from-orange-500 to-red-600" />
+        {/* Available Resources: Orange/Red -> Orange/Amber */}
+        <StatCard title="Available Resources" value={mockStats.resourcesAvailable} icon={faBookReader} bgColor="bg-gradient-to-r from-orange-500 to-amber-600" />
       </div>
 
       {/* Quick Actions */}
@@ -76,11 +78,12 @@ const ParentDashboardHome = ({ loggedInUser }) => {
             bgColor="bg-blue-600 hover:bg-blue-700 shadow-lg"
             onClick={() => console.log('Navigate to Appointments')}
           />
+          {/* SNAP Form: Red -> Orange/Amber */}
           <QuickAction
             title="SNAP Form"
             desc="View/Update your child's SNAP form data."
             icon={faShieldAlt}
-            bgColor="bg-red-500 hover:bg-red-600 shadow-lg"
+            bgColor="bg-amber-500 hover:bg-amber-600 shadow-lg"
             onClick={() => console.log('Navigate to SNAP Form')}
           />
         </div>

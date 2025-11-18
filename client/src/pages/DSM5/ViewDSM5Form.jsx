@@ -137,7 +137,7 @@ const ViewDSM5Form = () => {
                 answers,
                 severityRatings,
             };
-            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/dsm5forms/${id}`, payload);
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/dsm5forms/${id}`, payload);
             toast.success("Changes saved successfully!"); 
             setIsEditing(false);
         } catch (error) {
