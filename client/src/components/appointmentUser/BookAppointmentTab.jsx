@@ -1,5 +1,4 @@
 import React from "react";
-import { Mail, FileText } from "lucide-react";
 import DoctorSelection from "./DoctorSelection";
 import DateSelection from "./DateSelection";
 import TimeSelection from "./TimeSelection";
@@ -12,8 +11,8 @@ const BookAppointmentTab = ({
   selectedDate,
   selectedTime,
   availableTimeRanges,
-  patientEmail,
-  setPatientEmail,
+  patientName,
+  setPatientName,
   patientNote,
   setPatientNote,
   handleDateSelect,
@@ -55,8 +54,8 @@ const BookAppointmentTab = ({
             selectedDate={selectedDate}
             selectedTime={selectedTime}
             availableTimeRanges={availableTimeRanges}
-            patientEmail={patientEmail}
-            setPatientEmail={setPatientEmail}
+            patientName={patientName}
+            setPatientName={setPatientName}
             patientNote={patientNote}
             setPatientNote={setPatientNote}
             handleTimeSelect={handleTimeSelect}

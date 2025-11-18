@@ -14,17 +14,27 @@ const AdminUploadDocument = () => {
   const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "title"
 
   const fetchDocuments = async () => {
-    try {
-      const res = await fetch(`${API_URL}/documents`);
-      if (res.ok) {
-        const data = await res.json();
-        setDocuments(data);
-        setFilteredDocuments(data);
-      }
-    } catch (error) {
-      console.error("Error fetching documents:", error);
+  try {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${API_URL}/documents`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setDocuments(data);
+      setFilteredDocuments(data);
+    } else {
+      console.log("Error:", res.status);
     }
-  };
+  } catch (error) {
+    console.error("Error fetching documents:", error);
+  }
+};
+
 
   useEffect(() => {
     if (view === "manage") fetchDocuments();
@@ -87,15 +97,19 @@ const AdminUploadDocument = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     setLoading(true);
+    const token = localStorage.getItem("token");
     const formData = new FormData();
     formData.append("title", title);
     formData.append("file", file);
 
     try {
       const res = await fetch(`${API_URL}/documents/upload`, {
-        method: "POST",
-        body: formData,
-      });
+  method: "POST",
+  headers: {
+    "x-auth-token": token,
+  },
+  body: formData,
+});
 
       if (res.ok) {
         alert("File uploaded successfully!");
@@ -116,9 +130,14 @@ const AdminUploadDocument = () => {
     if (!window.confirm("Are you sure you want to delete this file?")) return;
     
     try {
-      const res = await fetch(`${API_URL}/documents/${fileId}`, {
-        method: "DELETE",
-      });
+      const token = localStorage.getItem("token");
+     const res = await fetch(`${API_URL}/documents/${fileId}`, {
+  method: "DELETE",
+  headers: {
+    "x-auth-token": token,
+  }
+});
+
       
       if (res.ok) {
         alert("File deleted!");
@@ -150,6 +169,35 @@ const AdminUploadDocument = () => {
       minute: '2-digit'
     });
   };
+  const handleDownload = async (docId, filename) => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`${API_URL}/documents/${docId}`, {
+      headers: {
+        "x-auth-token": token,
+      },
+    });
+
+    if (!res.ok) {
+      alert("Download failed");
+      return;
+    }
+
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename || `Document_${docId}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download error:", err);
+    alert("Download failed");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-10 px-4">
@@ -316,38 +364,37 @@ const AdminUploadDocument = () => {
             </div>
           ) : (
             <ul className="space-y-3">
-              {filteredDocuments.map(doc => (
-                <li
-                  key={doc._id}
-                  className="p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <a
-                        href={`http://localhost:5000/api/documents/${doc._id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 font-medium block mb-1"
-                      >
-                        {doc.metadata?.title || doc.filename || `Document ${doc._id}`}
-                      </a>
-                      <div className="text-sm text-gray-600 space-y-1">
-                       
-                        <p>Uploaded: {formatDate(doc.uploadDate || doc.uploadDate || doc.createdAt)}</p>
-                        {doc.metadata?.title && doc.metadata.title !== doc.filename && (
-                          <p>Title: {doc.metadata.title}</p>
-                        )}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDelete(doc._id)}
-                      className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition ml-4 flex-shrink-0"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </li>
-              ))}
+        {filteredDocuments.map(doc => (
+  <li
+    key={doc._id}
+    className="p-4 bg-gray-50 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+  >
+   <div className="flex  ">
+  <div className="flex-1 flex flex-col">
+    <span
+      onClick={() => handleDownload(doc._id, doc.filename)}
+      className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
+    >
+      {doc.metadata?.title || doc.filename || `Document ${doc._id}`}
+    </span>
+    <div className="text-sm text-gray-600">
+      <p>Uploaded: {formatDate(doc.uploadDate || doc.createdAt)}</p>
+      {doc.metadata?.title && doc.metadata.title !== doc.filename && (
+        <p>Title: {doc.metadata.title}</p>
+      )}
+    </div>
+  </div>
+  <button
+    onClick={() => handleDelete(doc._id)}
+    className="bg-red-600 text-white px-3 py-2 rounded-lg hover:bg-red-700 transition ml-4 flex-shrink-0"
+  >
+    Delete
+  </button>
+</div>
+
+  </li>
+))}
+
             </ul>
           )}
           
