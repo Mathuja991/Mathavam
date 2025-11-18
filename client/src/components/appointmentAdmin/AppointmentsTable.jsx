@@ -6,9 +6,9 @@ const getStatusBadge = (status) => {
     completed: { color: "bg-green-100 text-green-800 border border-green-200", text: "Completed" },
     cancelled: { color: "bg-red-100 text-red-800 border border-red-200", text: "Cancelled" }
   };
-  
+
   const config = statusConfig[status] || statusConfig.upcoming;
-  
+
   return (
     <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${config.color}`}>
       {config.text}
@@ -25,7 +25,6 @@ const AppointmentsTable = ({ appointments, onCancelAppointment, showActions }) =
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">#</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Doctor Name</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Patient Name</th>
-            <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Patient ID</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Date</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Time</th>
             <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b">Status</th>
@@ -45,9 +44,6 @@ const AppointmentsTable = ({ appointments, onCancelAppointment, showActions }) =
               </td>
               <td className="px-6 py-4 text-left align-middle border-b">
                 <div className="font-semibold text-gray-900">{appointment.patientName}</div>
-              </td>
-              <td className="px-6 py-4 text-left align-middle border-b">
-                <div className="text-gray-600 font-medium">{appointment.patientId}</div>
               </td>
               <td className="px-6 py-4 text-left align-middle border-b">
                 <div className="text-gray-900 font-medium">

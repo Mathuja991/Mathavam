@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComments, faTimes } from '@fortawesome/free-solid-svg-icons';
 
-// Authorization Header එක සකස් කරගැනීම සඳහා helper function එකක්
+// Helper function to set the Authorization header
 const getAuthConfig = () => {
   const token = localStorage.getItem('token');
   if (!token) {
-    // Auth token එකක් නොමැති නම් error එකක් log කර හිස් header එකක් දෙන්න
     console.error('Auth token not found in localStorage. Cannot fetch documents.');
     return { headers: {} };
   }
@@ -18,15 +17,15 @@ const getAuthConfig = () => {
 };
 
 const UserViewDocuments = () => {
-   const API_URL = import.meta.env.VITE_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
   const [documents, setDocuments] = useState([]);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fetchError, setFetchError] = useState(null); // Error state එකක් එකතු කරමු
-  
-  // Filter states
+  const [fetchError, setFetchError] = useState(null);
+
   const [titleFilter, setTitleFilter] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+<<<<<<< HEAD
   const [sortBy, setSortBy] = useState("newest"); // "newest", "oldest", "title"
   const [chatOpen, setChatOpen] = useState(false);
   const [chatInput, setChatInput] = useState("");
@@ -34,35 +33,37 @@ const UserViewDocuments = () => {
   const [chatLoading, setChatLoading] = useState(false);
   const [activeDoc, setActiveDoc] = useState(null); // last selected row document
   const ragChatEndpoint = `${API_URL || 'http://localhost:5000/api'}/rag/chat`;
+=======
+  const [sortBy, setSortBy] = useState("newest");
+>>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
 
   useEffect(() => {
     setLoading(true);
-    setFetchError(null); // Clear previous errors
+    setFetchError(null);
 
     const config = getAuthConfig();
 
     fetch('http://localhost:5000/api/documents', config)
       .then(res => {
         if (!res.ok) {
-            // 401 (Unauthorized) වැනි දෝෂ සඳහා
-            if (res.status === 401) {
-                throw new Error("Unauthorized: Please log in again.");
-            }
-            // අනෙකුත් දෝෂ
-            return res.json().then(error => { throw new Error(error.error || `Server Error: ${res.status}`); });
+          if (res.status === 401) {
+            throw new Error("Unauthorized: Please log in again.");
+          }
+          return res.json().then(error => { 
+            throw new Error(error.error || `Server Error: ${res.status}`); 
+          });
         }
         return res.json();
       })
       .then(data => {
-        // 🛡️ FIX: දත්ත array එකක් දැයි පරීක්ෂා කිරීම
         if (!Array.isArray(data)) {
-            console.error("API response is not an array:", data);
-            setFetchError("Received unexpected data from the server. Try logging in again.");
-            setDocuments([]);
-            setFilteredDocuments([]);
+          console.error("API response is not an array:", data);
+          setFetchError("Received unexpected data from the server. Try logging in again.");
+          setDocuments([]);
+          setFilteredDocuments([]);
         } else {
-            setDocuments(data);
-            setFilteredDocuments(data);
+          setDocuments(data);
+          setFilteredDocuments(data);
         }
       })
       .catch(err => {
@@ -74,18 +75,15 @@ const UserViewDocuments = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  // Apply filters whenever filter states change
   useEffect(() => {
     applyFilters();
   }, [titleFilter, dateFilter, sortBy, documents]);
 
   const applyFilters = () => {
-    // 🛡️ FIX: documents array එකක් දැයි පරීක්ෂා කිරීම
     if (!Array.isArray(documents)) return;
 
     let filtered = [...documents];
 
-    // Filter by title
     if (titleFilter) {
       filtered = filtered.filter(doc => 
         doc.filename?.toLowerCase().includes(titleFilter.toLowerCase()) ||
@@ -93,7 +91,6 @@ const UserViewDocuments = () => {
       );
     }
 
-    // Filter by date
     if (dateFilter) {
       const filterDate = new Date(dateFilter);
       filtered = filtered.filter(doc => {
@@ -102,9 +99,7 @@ const UserViewDocuments = () => {
       });
     }
 
-    // Apply sorting
     filtered = sortDocuments(filtered);
-
     setFilteredDocuments(filtered);
   };
 
@@ -222,31 +217,35 @@ const UserViewDocuments = () => {
   };
 
   const getFileIcon = (filename) => {
-    if (!filename) return '📄';
-    
+    if (!filename) return '';
+
     const extension = filename.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf':
-        return '📕';
+        return '';
       case 'doc':
       case 'docx':
-        return '📘';
+        return '';
       case 'xls':
       case 'xlsx':
-        return '📗';
+        return '';
       case 'ppt':
       case 'pptx':
-        return '📙';
+        return '';
       case 'jpg':
       case 'jpeg':
       case 'png':
       case 'gif':
-        return '🖼️';
+        return '';
       case 'zip':
       case 'rar':
+<<<<<<< HEAD
         return '🗜️';
+=======
+        return '';
+>>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
       default:
-        return '📄';
+        return '';
     }
   };
 
@@ -261,33 +260,59 @@ const UserViewDocuments = () => {
       </div>
     );
   }
-  
-  // 🚫 New Error Display
+
+  const handleDownload = async (docId, filename) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_URL}/documents/${docId}`, {
+        headers: {
+          "x-auth-token": token,
+        },
+      });
+
+      if (!res.ok) {
+        alert("Download/View failed: Unauthorized or server error.");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename || `Document_${docId}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Download error:", err);
+      alert("Download/View failed");
+    }
+  };
+
   if (fetchError) {
     return (
       <div className="max-w-4xl mt-10 mx-auto p-6 bg-red-50 rounded-xl shadow-lg border border-red-300">
         <h2 className="text-2xl font-bold text-red-700 mb-4">Error Loading Resources</h2>
         <p className="text-red-600">{fetchError}</p>
         <p className="mt-4 text-sm text-red-500">
-           If this is an "Unauthorized" error, please **log out and log back in** to refresh your session token.
+          If this is an "Unauthorized" error, please log out and log back in to refresh your session token.
         </p>
       </div>
     );
   }
 
-
   return (
     <div className="max-w-4xl mt-10 mx-auto p-6 bg-white rounded-xl shadow-lg">
       <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-3 text-center">
-        📚 Available Documents
+        Available Documents
       </h2>
 
-      {/* Filter Section */}
       <div className="mb-8 p-4 bg-blue-50 rounded-lg border border-blue-200">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4">🔍 Find Documents</h3>
+        <h3 className="text-lg font-semibold text-gray-700 mb-4">Find Documents</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          {/* Title Filter */}
+
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Search by Title
@@ -301,7 +326,6 @@ const UserViewDocuments = () => {
             />
           </div>
 
-          {/* Date Filter */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Filter by Date
@@ -314,7 +338,6 @@ const UserViewDocuments = () => {
             />
           </div>
 
-          {/* Sort Options */}
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-2">
               Sort Documents
@@ -324,40 +347,37 @@ const UserViewDocuments = () => {
               onChange={(e) => setSortBy(e.target.value)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
             >
-              <option value="newest">🆕 Newest First</option>
-              <option value="oldest">🕐 Oldest First</option>
-              <option value="title">🔤 Title A-Z</option>
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="title">Title A-Z</option>
             </select>
           </div>
         </div>
 
-        {/* Results and Clear Filters */}
         <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
           <span className="text-sm text-gray-600 font-medium">
-            📊 Showing {Array.isArray(filteredDocuments) ? filteredDocuments.length : 0} of {Array.isArray(documents) ? documents.length : 0} documents
+            Showing {Array.isArray(filteredDocuments) ? filteredDocuments.length : 0} of {Array.isArray(documents) ? documents.length : 0} documents
           </span>
+
           {(titleFilter || dateFilter) && (
             <button
               onClick={clearFilters}
               className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition font-medium text-sm"
             >
-              🗑️ Clear Filters
+              Clear Filters
             </button>
           )}
         </div>
       </div>
 
-      {/* Documents List */}
-      {/* 🛡️ FIX: filteredDocuments array එකක් දැයි පරීක්ෂා කිරීම */}
       {Array.isArray(filteredDocuments) && filteredDocuments.length === 0 ? (
         <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <div className="text-6xl mb-4">📭</div>
           <p className="text-gray-500 text-lg font-medium mb-2">
             {documents.length === 0 
               ? 'No documents available yet.' 
-              : 'No documents match your search criteria.'
-            }
+              : 'No documents match your search criteria.'}
           </p>
+
           {documents.length > 0 && (titleFilter || dateFilter) && (
             <button
               onClick={clearFilters}
@@ -369,8 +389,12 @@ const UserViewDocuments = () => {
         </div>
       ) : (
         <div className="space-y-4">
+<<<<<<< HEAD
           {/* 🛡️ FIX: Array check එක උඩින් තිබෙන නිසා මෙහිදී ආරක්ෂිතයි */}
           {filteredDocuments.map((doc, idx) => (
+=======
+          {filteredDocuments.map(doc => (
+>>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
             <div
               key={doc._id}
               className="p-5 bg-white rounded-lg border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200"
@@ -383,47 +407,37 @@ const UserViewDocuments = () => {
                   <div className="text-3xl mt-1">
                     {getFileIcon(doc.filename)}
                   </div>
-                  <div className="flex-1">
-                    <a
-                      href={`${API_URL}/documents/${doc._id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xl font-semibold text-blue-700 hover:text-blue-900 hover:underline block mb-2"
+
+                  <div className="flex-1 flex flex-col">
+                    <span
+                      onClick={() => handleDownload(doc._id, doc.filename)}
+                      className="text-blue-600 hover:text-blue-800 font-medium cursor-pointer"
                     >
-                      {doc.metadata?.title || doc.filename}
-                    </a>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-                    
-                      
-                      <div className="flex items-center space-x-1">
-                        <span className="font-medium">📅 Uploaded:</span>
-                        <span>{formatDate(doc.uploadDate || doc.createdAt)}</span>
-                      </div>
-                      
+                      {doc.metadata?.title || doc.filename || `Document ${doc._id}`}
+                    </span>
+
+                    <div className="text-sm text-gray-600">
+                      <p>Uploaded: {formatDate(doc.uploadDate || doc.createdAt)}</p>
                       {doc.metadata?.title && doc.metadata.title !== doc.filename && (
-                        <div className="flex items-center space-x-1 md:col-span-2">
-                          <span className="font-medium">🏷️ Title:</span>
-                          <span className="text-blue-600">{doc.metadata.title}</span>
-                        </div>
+                        <p>Title: {doc.metadata.title}</p>
                       )}
                     </div>
                   </div>
                 </div>
-                
-                <a
-                  href={`${API_URL}/documents/${doc._id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+
+                <button
+                  onClick={() => handleDownload(doc._id, doc.filename)}
                   className="ml-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm whitespace-nowrap"
                 >
-                  👁️ View
-                </a>
+                  Download
+                </button>
+
               </div>
             </div>
           ))}
         </div>
       )}
+<<<<<<< HEAD
 
       {/* Quick Stats */}
       {documents.length > 0 && (
@@ -507,6 +521,8 @@ const UserViewDocuments = () => {
           </form>
         </div>
       )}
+=======
+>>>>>>> 61bb27d9da2c515be3d198599f9eed4bb9696c2f
     </div>
   );
 };

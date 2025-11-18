@@ -1,12 +1,12 @@
 import React from "react";
-import { Clock, CheckCircle, Mail, FileText } from "lucide-react";
+import { Clock, CheckCircle, User, FileText } from "lucide-react";
 
 const TimeSelection = ({
   selectedDate,
   selectedTime,
   availableTimeRanges,
-  patientEmail,
-  setPatientEmail,
+  patientName,
+  setPatientName,
   patientNote,
   setPatientNote,
   handleTimeSelect,
@@ -61,20 +61,21 @@ const TimeSelection = ({
         </div>
       )}
 
-      {/* Email and Note Section - Only show when time is selected */}
+      {/* Patient Name and Note Section - Only show when time is selected */}
       {selectedTime && (
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Mail size={16} className="inline mr-2" />
-              Email for Confirmation (Optional)
+              <User size={16} className="inline mr-2" />
+              Patient Name *
             </label>
             <input
-              type="email"
-              value={patientEmail}
-              onChange={(e) => setPatientEmail(e.target.value)}
+              type="text"
+              value={patientName}
+              onChange={(e) => setPatientName(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your email for confirmation (optional)"
+              placeholder="Enter patient name"
+              required
             />
           </div>
           
@@ -94,7 +95,12 @@ const TimeSelection = ({
 
           <button
             onClick={handleConfirmBooking}
-            className="w-full bg-green-600 hover:bg-green-700 text-white py-4 px-6 rounded-xl font-bold text-lg transition-colors shadow-lg"
+            disabled={!patientName.trim()}
+            className={`w-full py-4 px-6 rounded-xl font-bold text-lg transition-colors shadow-lg ${
+              patientName.trim()
+                ? 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
           >
             Confirm & Book Appointment
           </button>

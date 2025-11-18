@@ -18,7 +18,7 @@ const slotSchema = new mongoose.Schema({
 const availabilitySchema = new mongoose.Schema({
   doctorId: { type: String, required: true },
   doctorName: { type: String, required: true },
-  availabilitySlots: [slotSchema]   // ARRAY OF OBJECTS
+  availabilitySlots: [slotSchema]  
 });
 
 module.exports = mongoose.model("Availability", availabilitySchema);

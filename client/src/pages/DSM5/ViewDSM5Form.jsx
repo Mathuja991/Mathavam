@@ -44,7 +44,7 @@ const ViewDSM5Form = () => {
                 return;
             }
 
-            const res = await axios.get(`http://localhost:5000/api/dsm5forms/${id}`);
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/dsm5forms/${id}`);
             const formData = res.data;
 
             setPatientInfo({
@@ -137,7 +137,7 @@ const ViewDSM5Form = () => {
                 answers,
                 severityRatings,
             };
-            const res = await axios.put(`http://localhost:5000/api/dsm5forms/${id}`, payload);
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/dsm5forms/${id}`, payload);
             toast.success("Changes saved successfully!"); 
             setIsEditing(false);
         } catch (error) {

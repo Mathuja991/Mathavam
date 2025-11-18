@@ -6,9 +6,11 @@ const {
   getDoctorById,
   updateDoctor,
   deleteDoctor
+  // checkStaffId is removed as it's no longer needed
 } = require('../controllers/doctorController');
 
 
+// CRUD routes for Staff members (using the /api/doctors path)
 router.post('/', createDoctor);
 router.get('/', getAllDoctors);
 router.get('/:id', getDoctorById);
