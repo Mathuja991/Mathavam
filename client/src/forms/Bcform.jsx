@@ -125,7 +125,16 @@ const BehaviorChecklist = () => {
   setFormData((prev) => ({ ...prev, childNo: value }));
 
   try {
-    const response = await fetch(`${API_URL}/patientRecords`);
+    const token = localStorage.getItem("token");
+
+   
+    const response = await fetch(`${API_URL}/patientRecords`, {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+    "x-auth-token": token
+  }
+});
     if (!response.ok) throw new Error("Failed to fetch records");
     const data = await response.json();
 
@@ -204,10 +213,13 @@ const BehaviorChecklist = () => {
     const newEntry = { ...formData, scores: selectedScores, severity };
 
     try {
+      const token = localStorage.getItem("token");
       const response = await fetch(`${API_URL}/bc/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEntry),
+        "x-auth-token": token
+        
       });
 
       if (!response.ok) {

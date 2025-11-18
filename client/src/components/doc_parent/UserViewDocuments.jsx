@@ -31,7 +31,7 @@ const UserViewDocuments = () => {
 
     const config = getAuthConfig();
 
-    fetch('http://localhost:5000/api/documents', config)
+    fetch(`${API_URL}/documents`, config)
       .then(res => {
         if (!res.ok) {
           if (res.status === 401) {
