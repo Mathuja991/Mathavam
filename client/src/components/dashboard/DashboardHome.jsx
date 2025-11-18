@@ -74,9 +74,9 @@ const DashboardHome = ({ loggedInUser }) => {
   }
 
   // --- Role-Based Content Rendering ---
-  const userRole = loggedInUser.userType || 'Unknown';
+  const userRole = (loggedInUser.userType || 'Unknown').trim().toLowerCase();
 
-  if (loading && userRole !== 'Parent' && userRole !== 'Unknown') {
+  if (loading && userRole !== 'parent' && userRole !== 'unknown') {
     return (
       <div className="flex justify-center items-center h-full p-8">
         <FontAwesomeIcon icon={faSpinner} spin className="text-4xl text-indigo-500" />
@@ -87,10 +87,11 @@ const DashboardHome = ({ loggedInUser }) => {
 
   // Determine which dashboard content to render
   switch (userRole) {
-    case 'Super Admin':
-    case 'Admin':
-    case 'Doctor':
-    case 'Therapist':
+    case 'super admin':
+    case 'admin':
+    case 'doctor':
+    case 'therapist':
+    case 'therapists':
       // All staff roles use the same administrative/clinical dashboard view
       return (
         <StaffDashboardContent

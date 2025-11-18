@@ -55,6 +55,15 @@ const normalizeDateOnly = (value) => {
   return date.toISOString().split("T")[0];
 };
 
+const buildAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return {};
+  return {
+    "x-auth-token": token,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 const formatDate = (value) => {
   if (!value) return "";
   const date = new Date(value);
@@ -91,10 +100,51 @@ const buildResponseMap = (sections = []) => {
 
 function SensoryProfileProgressPage() {
   const [tables, setTables] = useState([]);
+  const [allAssessments, setAllAssessments] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [childNo, setChildNo] = useState("");
   const [showGraph, setShowGraph] = useState(false);
+  const [showTrend, setShowTrend] = useState(false);
+
+  const renderSparkline = (points) => {
+    if (!points.length) return null;
+    const width = 220;
+    const height = 70;
+    const padding = 8;
+    const maxY = Math.max(...points.map((p) => p.total), 1);
+    const minY = Math.min(...points.map((p) => p.total), 0);
+    const yRange = Math.max(maxY - minY, 1);
+    const step = points.length > 1 ? (width - padding * 2) / (points.length - 1) : 0;
+    const path = points
+      .map((p, idx) => {
+        const x = padding + idx * step;
+        const y = height - padding - ((p.total - minY) / yRange) * (height - padding * 2);
+        return `${idx === 0 ? "M" : "L"}${x},${y}`;
+      })
+      .join(" ");
+
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-16">
+        <path d={path} fill="none" stroke="#6366f1" strokeWidth="2.5" />
+        {points.map((p, idx) => {
+          const x = padding + idx * step;
+          const y = height - padding - ((p.total - minY) / yRange) * (height - padding * 2);
+          return (
+            <circle
+              key={`${p.date}-${idx}`}
+              cx={x}
+              cy={y}
+              r="4"
+              fill="#a855f7"
+              stroke="#fff"
+              strokeWidth="1.5"
+            />
+          );
+        })}
+      </svg>
+    );
+  };
 
   const openPrintWindow = (title, bodyContent) => {
     if (typeof window === "undefined") return;
@@ -144,8 +194,13 @@ const buildQuadrantDetails = (table) =>
     setIsGenerating(true);
     setError("");
     try {
+      const headers = buildAuthHeaders();
+      if (!headers["x-auth-token"]) {
+        throw new Error("Missing auth token. Please log in again.");
+      }
       const response = await axios.get("/api/assessments/sensory-profile", {
         params: { patientId: trimmedChild },
+        headers,
       });
       const allSections = Array.isArray(response.data) ? response.data : [];
 
@@ -192,13 +247,18 @@ const buildQuadrantDetails = (table) =>
           new Date(a.recordedAt || a.testDate || 0)
       );
 
-      setTables(formattedTables);
+      setAllAssessments(formattedTables);
+      // Only keep the most recent assessment for this child number
+      setTables(formattedTables.length ? [formattedTables[0]] : []);
       setShowGraph(false);
+      setShowTrend(false);
     } catch (err) {
       console.error("Failed to load sensory profile tables:", err);
       setError("Unable to load sensory profile records.");
       setTables([]);
+      setAllAssessments([]);
       setShowGraph(false);
+      setShowTrend(false);
     } finally {
       setIsGenerating(false);
     }
@@ -210,6 +270,15 @@ const buildQuadrantDetails = (table) =>
       return;
     }
     setShowGraph(true);
+  };
+
+  const handleShowTrend = () => {
+    if (!allAssessments.length) {
+      setError("Generate data first, then view trend over time.");
+      return;
+    }
+    setShowTrend(true);
+    setShowGraph(false);
   };
 
   const handlePrintTables = () => {
@@ -387,25 +456,32 @@ const buildQuadrantDetails = (table) =>
                 placeholder="Enter Child No"
                 className="px-4 py-3 rounded-full border border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none min-w-[220px]"
               />
-              <button
-                onClick={generateTables}
-                disabled={isGenerating}
-                className="px-6 py-3 rounded-full bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition"
-              >
-                {isGenerating ? "Generating..." : "Generate Table"}
-              </button>
-              <button
-                onClick={handleGenerateGraph}
-                className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition"
-                disabled={!tables.length}
-              >
-                Generate Graph
-              </button>
+            <button
+              onClick={generateTables}
+              disabled={isGenerating}
+              className="px-6 py-3 rounded-full bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition"
+            >
+              {isGenerating ? "Generating..." : "Generate Table"}
+            </button>
+            <button
+              onClick={handleGenerateGraph}
+              className="px-6 py-3 rounded-full bg-green-600 text-white font-semibold shadow hover:bg-green-700 disabled:bg-green-300 disabled:cursor-not-allowed transition"
+              disabled={!tables.length}
+            >
+              Generate Graph
+            </button>
+            <button
+              onClick={handleShowTrend}
+              className="px-6 py-3 rounded-full bg-purple-600 text-white font-semibold shadow hover:bg-purple-700 disabled:bg-purple-300 disabled:cursor-not-allowed transition"
+              disabled={!allAssessments.length}
+            >
+              Overall Over Time
+            </button>
+          </div>
+          {error && (
+            <div className="px-4 py-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
+              {error}
             </div>
-            {error && (
-              <div className="px-4 py-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-sm">
-                {error}
-              </div>
             )}
           </div>
         </div>
@@ -506,6 +582,88 @@ const buildQuadrantDetails = (table) =>
             formatDateTime={formatDateTime}
             onPrint={handlePrintGraph}
           />
+        )}
+
+        {showTrend && allAssessments.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-lg border border-purple-100 p-6 space-y-6">
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-purple-600 uppercase tracking-wide">
+                  Sensory Profile
+                </p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Quadrant Progress Over Time
+                </h2>
+                <p className="text-gray-600">
+                  Trend of quadrant totals across all recorded assessment dates for this child.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {QUADRANT_SECTIONS.map((quadrant) => {
+                const points = allAssessments.map((assessment) => {
+                  const total = quadrant.qids.reduce(
+                    (sum, qid) =>
+                      sum + (Number(assessment.responseMap[qid]?.score ?? 0) || 0),
+                    0
+                  );
+                  return {
+                    date: formatDate(assessment.testDate),
+                    total,
+                    recordedAt: assessment.recordedAt,
+                  };
+                });
+
+                return (
+                  <div
+                    key={`trend-${quadrant.key}`}
+                    className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-purple-50 p-4 shadow-sm space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`${quadrant.headerClass} px-3 py-1 rounded-full text-xs font-bold`}
+                        >
+                          {quadrant.key}
+                        </span>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {quadrant.label}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Raw score trend across assessments
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {points.length} assessment(s)
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="bg-white border border-purple-100 rounded-xl px-3 py-2">
+                        {renderSparkline(points)}
+                      </div>
+                      {points.map((pt, idx) => (
+                        <div
+                          key={`${quadrant.key}-${pt.date}-${idx}`}
+                          className="flex items-center justify-between text-sm bg-white border border-purple-50 rounded-xl px-3 py-2"
+                        >
+                          <div className="text-gray-700 font-semibold">
+                            {pt.total}
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            {pt.date}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
     </div>
