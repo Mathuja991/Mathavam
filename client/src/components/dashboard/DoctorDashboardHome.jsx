@@ -43,10 +43,11 @@ const DoctorDashboardHome = ({ loggedInUser }) => {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="New CARS Assessments (CRUD)" value={mockStats.newCARS} icon={faSyringe} bgColor="bg-gradient-to-r from-red-600 to-pink-700" />
+        {/* CARS Assessment card: Red/Pink -> Purple/Indigo */}
+        <StatCard title="New CARS Assessments (CRUD)" value={mockStats.newCARS} icon={faSyringe} bgColor="bg-gradient-to-r from-purple-600 to-indigo-700" />
         <StatCard title="Upcoming Appointments (CRUD)" value={mockStats.upcomingAppointments} icon={faCalendarCheck} bgColor="bg-gradient-to-r from-blue-600 to-indigo-700" />
         <StatCard title="Total Patients" value={mockStats.totalPatients} icon={faClipboardList} bgColor="bg-gradient-to-r from-green-600 to-teal-700" />
-        <StatCard title="RDHS Access" value={mockStats.RDHSAccess} icon={faFileMedical} bgColor="bg-gradient-to-r from-purple-600 to-fuchsia-700" />
+        <StatCard title="RDHS Access" value={mockStats.RDHSAccess} icon={faFileMedical} bgColor="bg-gradient-to-r from-pink-600 to-fuchsia-700" />
       </div>
 
       {/* Quick Actions */}
@@ -55,11 +56,12 @@ const DoctorDashboardHome = ({ loggedInUser }) => {
           Clinical Tools ⚕️
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* CARS Form: Red -> Orange */}
           <QuickAction
             title="Manage CARS Form (CRUD)"
             desc="Create, Read, Update, Delete Childhood Autism Rating Scale forms."
             icon={faSyringe}
-            bgColor="bg-red-500 hover:bg-red-600 shadow-lg"
+            bgColor="bg-orange-500 hover:bg-orange-600 shadow-lg"
             onClick={() => console.log('Navigate to CARS Form')}
           />
           <QuickAction

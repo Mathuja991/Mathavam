@@ -11,7 +11,7 @@ const Appointment = require('../models/Appointment');
 // @desc    Add a new user
 // @route   POST /api/users/add
 // @access  Public
-const addUser = async (req, res) => { // <-- exports.addUser වෙනුවට const addUser
+const addUser = async (req, res) => {
     const { firstName, lastName, idNumber, userType, username, password, confirmPassword, childRegNo } = req.body;
 
     // Validation
@@ -76,7 +76,7 @@ const addUser = async (req, res) => { // <-- exports.addUser වෙනුවට 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private
-const getAllUsers = async (req, res) => { // <-- exports.getAllUsers වෙනුවට const getAllUsers
+const getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select('-password');
         res.json(users);
@@ -89,7 +89,7 @@ const getAllUsers = async (req, res) => { // <-- exports.getAllUsers වෙන�
 // @desc    Authenticate user & get token
 // @route   POST /api/users/login
 // @access  Public
-const loginUser = async (req, res) => { // <-- exports.loginUser වෙනුවට const loginUser
+const loginUser = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -145,7 +145,7 @@ const loginUser = async (req, res) => { // <-- exports.loginUser වෙනුව
 // @desc    Update user's username
 // @route   PUT /api/users/update-username
 // @access  Private
-const updateUsername = async (req, res) => { // <-- exports.updateUsername වෙනුවට const updateUsername
+const updateUsername = async (req, res) => {
     const { newUsername } = req.body;
     const userId = req.user.id;
 
@@ -189,7 +189,7 @@ const updateUsername = async (req, res) => { // <-- exports.updateUsername ව�
 // @desc    Update user's password
 // @route   PUT /api/users/update-password
 // @access  Private
-const updatePassword = async (req, res) => { // <-- exports.updatePassword වෙනුවට const updatePassword
+const updatePassword = async (req, res) => {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
     const userId = req.user.id;
 
@@ -231,7 +231,7 @@ const updatePassword = async (req, res) => { // <-- exports.updatePassword ව�
 // @desc    Get dashboard statistics for staff
 // @route   GET /api/users/dashboard/stats
 // @access  Private (Staff Roles)
-const getDashboardStats = async (req, res) => { // <-- exports.getDashboardStats වෙනුවට const getDashboardStats
+const getDashboardStats = async (req, res) => {
     try {
         const totalPatients = await Child.countDocuments();
 
@@ -272,12 +272,46 @@ const getDashboardStats = async (req, res) => { // <-- exports.getDashboardStats
     }
 };
 
-// 🟢 EXPORT FIX: Export the functions that are now defined as constants
+// 🌟 ADDED FIX: checkDoctor Function 🌟
+// @desc    Check if an ID number corresponds to a doctor
+// @route   GET /api/users/check-doctor/:idNumber
+// @access  Public
+const checkDoctor = async (req, res) => {
+    const { idNumber } = req.params;
+
+    if (!idNumber) {
+        return res.status(400).json({ message: 'ID Number is required' });
+    }
+
+    try {
+        // Find a user who is a 'Doctor' with the given ID
+        const doctor = await User.findOne({ 
+            idNumber, 
+            userType: 'Doctor'
+        });
+
+        if (doctor) {
+            // Found a doctor
+            res.status(200).json({ isDoctor: true, message: 'Doctor found.', doctor: doctor.firstName + ' ' + doctor.lastName });
+        } else {
+            // Doctor not found
+            res.status(200).json({ isDoctor: false, message: 'Doctor not found with this ID.' });
+        }
+
+    } catch (error) {
+        console.error('Error in checkDoctor:', error.message);
+        res.status(500).json({ message: 'Server error checking doctor status.' });
+    }
+};
+
+
+// 🟢 EXPORT FIX: checkDoctor added to module.exports
 module.exports = {
-  addUser, // <-- Now this refers to the const addUser
+  addUser,
   getAllUsers,
   loginUser,
   updateUsername,
   updatePassword,
   getDashboardStats,
+  checkDoctor, // ✅ checkDoctor දැන් නිවැරදිව export කර ඇත.
 };

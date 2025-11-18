@@ -15,10 +15,11 @@ const ROLES_CRUD_THERAPIST = ['Therapist', 'Resource Person'];
 
 
 // GET all sensory profiles with optional patientId filter
+// Endpoint: /api/assessments/sensory-profile
 router.get(
     "/sensory-profile", 
     authMiddleware,
-    checkRole(ROLES_VIEW_STAFF),
+    checkRole(ROLES_VIEW_STAFF), // Therapist ඇතුළු සියලුම Staff වර්ග වලට Read/View අවසරය
     async (req, res) => {
   try {
     const filter = {};
@@ -37,49 +38,24 @@ router.get(
 });
 
 // POST new sensory profile
+// Endpoint: /api/assessments/sensory-profile
 router.post(
     "/sensory-profile", 
     authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST),
+    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Create (C) අවසරය
     async (req, res) => {
   try {
-    const newProfile = new SensoryProfile(req.body);
-    const savedProfile = await newProfile.save();
-    console.log("Document saved successfully:", savedProfile);
-    res.status(201).json(savedProfile);
+    const newAssessment = new SensoryProfile(req.body);
+    await newAssessment.save();
+    res.status(201).json(newAssessment);
   } catch (error) {
-    console.error("Error saving assessment:", error);
-
-    if (error.code === 11000) {
-      return res.status(409).json({
-        message:
-          "A duplicate assessment for this patient, category, and test date already exists.",
-      });
-    }
-    res.status(500).json({ message: "Error saving assessment" });
-  }
-});
-
-// DELETE sensory profile by ID
-router.delete(
-    "/sensory-profile/:id", 
-    authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST),
-    async (req, res) => {
-  try {
-    const assessment = await SensoryProfile.findByIdAndDelete(req.params.id);
-
-    if (!assessment) {
-      return res.status(404).json({ message: "Assessment not found" });
-    }
-    res.status(200).json({ message: "Assessment deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting assessment:", error);
-    res.status(500).json({ message: "Error deleting assessment." });
+    console.error("Error creating sensory profile:", error);
+    res.status(400).json({ message: "Error creating assessment", error: error.message });
   }
 });
 
 // GET sensory profile by ID
+// Endpoint: /api/assessments/sensory-profile/:id
 router.get(
     "/sensory-profile/:id", 
     authMiddleware,
@@ -99,10 +75,11 @@ router.get(
 });
 
 // PUT update sensory profile by ID
+// Endpoint: /api/assessments/sensory-profile/:id
 router.put(
     "/sensory-profile/:id", 
     authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST),
+    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Update (U) අවසරය
     async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,11 +94,31 @@ router.put(
     if (!updatedAssessment) {
       return res.status(404).json({ message: "Assessment not found" });
     }
-
     res.status(200).json(updatedAssessment);
   } catch (error) {
     console.error("Error updating assessment:", error);
-    res.status(500).json({ message: "Error updating assessment" });
+    res.status(400).json({ message: "Error updating assessment", error: error.message });
+  }
+});
+
+// DELETE assessment by ID
+// Endpoint: /api/assessments/sensory-profile/:id
+router.delete(
+    "/sensory-profile/:id", 
+    authMiddleware,
+    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Delete (D) අවසරය
+    async (req, res) => {
+  try {
+    const deletedAssessment = await SensoryProfile.findByIdAndDelete(req.params.id);
+
+    if (!deletedAssessment) {
+      return res.status(404).json({ message: "Assessment not found" });
+    }
+
+    res.status(200).json({ message: "Assessment successfully deleted." });
+  } catch (error) {
+    console.error("Error deleting assessment:", error);
+    res.status(500).json({ message: "Error deleting assessment." });
   }
 });
 
