@@ -3,12 +3,10 @@ const express = require('express');
 const router = express.Router();
 const availabilityController = require('../controllers/availabilityController');
 
-// SPECIFIC ROUTES FIRST (before parameterized routes)
 router.post('/doctors', availabilityController.getMultipleDoctorsAvailability);
 router.get('/all/doctors', availabilityController.getAllDoctorsFromAvailability);
 router.post('/add', availabilityController.addAvailabilitySlots);
 
-// NEW: Body parameter routes for frontend compatibility (PUT THESE BEFORE PARAM ROUTES)
 router.delete('/delete-slot', availabilityController.deleteAvailabilitySlotBody);
 router.delete('/delete-all', availabilityController.clearDoctorAvailabilityBody);
 router.put('/update', availabilityController.updateAvailabilitySlotBody);

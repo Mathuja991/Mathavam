@@ -154,7 +154,7 @@ const AppointmentManagement = () => {
                 <AppointmentCard
                     type="book"
                     icon={FaUserMd} // Icon component passed as prop
-                    title="Book Session"
+                    title="Book Doctor Appoinmtment"
                     description="Schedule a doctor's consultation or general session."
                     allowed={isParent}
                 />

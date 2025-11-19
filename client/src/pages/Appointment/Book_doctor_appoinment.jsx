@@ -54,7 +54,7 @@ const PatientAppointmentBooking = () => {
         setLoading(true);
 
         // Fetch all doctors
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/availability/doctors/all`);
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/availability/all/doctors`);
         console.log(' API RESPONSE RECEIVED:', response.data.data);
 
         if (response.data.success) {
