@@ -185,7 +185,7 @@ const SubmittedSnapFormsList = () => {
             {/* Name Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                {isTranslated ? "Child Name" : "குழந்தையின் பெயர்"}
+                {isTranslated ? "Child Name" : "பிள்ளையின் பெயர்"}
               </label>
               <input
                 type="text"
@@ -251,10 +251,10 @@ const SubmittedSnapFormsList = () => {
                     #
                   </th>
                   <th className="px-6 py-3 text-blue-800 font-semibold text-sm uppercase tracking-wider">
-                    {isTranslated ? "Child Name" : "குழந்தையின் பெயர்"}
+                    {isTranslated ? "Child Name" : "பிள்ளையின் பெயர்"}
                   </th>
                   <th className="px-6 py-3 text-blue-800 font-semibold text-sm uppercase tracking-wider">
-                    {isTranslated ? "Child ID" : "குழந்தை ஐடி"}
+                    {isTranslated ? "Child ID" : "பிள்ளையின் அடையாள அட்டை"}
                   </th>
                   <th className="px-6 py-3 text-blue-800 font-semibold text-sm uppercase tracking-wider">
                     {isTranslated ? "Age" : "வயது"}
