@@ -3,9 +3,6 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import debounce from "lodash/debounce";
 
-// =====================================================================================
-// === Enhanced User Management Component (with modern styles, using FA icons) ===
-// =====================================================================================
 
 export default function ManageUser() {
     const [users, setUsers] = useState([]);
@@ -21,7 +18,6 @@ export default function ManageUser() {
 
     const navigate = useNavigate();
 
-    // 1. Function to get the Auth Token and create the Header 
     const getAuthConfig = useCallback(() => {
         const token = localStorage.getItem("token");
 
@@ -39,7 +35,6 @@ export default function ManageUser() {
         };
     }, [navigate]);
 
-    // 2. Function to fetch the list of users 
     const fetchUsers = useCallback(async () => {
         const config = getAuthConfig();
         if (!config) {
@@ -73,12 +68,10 @@ export default function ManageUser() {
         }
     }, [getAuthConfig, navigate]);
 
-    // Fetch users list on component mount
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
 
-    // 3. Function to delete a user 
     const handleDelete = async (userId) => {
         const config = getAuthConfig();
         if (!config) {
@@ -95,10 +88,9 @@ export default function ManageUser() {
                     config
                 );
                 setMessage("User deleted successfully.");
-                // Refresh list after a short delay to show the message
                 setTimeout(() => {
                     fetchUsers();
-                    setMessage(""); // Clear success message after refresh
+                    setMessage("");
                 }, 1500);
             } catch (err) {
                 if (err.response && err.response.status === 401) {
@@ -117,7 +109,6 @@ export default function ManageUser() {
         }
     };
 
-    // Other Navigation and Utility Functions
     const handleEdit = (userId) => {
         navigate(`/dashboard/manage-users/edit/${userId}`);
     };
@@ -135,7 +126,6 @@ export default function ManageUser() {
         "Parent",
     ];
 
-    // Debounced search function to prevent excessive re-renders/calls
     const debouncedSearch = useCallback(
         debounce((val) => setSearchTerm(val), 400),
         []
@@ -145,18 +135,15 @@ export default function ManageUser() {
         debouncedSearch(e.target.value);
     };
 
-    // Memoized filtered and sorted list for performance
     const filteredAndSortedUsers = useMemo(() => {
         let currentUsers = [...users];
         
-        // 1. Filter by User Type
         if (filterUserType) {
             currentUsers = currentUsers.filter(
                 (user) => user.userType === filterUserType
             );
         }
         
-        // 2. Search by Term
         if (searchTerm) {
             const lowercased = searchTerm.toLowerCase();
             currentUsers = currentUsers.filter(
@@ -171,7 +158,6 @@ export default function ManageUser() {
             );
         }
         
-        // 3. Sort
         if (sortConfig.key) {
             currentUsers.sort((a, b) => {
                 const aValue = a[sortConfig.key] || "";
@@ -204,19 +190,16 @@ export default function ManageUser() {
     };
 
     const resetFilters = () => {
-        // Clear the search input field visually
         const searchInput = document.querySelector(
             'input[placeholder="Search users..."]'
         );
         if (searchInput) searchInput.value = "";
         
-        // Reset state values
         setSearchTerm("");
         setFilterUserType("");
         setSortConfig({ key: "firstName", direction: "ascending" });
     };
 
-    // Function to assign color classes based on UserType for badges
     const getUserTypeBadgeClasses = (userType) => {
         switch (userType) {
             case "Super Admin":
@@ -236,10 +219,8 @@ export default function ManageUser() {
         }
     };
 
-    // --- Render Logic ---
 
     if (loading && users.length === 0) {
-        // Loading State
         return (
             <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl shadow-xl">
                 <svg
@@ -269,7 +250,6 @@ export default function ManageUser() {
     }
 
     if (error) {
-        // Error State
         return (
             <div className="max-w-4xl mx-auto mt-10 p-6 bg-red-50 border-2 border-red-400 rounded-xl shadow-xl text-red-800 text-center">
                 <svg
@@ -300,21 +280,17 @@ export default function ManageUser() {
 
     return (
         <div className="max-w-7xl mx-auto p-8 bg-white rounded-3xl shadow-2xl font-['Inter',_sans-serif]">
-            {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between items-center pb-6 mb-6 border-b border-gray-100 gap-4">
-                {/* Title with FA icon */}
                 <h1 className="text-4xl font-extrabold text-indigo-800 tracking-tight">
                     <i className="fas fa-users mr-2 text-indigo-600"></i> Manage Users
                 </h1>
                 <div className="flex gap-4">
-                    {/* Add New User Button */}
                     <button
                         onClick={handleAddNewUserClick}
                         className="flex items-center px-6 py-2 bg-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-teal-400/50 hover:bg-teal-700 transition duration-300 transform hover:scale-[1.02]"
                     >
                         <span className="text-xl mr-2">+</span> Add New User
                     </button>
-                    {/* Reset Filters Button with FA icon */}
                     <button
                         onClick={resetFilters}
                         className="flex items-center px-5 py-2 bg-gray-200 text-gray-700 font-medium rounded-xl shadow-md hover:bg-gray-300 transition duration-300"
@@ -324,14 +300,12 @@ export default function ManageUser() {
                 </div>
             </div>
 
-            {/* Success Message */}
             {message && (
                 <div className="mb-6 p-4 text-center text-lg font-medium text-teal-800 bg-teal-100 border border-teal-300 rounded-xl shadow-md animate-fade-in-down">
                     {message}
                 </div>
             )}
 
-            {/* Filter Section */}
             <div className="grid md:grid-cols-3 gap-6 p-6 mb-8 rounded-2xl bg-indigo-50/70 shadow-inner">
                 <div className="flex flex-col">
                     <label className="mb-2 text-sm font-semibold text-indigo-800">
@@ -378,7 +352,6 @@ export default function ManageUser() {
                             <option value="username">Username</option>
                             <option value="childRegNo">Child Reg No.</option>
                         </select>
-                        {/* Sort Direction Button */}
                         <button
                             onClick={() =>
                                 setSortConfig((prev) => ({
@@ -395,14 +368,12 @@ export default function ManageUser() {
                 </div>
             </div>
 
-            {/* Table */}
             {loading && filteredAndSortedUsers.length > 0 && (
                 <p className="text-center text-indigo-500 font-medium py-3 animate-pulse">
                     Updating user list...
                 </p>
             )}
             {!loading && filteredAndSortedUsers.length === 0 ? (
-                // No Users Found State
                 <div className="text-gray-600 text-center py-12 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
                     <p className="text-2xl font-semibold mb-2">No Users Found</p>
                     <p>
@@ -414,7 +385,6 @@ export default function ManageUser() {
                 <div className="overflow-x-auto rounded-2xl shadow-xl border border-gray-200">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            {/* Table Header */}
                             <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 sticky top-0 z-10 text-white shadow-lg">
                                 <th
                                     className="p-4 font-bold text-lg cursor-pointer hover:bg-indigo-700 transition duration-150 rounded-tl-2xl"
@@ -459,7 +429,6 @@ export default function ManageUser() {
                         </thead>
                         <tbody>
                             {filteredAndSortedUsers.map((user, idx) => (
-                                // Table Rows 
                                 <tr
                                     key={user._id}
                                     className={`border-b border-gray-100 text-gray-800 ${
@@ -474,7 +443,6 @@ export default function ManageUser() {
                                         {user.idNumber}
                                     </td>
                                     <td className="p-4">
-                                        {/* User Type Badge Style */}
                                         <span
                                             className={`inline-block px-3 py-1 text-xs rounded-full shadow-sm ${getUserTypeBadgeClasses(
                                                 user.userType
@@ -492,15 +460,8 @@ export default function ManageUser() {
                                         )}
                                     </td>
                                     <td className="p-4 space-x-3 text-center">
-                                        {/* Edit Button with FA icon */}
-                                        <button
-                                            onClick={() => handleEdit(user._id)}
-                                            className="px-4 py-1.5 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-200 transform hover:scale-[1.05]"
-                                            aria-label={`Edit user ${user.username}`}
-                                        >
-                                            <i className="fas fa-edit mr-1"></i> Edit
-                                        </button>
-                                        {/* Delete Button with FA icon */}
+
+                                    
                                         <button
                                             onClick={() => handleDelete(user._id)}
                                             className="px-4 py-1.5 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-[1.05]"

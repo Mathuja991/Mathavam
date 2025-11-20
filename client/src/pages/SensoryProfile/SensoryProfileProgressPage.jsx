@@ -4,6 +4,7 @@ import QuadrantGraph, {
   CLASS_COLUMNS,
   classifyQuadrantScore,
 } from "../../components/assessmentForms/SensoryProfile/QuadrantGraph";
+import { API_BASE_URL } from "../../utills/apiUtils";
 
 const QUADRANT_SECTIONS = [
   {
@@ -198,7 +199,7 @@ const buildQuadrantDetails = (table) =>
       if (!headers["x-auth-token"]) {
         throw new Error("Missing auth token. Please log in again.");
       }
-      const response = await axios.get("/api/assessments/sensory-profile", {
+      const response = await axios.get(`${API_BASE_URL}/assessments/sensory-profile`, {
         params: { patientId: trimmedChild },
         headers,
       });

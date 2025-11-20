@@ -1,20 +1,14 @@
-// controllers/userController.js
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-require('dotenv').config(); 
+require('dotenv').config();
 
-// 🟢 NEW IMPORTS FOR DASHBOARD STATS
 const Child = require('../models/Child');
 const Appointment = require('../models/Appointment');
 
-// @desc    Add a new user
-// @route   POST /api/users/add
-// @access  Public
 const addUser = async (req, res) => {
     const { firstName, lastName, idNumber, userType, username, password, confirmPassword, childRegNo } = req.body;
 
-    // Validation
     if (!firstName || !lastName || !idNumber || !userType || !username || !password || !confirmPassword) {
         return res.status(400).json({ message: 'Please enter all fields' });
     }
@@ -26,7 +20,6 @@ const addUser = async (req, res) => {
     }
 
     try {
-        // Check if user exists
         let userById = await User.findOne({ idNumber });
         if (userById) {
             return res.status(400).json({ message: 'User with this ID Number already exists' });
@@ -36,11 +29,9 @@ const addUser = async (req, res) => {
             return res.status(400).json({ message: 'Username is already taken' });
         }
 
-        // Hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create new user
         const newUser = new User({
             firstName,
             lastName,
@@ -51,7 +42,6 @@ const addUser = async (req, res) => {
             childRegNo: userType === 'Parent' ? childRegNo : null,
         });
 
-        // Save user
         const savedUser = await newUser.save();
 
         const userToReturn = { ...savedUser._doc };
@@ -65,17 +55,14 @@ const addUser = async (req, res) => {
     } catch (err) {
         console.error('Error in addUser:', err.message);
         if (err.name === 'ValidationError') {
-             const messages = Object.values(err.errors).map(val => val.message);
-             return res.status(400).json({ message: messages.join('. ') });
+            const messages = Object.values(err.errors).map(val => val.message);
+            return res.status(400).json({ message: messages.join('. ') });
         }
         res.status(500).json({ message: 'Server error adding user. Please try again.' });
     }
 };
 
 
-// @desc    Get all users
-// @route   GET /api/users
-// @access  Private
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find().select('-password');
@@ -86,9 +73,6 @@ const getAllUsers = async (req, res) => {
     }
 };
 
-// @desc    Authenticate user & get token
-// @route   POST /api/users/login
-// @access  Public
 const loginUser = async (req, res) => {
     const { username, password } = req.body;
 
@@ -117,8 +101,8 @@ const loginUser = async (req, res) => {
             { expiresIn: '7d' },
             (err, token) => {
                 if (err) {
-                     console.error('JWT Signing Error:', err);
-                     return res.status(500).json({ msg: 'Error generating token' });
+                    console.error('JWT Signing Error:', err);
+                    return res.status(500).json({ msg: 'Error generating token' });
                 }
 
                 res.json({
@@ -142,9 +126,6 @@ const loginUser = async (req, res) => {
 };
 
 
-// @desc    Update user's username
-// @route   PUT /api/users/update-username
-// @access  Private
 const updateUsername = async (req, res) => {
     const { newUsername } = req.body;
     const userId = req.user.id;
@@ -186,9 +167,6 @@ const updateUsername = async (req, res) => {
     }
 };
 
-// @desc    Update user's password
-// @route   PUT /api/users/update-password
-// @access  Private
 const updatePassword = async (req, res) => {
     const { currentPassword, newPassword, confirmNewPassword } = req.body;
     const userId = req.user.id;
@@ -226,11 +204,47 @@ const updatePassword = async (req, res) => {
     }
 };
 
+const resetPasswordIfValid = async (req, res) => {
+    const { username, firstName, lastName, idNumber, newPassword, confirmNewPassword } = req.body;
 
-// 🟢 NEW FUNCTION: Get dashboard statistics for staff
-// @desc    Get dashboard statistics for staff
-// @route   GET /api/users/dashboard/stats
-// @access  Private (Staff Roles)
+    if (!username || !firstName || !lastName || !idNumber || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({ message: 'All fields are required for verification.' });
+    }
+
+    if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ message: 'New passwords do not match.' });
+    }
+    
+    if (newPassword.length < 6) { 
+        return res.status(400).json({ message: 'Password must be at least 6 characters.' });
+    }
+
+    try {
+        const user = await User.findOne({ 
+            username: username.toLowerCase(), 
+            firstName, 
+            lastName, 
+            idNumber 
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User verification failed. Please check your details.' });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        
+        await user.save();
+
+        res.json({ message: 'Password reset successfully. You can now log in with your new password.' });
+
+    } catch (err) {
+        console.error('Password Reset Error:', err.message);
+        res.status(500).json({ message: 'Server error during password reset.' });
+    }
+};
+
+
 const getDashboardStats = async (req, res) => {
     try {
         const totalPatients = await Child.countDocuments();
@@ -243,7 +257,7 @@ const getDashboardStats = async (req, res) => {
 
         const endOfToday = new Date();
         endOfToday.setHours(23, 59, 59, 999);
-        
+
         const appointmentsToday = await Appointment.countDocuments({
             appointmentDate: {
                 $gte: startOfToday,
@@ -252,7 +266,6 @@ const getDashboardStats = async (req, res) => {
             status: { $ne: 'Cancelled' }
         });
 
-        // 'Pending' appointments count as pending tasks
         const pendingTasks = await Appointment.countDocuments({
             status: 'Pending'
         });
@@ -272,10 +285,6 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
-// 🌟 ADDED FIX: checkDoctor Function 🌟
-// @desc    Check if an ID number corresponds to a doctor
-// @route   GET /api/users/check-doctor/:idNumber
-// @access  Public
 const checkDoctor = async (req, res) => {
     const { idNumber } = req.params;
 
@@ -284,17 +293,14 @@ const checkDoctor = async (req, res) => {
     }
 
     try {
-        // Find a user who is a 'Doctor' with the given ID
-        const doctor = await User.findOne({ 
-            idNumber, 
+        const doctor = await User.findOne({
+            idNumber,
             userType: 'Doctor'
         });
 
         if (doctor) {
-            // Found a doctor
             res.status(200).json({ isDoctor: true, message: 'Doctor found.', doctor: doctor.firstName + ' ' + doctor.lastName });
         } else {
-            // Doctor not found
             res.status(200).json({ isDoctor: false, message: 'Doctor not found with this ID.' });
         }
 
@@ -305,13 +311,13 @@ const checkDoctor = async (req, res) => {
 };
 
 
-// 🟢 EXPORT FIX: checkDoctor added to module.exports
 module.exports = {
-  addUser,
-  getAllUsers,
-  loginUser,
-  updateUsername,
-  updatePassword,
-  getDashboardStats,
-  checkDoctor, // ✅ checkDoctor දැන් නිවැරදිව export කර ඇත.
+    addUser,
+    getAllUsers,
+    loginUser,
+    updateUsername,
+    updatePassword,
+    getDashboardStats,
+    checkDoctor,
+    resetPasswordIfValid,
 };

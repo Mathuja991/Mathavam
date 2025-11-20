@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import BaseCards from "../../components/assessmentForms/SensoryProfile/BaseCards";
-import { createSensoryProfilePayload } from "../../utills/apiUtils";
+import { API_BASE_URL, createSensoryProfilePayload } from "../../utills/apiUtils";
 import { printSensorySection } from "../../utills/printSensorySection";
 
 const buildAuthHeaders = () => {
@@ -28,9 +28,7 @@ const normalizeDateOnly = (value) => {
   }
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
-  const offsetMinutes = date.getTimezoneOffset();
-  const adjusted = new Date(date.getTime() - offsetMinutes * 60000);
-  return adjusted.toISOString().split("T")[0];
+  return date.toISOString().split("T")[0];
 };
 
 const getSectionTimestamp = (section) =>
@@ -138,7 +136,7 @@ function SensoryProfileSectionsPage() {
         if (!headers["x-auth-token"]) {
           throw new Error("Missing auth token. Please log in again.");
         }
-        const response = await axios.get("/api/assessments/sensory-profile", {
+        const response = await axios.get(`${API_BASE_URL}/assessments/sensory-profile`, {
           params: { patientId },
           headers,
         });
@@ -195,6 +193,9 @@ function SensoryProfileSectionsPage() {
         if (!headers["x-auth-token"]) {
           throw new Error("Missing auth token. Please log in again.");
         }
+        const existingSection = selectedSection
+          ? existingSections[selectedSection]
+          : null;
         const payload = createSensoryProfilePayload(formSpecificData, {
           patientId,
           examinerId,
@@ -202,11 +203,11 @@ function SensoryProfileSectionsPage() {
           ageGroup: formType === "child" ? "Child" : "Toddler",
         });
 
-        const response = await axios.post(
-          "/api/assessments/sensory-profile",
-          payload,
-          { headers }
-        );
+        const url = existingSection?._id
+          ? `${API_BASE_URL}/assessments/sensory-profile/${existingSection._id}`
+          : `${API_BASE_URL}/assessments/sensory-profile`;
+        const method = existingSection?._id ? axios.put : axios.post;
+        const response = await method(url, payload, { headers });
 
         const savedDoc = response.data;
         const categoryKey = savedDoc?.category || payload.category;
@@ -218,7 +219,7 @@ function SensoryProfileSectionsPage() {
             selectedSection ||
             formSpecificData?.formTitle ||
             "Unknown Section";
-          next[key] = savedDoc;
+          next[key] = { ...(prev[key] || {}), ...savedDoc };
           return next;
         });
         setEditingSections((prev) => {
@@ -242,7 +243,15 @@ function SensoryProfileSectionsPage() {
         setSavingSection(false);
       }
     },
-    [patientId, examinerId, testDate, formType, formSections, selectedSection]
+    [
+      patientId,
+      examinerId,
+      testDate,
+      formType,
+      formSections,
+      selectedSection,
+      existingSections,
+    ]
   );
 
   const rawSelectedSectionData = selectedSection

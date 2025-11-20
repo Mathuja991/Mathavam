@@ -2,6 +2,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Mail, Phone, Calendar, Briefcase, DollarSign, User, Zap, CheckCircle, Loader, UserPlus, Users, AlertTriangle, Search, UserCheck, BookOpen, Star, Edit3, Trash2 } from 'lucide-react';
 
+// --- Configuration Fix (Crucial Change for Vite Deployment) ---
+// 1. VITE Environment Variable එක නිවැරදිව කියවීම.
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''; 
+// API_BASE_URL = 'https://mathavam-system-backend.vercel.app/api' (As per your .env)
+
+// 2. Double /api දෝෂය වළක්වා ගැනීමට /api කොටස ඉවත් කිරීම.
+// API_ENDPOINT = 'https://mathavam-system-backend.vercel.app/api/doctors' වනු ඇත.
+const API_ENDPOINT = `${API_BASE_URL}/doctors`; 
+// -------------------------
+
 // --- Utility Functions ---
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A';
@@ -85,7 +95,8 @@ const AddStaffForm = ({ onStaffAdded, switchView }) => {
     };
 
     try {
-      const response = await axios.post('/api/doctors', payload);
+      // FIX: Use the absolute API_ENDPOINT
+      const response = await axios.post(API_ENDPOINT, payload);
 
       if (response.data.success) {
         setMessage({ type: 'success', text: `Staff member ${formData.firstName} ${formData.lastName} added successfully!` });
@@ -102,10 +113,11 @@ const AddStaffForm = ({ onStaffAdded, switchView }) => {
         setMessage({ type: 'error', text: response.data.message || 'Failed to add staff member.' });
       }
     } catch (error) {
-      console.error('Error saving staff data:', error);
+      // Improved error message for deployment troubleshooting
+      console.error('Error saving staff data:', error.message, error.response?.status, error.response?.data); 
       setMessage({
         type: 'error',
-        text: error.response?.data?.message || 'An error occurred. Please try again.'
+        text: error.response?.data?.message || `An error occurred. Please check the API URL (${API_ENDPOINT}) and network connection.`
       });
     } finally {
       setLoading(false);
@@ -455,14 +467,16 @@ const ManageStaff = () => {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('/api/doctors');
+      // FIX: Use the absolute API_ENDPOINT
+      const response = await axios.get(API_ENDPOINT);
       if (response.data.success) {
         setStaffList(response.data.data);
       } else {
         setError('Failed to fetch staff data.');
       }
     } catch (err) {
-      setError(err.message || 'Server error while fetching data.');
+      // Improved error message for deployment troubleshooting
+      setError(err.message || `Server error while fetching data. Check if backend is running at ${API_ENDPOINT}`);
       setStaffList([]);
     } finally {
       setLoading(false);
@@ -482,7 +496,8 @@ const ManageStaff = () => {
   const handleDelete = async (staffId, staffName) => {
     if (window.confirm(`Are you sure you want to delete ${staffName}?`)) {
       try {
-        const response = await axios.delete(`/api/doctors/${staffId}`);
+        // FIX: Use the absolute API_ENDPOINT
+        const response = await axios.delete(`${API_ENDPOINT}/${staffId}`);
         if (response.data.success) {
           alert('Staff member deleted successfully.');
           fetchStaff(); // Refresh the list

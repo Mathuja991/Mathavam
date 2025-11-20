@@ -31,7 +31,7 @@ exports.createAppointment = async (req, res) => {
     try {
       const child = await Child.findById(patient);
       if (child) {
-        const registrationNumber = child.childNo || child.childRegNo;
+        const registrationNumber = (child.childNo || child.childRegNo || '').trim();
         const patientName = child.name;
         if (registrationNumber && patientName) {
           let bookerName = 'Mathavam System';
@@ -39,15 +39,19 @@ exports.createAppointment = async (req, res) => {
             const adminUser = await User.findById(bookerId);
             bookerName = adminUser ? `${adminUser.firstName} ${adminUser.lastName}` : 'an Admin';
           }
-          const formattedDate = new Date(appointment.appointmentDate).toLocaleDateString('en-US', { /*...*/ });
+          const formattedDate = new Date(appointment.appointmentDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
           const message = `A new appointment for ${patientName} (${registrationNumber}) has been booked by ${bookerName} on ${formattedDate} at ${appointment.startTime}.`;
           const notification = new Notification({
             patientName: patientName, patientRegNo: registrationNumber, message: message, link: '/dashboard/appointments',
           });
           await notification.save();
           console.log(`Notification created for RegNo: ${registrationNumber} (New Booking)`);
-        } else { /* Handle missing regNo */ }
-      } else { /* Handle missing child */ }
+        } else {
+          console.warn('Could not create notification: missing registrationNumber or patientName');
+        }
+      } else {
+        console.warn('Could not create notification: Child not found for patient ID:', patient);
+      }
     } catch (notificationError) {
       console.error('Failed to create notification on booking:', notificationError.message);
     }
@@ -97,7 +101,7 @@ exports.updateAppointmentStatus = async (req, res) => {
       const child = updatedAppointment.patient;
 
       if (child) {
-        const registrationNumber = child.childNo || child.childRegNo;
+        const registrationNumber = (child.childNo || child.childRegNo || '').trim();
         const patientName = child.name;
 
         // Create notification only if RegNo exists
@@ -122,7 +126,7 @@ exports.updateAppointmentStatus = async (req, res) => {
            console.warn(`Could not send status update notification: Child associated with appointment ${appointmentId} is missing 'childNo' or 'childRegNo'.`);
         }
       } else {
-          console.warn(`Could not send status update notification: Child details not found for appointment ${appointmentId}.`);
+        console.warn(`Could not send status update notification: Child details not found for appointment ${appointmentId}.`);
       }
     } catch (notificationError) {
       // Log error but allow the main response to succeed

@@ -9,11 +9,9 @@ import {
   faChartLine, 
   faNotesMedical, 
   faBolt,
-  // 🛑 නව Icon එක import කරන්න
   faClipboardCheck 
 } from '@fortawesome/free-solid-svg-icons';
 
-// UI Components import
 import StatCard from '../ui/StatCard';
 import QuickAction from '../ui/QuickAction';
 
@@ -22,28 +20,25 @@ import QuickAction from '../ui/QuickAction';
  */
 const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
   const isSuperAdminOrAdmin = ['Super Admin', 'Admin'].includes(loggedInUser.userType);
+  const isSuperAdmin = ['Super Admin'].includes(loggedInUser.userType);
   const isDoctor = loggedInUser.userType === 'Doctor';
   const isTherapist = loggedInUser.userType === 'Therapist';
   const canRecord = isDoctor || isTherapist;
 
-  // Navigation handlers
   const handleRecordingSheet = () => handleNavigation('/dashboard/patient-records');
   const handleAppointmentManagement = () => handleNavigation('/dashboard/appointments');
   const handleAdminDocs = () => handleNavigation('/dashboard/adminuploaddocs');
   const handleMonthlyReturns = () => handleNavigation('/dashboard/monreturn');
   const handleManageUsers = () => handleNavigation('/dashboard/manage-users');
   
-  // 🛑 නව QR Attendance Navigation handler එක
-  const handleQrAttendanceManagement = () => handleNavigation('/dashboard/qr-attendance'); // App.jsx route එකේ path එකට අනුව සකසා ඇත.
+  const handleQrAttendanceManagement = () => handleNavigation('/dashboard/qr-attendance');
 
   return (
     <div className="p-4 md:p-6 space-y-8">
-      {/* --- Statistics Overview (All Staff) --- */}
       <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2 flex items-center gap-2">
         My Dashboard ({loggedInUser.userType}) <FontAwesomeIcon icon={faUsers} className="text-2xl text-indigo-600" />
       </h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Stat Cards... (unchanged) */}
         <StatCard
           title="Total Patients"
           value={stats.totalPatients || <FontAwesomeIcon icon={faSpinner} spin />}
@@ -78,7 +73,6 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
         />
       </div>
 
-      {/* --- Quick Actions --- */}
       <div className="pt-4">
         <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2 flex items-center gap-2">
           Quick Actions <FontAwesomeIcon icon={faBolt} className="text-2xl text-yellow-500" />
@@ -103,14 +97,12 @@ const StaffDashboardContent = ({ stats, handleNavigation, loggedInUser }) => {
             bgColor="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 shadow-xl"
           />
           
-          {/* 🛑 නව QR Attendance Management Quick Action එක Admin/SuperAdmin සඳහා එකතු කිරීම */}
-          {isSuperAdminOrAdmin && (
+          {isSuperAdmin && (
             <QuickAction
               title="QR Attendance Mgmt."
               desc="View, filter, and export session attendance logs."
               onClick={handleQrAttendanceManagement}
               icon={faClipboardCheck}
-              // නව Color scheme: Teal/Green to distinguish from others
               bgColor="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-600 hover:to-emerald-700 shadow-xl"
             />
           )}

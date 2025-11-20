@@ -2,7 +2,6 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faShieldAlt, faUsersCog, faChartBar, faFileInvoiceDollar, faBook } from '@fortawesome/free-solid-svg-icons';
 
-// Simple card component for visual consistency
 const StatCard = ({ title, value, icon, bgColor }) => (
   <div className={`p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition-transform duration-300 ${bgColor}`}>
     <div className="flex items-center justify-between">
@@ -28,7 +27,6 @@ const QuickAction = ({ title, desc, icon, bgColor, onClick }) => (
 
 
 const SuperAdminDashboardHome = ({ loggedInUser }) => {
-  // Mock data - replace with actual API calls in a real application
   const mockStats = {
     totalUsers: '120',
     totalAdmins: '5',
@@ -42,7 +40,6 @@ const SuperAdminDashboardHome = ({ loggedInUser }) => {
         Super Admin Portal <span className="text-2xl text-gray-500">({loggedInUser?.userType})</span>
       </h1>
       
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Users" value={mockStats.totalUsers} icon={faUsersCog} bgColor="bg-gradient-to-r from-blue-600 to-blue-800" />
         <StatCard title="Total Children Records" value={mockStats.totalChildren} icon={faBook} bgColor="bg-gradient-to-r from-emerald-600 to-green-700" />
@@ -50,7 +47,6 @@ const SuperAdminDashboardHome = ({ loggedInUser }) => {
         <StatCard title="System Health" value="Excellent" icon={faChartBar} bgColor="bg-gradient-to-r from-purple-600 to-pink-700" />
       </div>
 
-      {/* Quick Actions */}
       <div className="pt-4">
         <h2 className="text-3xl font-bold text-indigo-800 mb-6 border-b-2 border-indigo-500/50 pb-2">
           System Management 🛠️

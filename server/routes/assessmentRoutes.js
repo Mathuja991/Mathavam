@@ -3,23 +3,17 @@ const router = express.Router();
 
 const SensoryProfile = require("../models/SensoryProfile");
 
-// --- ALUTH IMPORTS ---
 const authMiddleware = require('../middleware/authMiddleware');
 const checkRole = require('../middleware/checkRoleMiddleware');
 
-// --- Role Arrays ---
-// Rule: View for Doctor, Therapist, Admin, Super Admin. Parent = Restrict
 const ROLES_VIEW_STAFF = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Therapists', 'Resource Person'];
-// Rule: CRUD for "O,P" -> Therapists
 const ROLES_CRUD_THERAPIST = ['Therapist', 'Therapists', 'Resource Person'];
 
 
-// GET all sensory profiles with optional patientId filter
-// Endpoint: /api/assessments/sensory-profile
 router.get(
     "/sensory-profile", 
     authMiddleware,
-    checkRole(ROLES_VIEW_STAFF), // Therapist ඇතුළු සියලුම Staff වර්ග වලට Read/View අවසරය
+    checkRole(ROLES_VIEW_STAFF),
     async (req, res) => {
   try {
     const filter = {};
@@ -37,12 +31,10 @@ router.get(
   }
 });
 
-// POST new sensory profile
-// Endpoint: /api/assessments/sensory-profile
 router.post(
     "/sensory-profile", 
     authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Create (C) අවසරය
+    checkRole(ROLES_CRUD_THERAPIST),
     async (req, res) => {
   try {
     const newAssessment = new SensoryProfile(req.body);
@@ -54,8 +46,6 @@ router.post(
   }
 });
 
-// GET sensory profile by ID
-// Endpoint: /api/assessments/sensory-profile/:id
 router.get(
     "/sensory-profile/:id", 
     authMiddleware,
@@ -74,12 +64,10 @@ router.get(
   }
 });
 
-// PUT update sensory profile by ID
-// Endpoint: /api/assessments/sensory-profile/:id
 router.put(
     "/sensory-profile/:id", 
     authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Update (U) අවසරය
+    checkRole(ROLES_CRUD_THERAPIST),
     async (req, res) => {
   try {
     const { id } = req.params;
@@ -101,12 +89,10 @@ router.put(
   }
 });
 
-// DELETE assessment by ID
-// Endpoint: /api/assessments/sensory-profile/:id
 router.delete(
     "/sensory-profile/:id", 
     authMiddleware,
-    checkRole(ROLES_CRUD_THERAPIST), // Therapist හට Delete (D) අවසරය
+    checkRole(ROLES_CRUD_THERAPIST),
     async (req, res) => {
   try {
     const deletedAssessment = await SensoryProfile.findByIdAndDelete(req.params.id);

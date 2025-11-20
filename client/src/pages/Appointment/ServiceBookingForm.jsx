@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 
 
-// --- HELPER COMPONENT: CONFIRMATION MODAL (from AllAppointmentsList.jsx) ---
 const ConfirmationModal = ({ isOpen, message, onConfirm, onCancel }) => {
     if (!isOpen) return null;
     return (
@@ -54,7 +53,6 @@ const ConfirmationModal = ({ isOpen, message, onConfirm, onCancel }) => {
     );
 };
 
-// --- HELPER COMPONENT: LASSANA STATUS BADGES (from AllAppointmentsList.jsx) ---
 const StatusBadge = ({ status }) => {
     const statusStyles = {
         Pending: "bg-yellow-100 text-yellow-800 border-yellow-300",
@@ -86,7 +84,6 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// --- HELPER FUNCTION: AVATAR EKA SANDAHAMA INITIALS (from AllAppointmentsList.jsx) ---
 const getInitials = (name) => {
     if (!name) return '?';
     const names = name.split(' ');
@@ -94,17 +91,14 @@ const getInitials = (name) => {
     return (names[0][0] + names[names.length - 1][0])?.toUpperCase() || '?';
 };
 
-// --- HELPER FUNCTION: DATE FORMATTING (from AllAppointmentsList.jsx) ---
 const formatDate = (dateString) => {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-// --- MAIN COMPONENT STARTS HERE ---
 const ServiceBookingForm = () => {
   const navigate = useNavigate();
   
-  // --- Booking Form State (Existing) ---
   const [formData, setFormData] = useState({
     patientId: '',
     practitionerId: '',
@@ -115,39 +109,31 @@ const ServiceBookingForm = () => {
     notes: '',
   });
 
-  // --- Booking Form Dropdown State (Existing) ---
   const [practitioners, setPractitioners] = useState([]);
   const [patients, setPatients] = useState([]);
 
-  // --- General State (Existing) ---
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null); 
   
-  // --- Admin/View State (New) ---
   const [isAdmin, setIsAdmin] = useState(false);
-  const [activeTab, setActiveTab] = useState('book'); // 'book' or 'list'
+  const [activeTab, setActiveTab] = useState('book');
 
-  // --- List View State (from AllAppointmentsList.jsx) ---
-  const [listAppointments, setListAppointments] = useState([]); // Original full list
+  const [listAppointments, setListAppointments] = useState([]);
   const [listLoading, setListLoading] = useState(true);
   const [listError, setListError] = useState(null);
 
-  // Confirmation modal state
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [modalContent, setModalContent] = useState({ message: '', onConfirm: () => {} });
 
-  // Filters & Search State
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10); 
 
-  // --- Available service types (Existing) ---
   const serviceTypes = [
     'Speech Therapy',
     'Occupational Therapy',
@@ -156,7 +142,6 @@ const ServiceBookingForm = () => {
     'Other',
   ];
 
-  // --- Helper to get authorization token (Existing) ---
   const getAuthConfig = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -172,7 +157,6 @@ const ServiceBookingForm = () => {
     };
   };
 
-  // --- Show confirmation modal (from AllAppointmentsList.jsx) ---
   const showConfirmation = (message, onConfirm) => {
     setModalContent({ message, onConfirm });
     setShowConfirmationModal(true);
@@ -187,7 +171,6 @@ const ServiceBookingForm = () => {
     setShowConfirmationModal(false);
   };
 
-  // --- List Data Fetcher (Modified from AllAppointmentsList.jsx) ---
   const fetchAllAppointments = async (config) => {
     if (!isAdmin) return; 
 
@@ -212,7 +195,6 @@ const ServiceBookingForm = () => {
   };
 
 
-  // --- Combined useEffect to load initial data & check role ---
   useEffect(() => {
     const fetchInitialData = async () => {
       const token = localStorage.getItem('token');
@@ -221,7 +203,6 @@ const ServiceBookingForm = () => {
         return;
       }
 
-      // Verify user ID and check for Admin role
       let isUserAdmin = false;
       try {
         const user = JSON.parse(localStorage.getItem('user'));
@@ -242,7 +223,6 @@ const ServiceBookingForm = () => {
       const config = getAuthConfig();
       if (!config) return; 
 
-      // Fetch Booking Form Data (Practitioners, Patients)
       setLoading(true);
       try {
         const [usersResponse, patientsResponse] = await Promise.all([
@@ -256,22 +236,18 @@ const ServiceBookingForm = () => {
         setPractitioners(filteredPractitioners);
         setPatients(patientsResponse.data);
       } catch (err) {
-         // ... (error handling for booking data fetch)
       } finally {
         setLoading(false);
       }
       
-      // Fetch List Data if Admin
       if (isUserAdmin) {
-          // Initial fetch is done separately for better control
           fetchAllAppointments(config);
       }
     };
 
     fetchInitialData();
-  }, [navigate, isAdmin]); // isAdmin is dependency only for first load context
+  }, [navigate, isAdmin]);
 
-  // --- Booking Form Handlers (Existing) ---
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
@@ -291,7 +267,6 @@ const ServiceBookingForm = () => {
        return;
     }
 
-    // Input Validation (Example: Time check)
     if (formData.startTime && formData.endTime) {
       const start = new Date(`2000/01/01 ${formData.startTime}`);
       const end = new Date(`2000/01/01 ${formData.endTime}`);
@@ -320,21 +295,24 @@ const ServiceBookingForm = () => {
         `${import.meta.env.VITE_API_URL}/appointments`, dataToSend, config
       );
       setSuccess(true);
-      // Clear the form after successful booking
       setFormData({ patientId: '', practitionerId: '', serviceType: '', appointmentDate: '', startTime: '', endTime: '', notes: '', });
-      // If admin, refetch the list to show the new appointment
       if(isAdmin) {
           fetchAllAppointments(config);
       }
+      
+      window.dispatchEvent(new Event('BOOKING_SUCCESS_NOTIFICATION_TRIGGER'));
 
     } catch (err) {
-      // ... (error handling for booking)
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else {
+        setError('An unexpected error occurred during booking. Please check your inputs.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- List View Handlers (from AllAppointmentsList.jsx) ---
   const handleListStatusChange = async (id, newStatus) => {
     const config = getAuthConfig();
     if (!config) return;
@@ -371,7 +349,6 @@ const ServiceBookingForm = () => {
         try {
             await axios.delete(`${import.meta.env.VITE_API_URL}/appointments/${id}`, config);
             setListAppointments(prevAppointments => prevAppointments.filter(appt => appt._id !== id));
-            // Recalculate pagination after deletion
             setCurrentPage(1); 
         } catch (err) {
             if (err.response && err.response.status === 401) {
@@ -386,7 +363,6 @@ const ServiceBookingForm = () => {
     });
   };
   
-  // 2. Memoized filtering logic (from AllAppointmentsList.jsx)
   const filteredAppointments = useMemo(() => {
     let filtered = [...listAppointments];
 
@@ -416,7 +392,6 @@ const ServiceBookingForm = () => {
     return filtered;
   }, [listAppointments, searchTerm, statusFilter, dateFilter]);
 
-  // 3. Memoized pagination logic (from AllAppointmentsList.jsx)
   const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
   const paginatedAppointments = useMemo(() => {
@@ -425,12 +400,10 @@ const ServiceBookingForm = () => {
       return filteredAppointments.slice(startIndex, endIndex);
   }, [filteredAppointments, currentPage, itemsPerPage]);
 
-  // Reset to page 1 when filters change (from AllAppointmentsList.jsx)
   useEffect(() => {
       setCurrentPage(1);
   }, [searchTerm, statusFilter, dateFilter, itemsPerPage]);
 
-  // Pagination handlers (from AllAppointmentsList.jsx)
   const handleNextPage = () => {
       setCurrentPage(prev => Math.min(prev + 1, totalPages));
   };
@@ -439,11 +412,9 @@ const ServiceBookingForm = () => {
       setCurrentPage(prev => Math.max(prev - 1, 1));
   };
 
-  // --- Main Render Block ---
   return (
     <div className="container mx-auto p-4 md:p-10 max-w-7xl bg-gray-50 rounded-3xl shadow-2xl font-['Inter',_sans-serif] min-h-[80vh]">
         
-        {/* TAB NAVIGATION FOR ADMINS */}
         {isAdmin && (
             <div className="flex border-b-2 border-gray-200 mb-8 bg-white/70 backdrop-blur-sm rounded-t-xl overflow-hidden shadow-md">
                 <button
@@ -469,10 +440,8 @@ const ServiceBookingForm = () => {
             </div>
         )}
 
-        {/* RENDER BOOKING FORM */}
         {activeTab === 'book' && (
             <div className="bg-white p-8 rounded-3xl shadow-xl border-t-4 border-blue-600 max-w-4xl mx-auto">
-                {/* Error/Success Messages (Existing) */}
                 {error && (
                     <p className="text-red-700 bg-red-100 p-4 rounded-xl text-center mb-6 border border-red-300 font-medium">
                         <AlertCircle className="inline w-5 h-5 mr-2" />
@@ -491,7 +460,6 @@ const ServiceBookingForm = () => {
                     Book New Service Appointment
                 </h2>
                 <form onSubmit={handleBookingSubmit} className="space-y-6">
-                    {/* --- Row 1: Patient & Practitioner --- */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label htmlFor="patientId" className="block text-sm font-semibold text-gray-700 mb-1">
@@ -507,10 +475,8 @@ const ServiceBookingForm = () => {
                             >
                                 <option value="">Select Child</option>
                                 {patients.map((patient) => {
-                                    // Child Reg No Fix (Functionality Preserved)
                                     const regNo = patient.childRegNo || patient.childNo || 'N/A';
                                     const displayText = `${patient.name} [Reg No: ${regNo}]`;
-                                    // End Fix
                                     return (
                                         <option key={patient._id} value={patient._id}>
                                             {displayText}
@@ -541,7 +507,6 @@ const ServiceBookingForm = () => {
                         </div>
                     </div>
 
-                    {/* --- Row 2: Service Type & Date --- */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label htmlFor="serviceType" className="block text-sm font-semibold text-gray-700 mb-1">
@@ -574,13 +539,12 @@ const ServiceBookingForm = () => {
                                 value={formData.appointmentDate}
                                 onChange={handleChange}
                                 required
-                                min={new Date().toISOString().split('T')[0]} // Restrict past dates
+                                min={new Date().toISOString().split('T')[0]}
                                 className="mt-1 block w-full py-3 px-3 border border-gray-300 border-2 rounded-xl shadow-sm focus:ring-blue-600 focus:border-blue-600 transition-all duration-200 hover:border-blue-300"
                             />
                         </div>
                     </div>
 
-                    {/* --- Row 3: Start Time & End Time --- */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label htmlFor="startTime" className="block text-sm font-semibold text-gray-700 mb-1">
@@ -612,7 +576,6 @@ const ServiceBookingForm = () => {
                         </div>
                     </div>
 
-                    {/* --- Row 4: Notes (Full Width) --- */}
                     <div>
                         <label htmlFor="notes" className="block text-sm font-semibold text-gray-700 mb-1">
                             Notes (Optional)
@@ -628,7 +591,6 @@ const ServiceBookingForm = () => {
                         ></textarea>
                     </div>
 
-                    {/* --- Submit Button --- */}
                     <div className="flex justify-end pt-5">
                         <button
                             type="submit"
@@ -652,17 +614,14 @@ const ServiceBookingForm = () => {
             </div>
         )}
 
-        {/* RENDER ALL APPOINTMENTS LIST */}
         {activeTab === 'list' && isAdmin && (
             <div className="mt-8">
-                {/* --- Filter & Search Section (from AllAppointmentsList.jsx) --- */}
                 <div className="p-6 mb-8 bg-white rounded-2xl shadow-xl border border-gray-100">
                     <div className="flex items-center gap-2 mb-6 border-b pb-3 text-gray-700">
                         <Filter className="w-6 h-6 text-blue-600" />
                         <h2 className="text-2xl font-bold">Filter & Search Options</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
-                        {/* Search Input */}
                         <div className="md:col-span-2 relative">
                             <label htmlFor="search" className="block text-sm font-semibold text-gray-700 mb-1"> Search </label>
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 mt-3.5 w-5 h-5 text-gray-400" />
@@ -675,7 +634,6 @@ const ServiceBookingForm = () => {
                                 className="block w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl shadow-sm focus:ring-blue-600 focus:border-blue-600 transition-all" 
                             />
                         </div>
-                        {/* Status Filter */}
                         <div className="relative">
                             <label htmlFor="statusFilter" className="block text-sm font-semibold text-gray-700 mb-1"> Status </label>
                             <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 mt-3.5 w-5 h-5 text-gray-400" />
@@ -693,7 +651,6 @@ const ServiceBookingForm = () => {
                                 <option value="Rescheduled">Rescheduled</option>
                             </select>
                         </div>
-                        {/* Date Filter */}
                         <div className="relative">
                             <label htmlFor="dateFilter" className="block text-sm font-semibold text-gray-700 mb-1"> Date </label>
                             <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 mt-3.5 w-5 h-5 text-gray-400" />
@@ -708,7 +665,6 @@ const ServiceBookingForm = () => {
                     </div>
                 </div>
 
-                {/* --- Appointments Table (from AllAppointmentsList.jsx) --- */}
                 <div className="bg-white shadow-2xl rounded-2xl overflow-hidden">
                     {listError && (
                         <div className="p-4 bg-red-100 text-red-700 text-center font-medium">Error: {listError}</div>
@@ -739,7 +695,6 @@ const ServiceBookingForm = () => {
                                 <tbody className="bg-white divide-y divide-gray-100">
                                     {paginatedAppointments.map((appt) => (
                                         <tr key={appt._id} className="hover:bg-blue-50/50 transition-colors duration-150">
-                                            {/* Patient */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-base ring-2 ring-blue-300">
@@ -751,7 +706,6 @@ const ServiceBookingForm = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            {/* Practitioner */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-green-100 text-green-600 font-bold text-base ring-2 ring-green-300">
@@ -763,9 +717,7 @@ const ServiceBookingForm = () => {
                                                     </div>
                                                 </div>
                                             </td>
-                                            {/* Service Type */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-indigo-700">{appt.serviceType}</td>
-                                            {/* Date & Time */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
                                                 <div className="flex items-center gap-1.5 font-medium">
                                                     <Calendar className="w-4 h-4 text-blue-500" />
@@ -776,11 +728,9 @@ const ServiceBookingForm = () => {
                                                     {appt.startTime} - {appt.endTime}
                                                 </div>
                                             </td>
-                                            {/* Status */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <StatusBadge status={appt.status} />
                                             </td>
-                                            {/* Actions */}
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <div className="flex justify-end space-x-3 items-center">
                                                     <select
@@ -810,7 +760,6 @@ const ServiceBookingForm = () => {
                         </div>
                     )}
                     
-                    {/* --- Pagination Controls (from AllAppointmentsList.jsx) --- */}
                     {(totalPages > 1 || paginatedAppointments.length > 0) && (
                         <div className="p-5 flex flex-col sm:flex-row justify-between items-center border-t border-gray-200 bg-gray-50 rounded-b-2xl">
                             <div className="text-sm text-gray-700 mb-4 sm:mb-0">
@@ -840,7 +789,6 @@ const ServiceBookingForm = () => {
             </div>
         )}
 
-        {/* Confirmation Modal Render */}
         <ConfirmationModal
             isOpen={showConfirmationModal}
             message={modalContent.message}

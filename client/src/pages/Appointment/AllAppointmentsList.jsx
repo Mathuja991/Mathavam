@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-// --- LASSANA UI SANDAHAMA ICON IMPORTS ---
 import { 
     Search, 
     Filter, 
@@ -12,18 +11,16 @@ import {
     Trash2, 
     Clock, 
     User, 
-    Stethoscope, // Doctor/Therapist icon
+    Stethoscope,
     Calendar,
-    AlertCircle, // Modal icon
-    CheckCircle,  // Status icons
+    AlertCircle,
+    CheckCircle,
     XCircle,
     Archive,
     RefreshCw,
     Clock4
 } from 'lucide-react';
 
-// --- HELPER COMPONENT: LASSANA STATUS BADGES ---
-// Status eka anuwa wenas wana lassana badge ekak sadana component eka
 const StatusBadge = ({ status }) => {
     const statusStyles = {
         Pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -55,8 +52,6 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-// --- HELPER FUNCTION: AVATAR EKA SANDAHAMA INITIALS ---
-// Namakin akuru dekak laba gani (e.g., "Nimal Silva" -> "NS")
 const getInitials = (name) => {
     if (!name) return '?';
     const names = name.split(' ');
@@ -67,25 +62,21 @@ const getInitials = (name) => {
 
 const AllAppointmentsList = () => {
     const navigate = useNavigate();
-    const [appointments, setAppointments] = useState([]); // Original full list
+    const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     
-    // Confirmation modal state
     const [showModal, setShowModal] = useState(false);
     const [modalContent, setModalContent] = useState({ message: '', onConfirm: () => {} });
 
-    // Filters & Search State
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('');
     const [dateFilter, setDateFilter] = useState('');
 
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10); 
 
-    // Show confirmation modal
     const showConfirmation = (message, onConfirm) => {
         setModalContent({ message, onConfirm });
         setShowModal(true);
@@ -100,7 +91,6 @@ const AllAppointmentsList = () => {
         setShowModal(false);
     };
 
-    // Get auth config helper
     const getAuthConfig = () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -113,7 +103,6 @@ const AllAppointmentsList = () => {
         };
     };
 
-    // 1. Fetch data ONCE
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (user && (user.userType === 'Admin' || user.userType === 'Super Admin')) {
@@ -124,7 +113,6 @@ const AllAppointmentsList = () => {
                 if (!config) return; 
 
                 try {
-                    // This will now get the correct patient fields ('name', 'childNo')
                     const res = await axios.get(`${import.meta.env.VITE_API_URL}/appointments`, config);
                     setAppointments(res.data.data || res.data);
                 } catch (err) {
@@ -149,7 +137,6 @@ const AllAppointmentsList = () => {
         }
     }, [navigate]);
 
-    // 2. Memoized filtering logic
     const filteredAppointments = useMemo(() => {
         let filtered = [...appointments];
 
@@ -179,7 +166,6 @@ const AllAppointmentsList = () => {
         return filtered;
     }, [appointments, searchTerm, statusFilter, dateFilter]);
 
-    // 3. Memoized pagination logic
     const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
 
     const paginatedAppointments = useMemo(() => {
@@ -188,12 +174,10 @@ const AllAppointmentsList = () => {
         return filteredAppointments.slice(startIndex, endIndex);
     }, [filteredAppointments, currentPage, itemsPerPage]);
 
-    // Reset to page 1 when filters change
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter, dateFilter, itemsPerPage]);
 
-    // Pagination handlers
     const handleNextPage = () => {
         setCurrentPage(prev => Math.min(prev + 1, totalPages));
     };
@@ -202,7 +186,6 @@ const AllAppointmentsList = () => {
         setCurrentPage(prev => Math.max(prev - 1, 1));
     };
 
-    // API call handlers (status change, delete)
     const handleStatusChange = async (id, newStatus) => {
         const config = getAuthConfig();
         if (!config) return;
@@ -254,13 +237,11 @@ const AllAppointmentsList = () => {
         });
     };
 
-    // Format date for display
     const formatDate = (dateString) => {
         const options = { year: 'numeric', month: 'long', day: 'numeric' };
         return new Date(dateString).toLocaleDateString(undefined, options);
     };
     
-    // --- LASSANA UI: MODIFIED MODAL ---
     const Modal = ({ isOpen, message, onConfirm, onCancel }) => {
         if (!isOpen) return null;
         return (
@@ -306,7 +287,6 @@ const AllAppointmentsList = () => {
         </div>
     );
 
-    // --- LASSANA UI WENASKAM ARABHE WE ---
     return (
         <div className="p-4 md:p-8 bg-gray-50 min-h-screen">
             <Modal
@@ -315,9 +295,8 @@ const AllAppointmentsList = () => {
                 onConfirm={handleModalConfirm}
                 onCancel={handleModalCancel}
             />
-            <div className="container mx-auto max-w-8xl"> {/* Made wider */}
+            <div className="container mx-auto max-w-8xl">
                 
-                {/* --- LASSANA HEADER EKA --- */}
                 <div className="mb-6">
                     <h1 className="text-4xl font-extrabold text-gray-800">All Appointments</h1>
                     <p className="text-lg text-gray-500 mt-1">
@@ -325,19 +304,16 @@ const AllAppointmentsList = () => {
                     </p>
                 </div>
                 
-                {/* --- LASSANA SEARCH HA FILTER KOTUWA --- */}
                 <div className="mb-6 p-5 bg-white rounded-xl shadow-lg shadow-gray-200/50 border border-gray-200">
                     <div className="flex items-center gap-2 mb-4">
                         <Filter className="w-5 h-5 text-blue-600" />
                         <h2 className="text-xl font-semibold text-gray-700">Filter & Search</h2>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        {/* Search Input */}
                         <div className="md:col-span-2 relative">
                             <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
                                 Search
                             </label>
-                            {/* --- ICON EKA INPUT EKA ATHULE --- */}
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 mt-3 w-5 h-5 text-gray-400" />
                             <input
                                 type="text"
@@ -349,7 +325,6 @@ const AllAppointmentsList = () => {
                             />
                         </div>
 
-                        {/* Status Filter */}
                         <div className="relative">
                             <label htmlFor="statusFilter" className="block text-sm font-medium text-gray-700 mb-1">
                                 Status
@@ -370,7 +345,6 @@ const AllAppointmentsList = () => {
                             </select>
                         </div>
 
-                        {/* Date Filter */}
                         <div className="relative">
                             <label htmlFor="dateFilter" className="block text-sm font-medium text-gray-700 mb-1">
                                 Date
@@ -387,7 +361,6 @@ const AllAppointmentsList = () => {
                     </div>
                 </div>
 
-                {/* --- LASSANA TABLE EKA --- */}
                 <div className="bg-white shadow-xl shadow-gray-200/50 rounded-xl overflow-hidden border border-gray-200">
                     <div className="overflow-x-auto">
                         {filteredAppointments.length === 0 ? (
@@ -410,22 +383,18 @@ const AllAppointmentsList = () => {
                                     {paginatedAppointments.map((appt) => (
                                         <tr key={appt._id} className="hover:bg-gray-50/50 transition-colors">
                                             
-                                            {/* --- PATIENT AVATAR EKA HA NAMA (NIWERADI KARA ATH) --- */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
                                                         {getInitials(appt.patient?.name)}
                                                     </div>
                                                     <div>
-                                                        {/* This now correctly displays 'name' */}
                                                         <div className="text-sm font-semibold text-gray-900">{appt.patient?.name}</div>
-                                                        {/* This displays 'childRegNo' or 'childNo' */}
                                                         <div className="text-xs text-gray-500">{appt.patient?.childRegNo || appt.patient?.childNo}</div>
                                                     </div>
                                                 </div>
                                             </td>
                                             
-                                            {/* --- PRACTITIONER AVATAR EKA HA NAMA --- */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-green-100 text-green-600 font-semibold text-sm">
@@ -440,7 +409,6 @@ const AllAppointmentsList = () => {
 
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{appt.serviceType}</td>
                                             
-                                            {/* --- ICONS SAHITHA DATE/TIME --- */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2 text-sm text-gray-700">
                                                     <Calendar className="w-4 h-4 text-gray-400" />
@@ -452,15 +420,12 @@ const AllAppointmentsList = () => {
                                                 </div>
                                             </td>
                                             
-                                            {/* --- LASSANA STATUS BADGES --- */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <StatusBadge status={appt.status} />
                                             </td>
                                             
-                                            {/* --- WENAS KALA ACTIONS --- */}
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
-                                                    {/* --- STATUS WENAS KIREEMA --- */}
                                                     <select
                                                         value={appt.status}
                                                         onChange={(e) => handleStatusChange(appt._id, e.target.value)}
@@ -473,7 +438,6 @@ const AllAppointmentsList = () => {
                                                         <option value="Rescheduled">Rescheduled</option>
                                                     </select>
                                                     
-                                                    {/* --- DELETE ICON BUTTON EKA --- */}
                                                     <button
                                                         onClick={() => handleDeleteAppointment(appt._id)}
                                                         className="text-gray-400 hover:text-red-600 transition-colors p-2 rounded-lg hover:bg-red-100"
@@ -490,10 +454,8 @@ const AllAppointmentsList = () => {
                         )}
                     </div>
 
-                    {/* --- LASSANA PAGINATION CONTROLS --- */}
                     {filteredAppointments.length > itemsPerPage && (
                         <div className="flex items-center justify-between py-4 px-6 bg-white border-t border-gray-200 rounded-b-xl">
-                            {/* Items per page selector */}
                             <div>
                                 <label htmlFor="itemsPerPage" className="text-sm text-gray-600 mr-2">Show:</label>
                                 <select
@@ -509,14 +471,12 @@ const AllAppointmentsList = () => {
                                 </select>
                             </div>
 
-                            {/* Page info */}
                             <span className="text-sm text-gray-700">
                                 Page <span className="font-semibold">{currentPage}</span> of <span className="font-semibold">{totalPages}</span>
                                 {' '}
                                 (<span className="font-semibold">{filteredAppointments.length}</span> results)
                             </span>
 
-                            {/* Pagination buttons */}
                             <div className="flex space-x-2">
                                 <button
                                     onClick={handlePrevPage}

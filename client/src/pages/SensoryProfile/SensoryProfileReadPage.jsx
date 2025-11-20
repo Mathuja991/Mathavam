@@ -1,8 +1,12 @@
+// SensoryProfileReadPage.jsx
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import { FaPencilAlt, FaLock, FaPrint } from "react-icons/fa";
 import { printSensorySection } from "../../utills/printSensorySection";
+// ADDED IMPORTS: Import the centralized API config
+import { API_BASE_URL, getAuthConfig } from "../../utills/apiUtils"; 
 
 // Helper function to check if a section is still editable (within 5 hours)
 const isEditable = (timestamp) => {
@@ -53,23 +57,26 @@ function SensoryProfileReadPage() {
   const fetchAllSections = async () => {
     setIsLoading(true);
     setError(null);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error(
-          "Authentication token missing. Please ensure you are logged in."
-        );
-      }
+    
+    // Check for token *before* the API call
+    if (!localStorage.getItem("token")) {
+        setError("Authentication token missing. Please log in again.");
+        setIsLoading(false);
+        return;
+    }
 
-      const response = await axios.get("/api/assessments/sensory-profile", {
-        params: {
-          patientId: filterPatientId ? filterPatientId.trim() : undefined,
-        },
-        headers: {
-          "x-auth-token": token,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+    try {
+      // FIX 3: Use API_BASE_URL and getAuthConfig()
+      const response = await axios.get(
+        `${API_BASE_URL}/assessments/sensory-profile`, 
+        {
+          params: {
+            patientId: filterPatientId ? filterPatientId.trim() : undefined,
+          },
+          // Merge params with auth config
+          ...getAuthConfig() 
+        }
+      );
 
       const sortedSections = (response.data || []).sort((a, b) => {
         const aTs =
@@ -87,10 +94,11 @@ function SensoryProfileReadPage() {
       setSections(sortedSections);
     } catch (err) {
       console.error("Error fetching sections:", err);
-      const errorMessage =
-        err.response?.data?.msg ||
-        err.message ||
-        "Failed to fetch assessment sections.";
+      // Display a friendly error message, especially for 401
+      const isAuthError = axios.isAxiosError(err) && err.response?.status === 401;
+      const errorMessage = isAuthError 
+        ? "Token is invalid or expired. Please re-login."
+        : err.response?.data?.msg || err.message || "Failed to fetch assessment sections.";
       setError(errorMessage);
       setSections([]);
     } finally {
@@ -171,26 +179,44 @@ function SensoryProfileReadPage() {
         </button>
       </form>
 
-      <div className="bg-white shadow-md rounded-lg overflow-x-auto">
+      <div className="bg-white rounded-lg shadow-xl overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Category
+              </th>
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Patient ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Examiner ID
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">
-                Section Category
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Submission Date
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Submitted
+              <th
+                scope="col"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
+                Raw Score
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -198,49 +224,42 @@ function SensoryProfileReadPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {sections.length === 0 ? (
               <tr>
-                <td colSpan="6" className="text-center py-8 text-gray-500">
-                  No sections have been submitted yet.
+                <td
+                  colSpan="6"
+                  className="px-6 py-10 text-center text-gray-500"
+                >
+                  {filterPatientId
+                    ? `No sections found for patient ID: ${filterPatientId}`
+                    : "No submitted Sensory Profile sections found."}
                 </td>
               </tr>
             ) : (
               sections.map((section) => {
-                const rawTimestamp =
-                  section.submittedAt ||
-                  section.updatedAt ||
-                  section.createdAt;
-                const normalizedTs = normalizeTimestamp(rawTimestamp);
-                const canEdit = normalizedTs && isEditable(normalizedTs);
-                const assessmentId = section.assessmentId || section._id;
+                const assessmentId = section._id;
+                const latestTimestamp =
+                  normalizeTimestamp(section.submittedAt) ||
+                  normalizeTimestamp(section.updatedAt) ||
+                  normalizeTimestamp(section.createdAt);
+                const canEdit = isEditable(latestTimestamp);
 
                 return (
-                  <tr key={section._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                      {section.patientId}
+                  <tr key={assessmentId} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {section.category || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {section.examinerId}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {section.patientId || "N/A"}
                     </td>
-                    <td className="px-6 py-4 text-gray-700 font-semibold whitespace-normal break-words max-w-xs">
-                      {section.category}
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {section.examinerId || "N/A"}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                      {normalizedTs
-                        ? formatDisplayDateTime(normalizedTs)
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDisplayDateTime(latestTimestamp) || "N/A"}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {section.rawScore !== undefined
+                        ? section.rawScore
                         : "N/A"}
-                    </td>
-                    {/* Status token */}
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {canEdit ? (
-                        <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          <FaPencilAlt className="text-xs" />
-                          Editable (within 5 hours)
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-500 border border-gray-200">
-                          <FaLock className="text-xs" />
-                          Locked
-                        </span>
-                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center space-x-2">
                       <button

@@ -14,33 +14,33 @@ const userSchema = new mongoose.Schema({
   idNumber: {
     type: String,
     required: true,
-    unique: true, // Assuming ID numbers should be unique
+    unique: true,
     trim: true,
   },
   userType: {
     type: String,
     required: true,
-    enum: ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'], // Ensure valid user types
+    enum: ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'],
     trim: true,
   },
   username: {
     type: String,
     required: true,
-    unique: true, // Usernames should be unique
+    unique: true,
     trim: true,
-    lowercase: true, // Store usernames in lowercase for consistency
+    lowercase: true,
   },
   password: {
     type: String,
     required: true,
   },
-  childRegNo: { // Add this field for 'Parent' user type
+  childRegNo: {
     type: String,
     required: function() {
-      return this.userType === 'Parent'; // Required only if userType is 'Parent'
+      return this.userType === 'Parent';
     },
     trim: true,
-    default: null // Set default to null if not a 'Parent'
+    default: null
   },
   createdAt: {
     type: Date,
@@ -50,7 +50,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-}, { timestamps: true }); // Mongoose `timestamps` option automatically adds createdAt and updatedAt
+}, { timestamps: true });
 
 
 const User = mongoose.model('User', userSchema);

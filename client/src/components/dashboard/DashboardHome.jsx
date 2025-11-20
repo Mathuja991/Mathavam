@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,6 @@ import {
   faExclamationTriangle 
 } from '@fortawesome/free-solid-svg-icons';
 
-// Imports from the newly created files
 import { API_BASE_URL, getAuthConfig } from '../util/apiUtils';
 import StaffDashboardContent from '../dashboard/StaffDashboardContent';
 import ParentDashboardContent from '../dashboard/ParentDashboardContent';
@@ -22,11 +22,11 @@ const DashboardHome = ({ loggedInUser }) => {
     appointmentsToday: null,
     pendingTasks: null,
     activeStaff: null,
+    fetchError: false, 
   });
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Navigation handler to pass down to child components
   const handleNavigation = useCallback((path) => {
     navigate(path);
   }, [navigate]);
@@ -35,15 +35,14 @@ const DashboardHome = ({ loggedInUser }) => {
    * Fetches the dashboard statistics from the API for staff roles.
    */
   useEffect(() => {
-    // Determine user role in lowercase for consistent checking
     const userRoleLower = (loggedInUser?.userType || '').trim().toLowerCase();
 
-    // Only fetch stats for staff members (i.e., not 'parent' or empty)
     if (loggedInUser && userRoleLower !== 'parent' && userRoleLower) {
       const fetchStats = async () => {
         setLoading(true);
+        setStats(prev => ({ ...prev, fetchError: false })); 
+
         try {
-          // Backend route: /api/users/dashboard/stats
           const res = await axios.get(`${API_BASE_URL}/users/dashboard/stats`, getAuthConfig());
           
           setStats({
@@ -51,23 +50,26 @@ const DashboardHome = ({ loggedInUser }) => {
             appointmentsToday: res.data.appointmentsToday,
             pendingTasks: res.data.pendingTasks,
             activeStaff: res.data.activeStaff,
+            fetchError: false,
           });
 
         } catch (error) {
           console.error('Error fetching dashboard stats:', error);
           setStats({
-            totalPatients: 'Error',
-            appointmentsToday: 'Error',
-            pendingTasks: 'Error',
-            activeStaff: 'Error',
+            totalPatients: null,
+            appointmentsToday: null,
+            pendingTasks: null,
+            activeStaff: null,
+            fetchError: true,
           });
+          
+          
         } finally {
           setLoading(false);
         }
       };
       fetchStats();
     } else {
-      // For Parents and Unknowns, no stats needed, just set loading to false
       setLoading(false);
     }
   }, [loggedInUser]);
@@ -76,8 +78,6 @@ const DashboardHome = ({ loggedInUser }) => {
     return <div className="text-center p-8 text-gray-500">Loading user data...</div>;
   }
 
-  // --- Role-Based Content Rendering ---
-  // The role is converted to lowercase for comparison with 'case' blocks
   const userRole = (loggedInUser.userType || 'Unknown').trim().toLowerCase();
 
   if (loading && userRole !== 'parent' && userRole !== 'unknown' && userRole) {
@@ -89,14 +89,12 @@ const DashboardHome = ({ loggedInUser }) => {
     );
   }
 
-  // Determine which dashboard content to render
   switch (userRole) {
     case 'super admin':
     case 'admin':
     case 'doctor':
     case 'therapist':
     case 'therapists':
-      // All staff roles use the same administrative/clinical dashboard view
       return (
         <StaffDashboardContent
           stats={stats}
@@ -104,8 +102,7 @@ const DashboardHome = ({ loggedInUser }) => {
           loggedInUser={loggedInUser}
         />
       );
-    case 'parent': // ✅ FIX: Changed from 'Parent' to 'parent'
-      // The Parent role uses a tailored dashboard view
+    case 'parent':
       return (
         <ParentDashboardContent
           handleNavigation={handleNavigation}
@@ -113,7 +110,6 @@ const DashboardHome = ({ loggedInUser }) => {
         />
       );
     default:
-      // If the user role is not matched (e.g., 'unknown' or an unrecognized role)
       return (
         <div className="p-8 bg-red-50 rounded-lg shadow-lg border border-red-300 mx-auto max-w-xl mt-10 text-center">
           <FontAwesomeIcon icon={faExclamationTriangle} className="text-4xl text-red-600 mb-4" />

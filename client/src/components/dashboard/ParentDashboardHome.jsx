@@ -2,7 +2,6 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChild, faCalendarAlt, faQrcode, faBookReader, faShieldAlt } from '@fortawesome/free-solid-svg-icons';
 
-// Simple card component
 const StatCard = ({ title, value, icon, bgColor }) => (
   <div className={`p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition-transform duration-300 ${bgColor}`}>
     <div className="flex items-center justify-between">
@@ -27,9 +26,8 @@ const QuickAction = ({ title, desc, icon, bgColor, onClick }) => (
 );
 
 const ParentDashboardHome = ({ loggedInUser }) => {
-  // Mock data
   const mockStats = {
-    childName: 'Your Child', // Fetch actual child name
+    childName: 'Your Child',
     nextAppointment: 'Tomorrow, 10:00 AM',
     qrCodeStatus: 'Active',
     resourcesAvailable: '12',
@@ -41,17 +39,13 @@ const ParentDashboardHome = ({ loggedInUser }) => {
         Welcome Parent! <span className="text-2xl text-gray-500">({loggedInUser?.userType})</span>
       </h1>
       
-      {/* Child-Specific Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Child Name: Purple/Pink -> Purple/Deep Purple (retained a deep color) */}
         <StatCard title="Child Name" value={mockStats.childName} icon={faChild} bgColor="bg-gradient-to-r from-purple-600 to-indigo-700" />
         <StatCard title="Next Appointment" value={mockStats.nextAppointment} icon={faCalendarAlt} bgColor="bg-gradient-to-r from-blue-600 to-sky-700" />
         <StatCard title="QR Code Status" value={mockStats.qrCodeStatus} icon={faQrcode} bgColor="bg-gradient-to-r from-green-600 to-teal-700" />
-        {/* Available Resources: Orange/Red -> Orange/Amber */}
         <StatCard title="Available Resources" value={mockStats.resourcesAvailable} icon={faBookReader} bgColor="bg-gradient-to-r from-orange-500 to-amber-600" />
       </div>
 
-      {/* Quick Actions */}
       <div className="pt-4">
         <h2 className="text-3xl font-bold text-purple-700 mb-6 border-b-2 border-purple-500/50 pb-2">
           Quick Access & Tools 🏡
@@ -78,7 +72,6 @@ const ParentDashboardHome = ({ loggedInUser }) => {
             bgColor="bg-blue-600 hover:bg-blue-700 shadow-lg"
             onClick={() => console.log('Navigate to Appointments')}
           />
-          {/* SNAP Form: Red -> Orange/Amber */}
           <QuickAction
             title="SNAP Form"
             desc="View/Update your child's SNAP form data."

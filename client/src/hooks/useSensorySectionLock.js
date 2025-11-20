@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "../utills/apiUtils";
+
+const buildAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return null;
+  return {
+    "x-auth-token": token,
+    Authorization: `Bearer ${token}`,
+  };
+};
 
 const FIVE_HOURS_MS = 5 * 60 * 60 * 1000;
 
@@ -13,9 +23,7 @@ const normalizeDateOnly = (value) => {
   }
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return "";
-  const offsetMinutes = parsed.getTimezoneOffset();
-  const adjusted = new Date(parsed.getTime() - offsetMinutes * 60000);
-  return adjusted.toISOString().split("T")[0];
+  return parsed.toISOString().split("T")[0];
 };
 
 export function useSensorySectionLock({
@@ -41,15 +49,22 @@ export function useSensorySectionLock({
 
   const fetchExistingSection = useCallback(async () => {
     if (!patientId || !testDate || !category) return null;
+    const headers = buildAuthHeaders();
+    if (!headers) {
+      setError("Missing auth token. Please log in again.");
+      setExistingSection(null);
+      return null;
+    }
     setLoading(true);
     setError("");
     try {
-      const response = await axios.get("/api/assessments/sensory-profile", {
+      const response = await axios.get(`${API_BASE_URL}/assessments/sensory-profile`, {
         params: {
           patientId,
           category,
           testDate: normalizeDateOnly(testDate),
         },
+        headers,
       });
       const docArray = Array.isArray(response.data) ? response.data : [];
       const doc = docArray[0] || null;

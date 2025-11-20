@@ -1,46 +1,94 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+
 import { FaQrcode, FaTimes, FaDownload } from "react-icons/fa";
-import QRCode from "qrcode";
+
+import { saveAs } from "file-saver";
+
 import { getAllChildren } from "../../services/qrService";
+
+// FIX: Reverting to the safe import structure for 'qrcode.react'
+
+// to prevent the "default is not exported" build error on Vercel/Vite/Rollup.
+
+import * as QRCodeExports from "qrcode.react";
+
+const QRCode = QRCodeExports.default || QRCodeExports;
+
+// ----------------------------------------------------------------------------------------------------------------------
 
 function ChildManagementPage() {
   const [children, setChildren] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
+
   const [error, setError] = useState(null);
 
+  // qrCodeDataUrl holds the raw data (childNo)
+
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
+
   const [selectedChildName, setSelectedChildName] = useState("");
+
+  const [selectedChildNo, setSelectedChildNo] = useState("");
+
+  // Ref to access the QRCode component's canvas for downloading
+
+  const qrCodeRef = useRef(null);
 
   useEffect(() => {
     const fetchChildren = async () => {
       try {
         const response = await getAllChildren();
+
         setChildren(response.data);
       } catch (err) {
         setError("Failed to fetch children from the server.");
+
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchChildren();
   }, []);
 
-  const handleGenerateQr = async (child) => {
-    try {
-      const qrData = await QRCode.toDataURL(child.childNo, { width: 300 });
-      setQrCodeDataUrl(qrData);
-      setSelectedChildName(child.name);
-    } catch (err) {
-      console.error("Failed to generate QR code", err);
-    }
+  const handleGenerateQr = (child) => {
+    setQrCodeDataUrl(child.childNo);
+
+    setSelectedChildName(child.name);
+
+    setSelectedChildNo(child.childNo);
   };
 
   const sanitizedFileName = `qr-code_${selectedChildName
+
     .toLowerCase()
-    .replace(/\s+/g, "_")}.png`;
+
+    .replace(/\s+/g, "_")}-${selectedChildNo}.png`;
+
+  const handleDownloadQr = () => {
+    if (qrCodeRef.current) {
+      // Access the canvas element from the ref (a method provided by qrcode.react)
+
+      // Note: In some environments, getCanvas() might not be immediately available on the component ref.
+
+      // If this fails, try qrCodeRef.current.querySelector('canvas')
+
+      const canvas = qrCodeRef.current.getCanvas
+        ? qrCodeRef.current.getCanvas()
+        : qrCodeRef.current;
+
+      if (canvas) {
+        canvas.toBlob((blob) => {
+          saveAs(blob, sanitizedFileName);
+        });
+      }
+    }
+  };
 
   if (isLoading) return <p className="text-center p-8">Loading children...</p>;
+
   if (error) return <p className="text-center p-8 text-red-500">{error}</p>;
 
   return (
@@ -56,27 +104,34 @@ function ChildManagementPage() {
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Child No
               </th>
+
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Name
               </th>
+
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Age
               </th>
+
               <th className="px-5 py-3 border-b-2 border-gray-200 bg-gray-100"></th>
             </tr>
           </thead>
+
           <tbody>
             {children.map((child) => (
               <tr key={child.childNo}>
                 <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                   {child.childNo}
                 </td>
+
                 <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                   {child.name}
                 </td>
+
                 <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm">
                   {child.age}
                 </td>
+
                 <td className="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
                   <button
                     onClick={() => handleGenerateQr(child)}
@@ -90,29 +145,39 @@ function ChildManagementPage() {
             ))}
           </tbody>
         </table>
+
+        <p className="text-xs text-gray-400 p-2">
+          *Note: This component uses the qrcode.react library to render the QR
+          code directly as a canvas element.
+        </p>
       </div>
 
       {qrCodeDataUrl && (
         <div className="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl text-center">
             <h2 className="text-2xl font-bold mb-2">QR Code Ready</h2>
+
             <p className="text-gray-500 mb-6">
               Scan or download this QR code for parents to use.
             </p>
-            <img
-              src={qrCodeDataUrl}
-              alt="QR Code preview"
+
+            <QRCode
+              value={qrCodeDataUrl}
+              size={300}
+              level="L"
+              includeMargin={true}
               className="mx-auto"
+              ref={qrCodeRef} // Attach ref for download functionality
             />
+
             <div className="mt-8 flex justify-center gap-4">
-              <a
-                href={qrCodeDataUrl}
-                download={sanitizedFileName}
+              <button
+                onClick={handleDownloadQr}
                 className="inline-flex items-center gap-2 bg-blue-500 text-white font-semibold px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
               >
                 <FaDownload />
                 Download
-              </a>
+              </button>
 
               <button
                 onClick={() => setQrCodeDataUrl("")}

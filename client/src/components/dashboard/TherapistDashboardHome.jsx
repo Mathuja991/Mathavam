@@ -3,7 +3,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faHandsHelping, faCalendarAlt, faCommentDots, faPuzzlePiece, faRunning } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
 
-// Simple card component
 const StatCard = ({ title, value, icon, bgColor }) => (
   <div className={`p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition-transform duration-300 ${bgColor}`}>
     <div className="flex items-center justify-between">
@@ -29,7 +28,6 @@ const QuickAction = ({ title, desc, icon, bgColor, onClick }) => (
 
 const TherapistDashboardHome = ({ loggedInUser }) => {
   const navigate = useNavigate();
-  // Mock data
   const mockStats = {
     speechPending: '4',
     sensoryPending: '6',
@@ -43,16 +41,13 @@ const TherapistDashboardHome = ({ loggedInUser }) => {
         Therapy Management Console <span className="text-2xl text-gray-500">({loggedInUser?.userType})</span>
       </h1>
       
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Speech Forms Pending (S - CRUD)" value={mockStats.speechPending} icon={faCommentDots} bgColor="bg-gradient-to-r from-blue-600 to-sky-700" />
         <StatCard title="Sensory Profiles Pending (O, P - CRUD)" value={mockStats.sensoryPending} icon={faPuzzlePiece} bgColor="bg-gradient-to-r from-amber-600 to-orange-700" />
-        {/* Sessions Today: Red/Pink -> Purple/Indigo */}
         <StatCard title="Therapy Sessions Today" value={mockStats.sessionsToday} icon={faCalendarAlt} bgColor="bg-gradient-to-r from-purple-600 to-indigo-700" />
         <StatCard title="Active Behavioural Plans" value={mockStats.activeTherapyPlans} icon={faRunning} bgColor="bg-gradient-to-r from-green-600 to-teal-700" />
       </div>
 
-      {/* Quick Actions */}
       <div className="pt-4">
         <h2 className="text-3xl font-bold text-green-700 mb-6 border-b-2 border-green-500/50 pb-2">
           Therapy & Assessment Tools 📋

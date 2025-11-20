@@ -1,4 +1,3 @@
-// App.jsx Update
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
@@ -11,7 +10,6 @@ import AddNewUser from './pages/ManageUsers/AddNewUser';
 import TherapyAssessmentList from './pages/SpeechAndTheropyAssessment/TherapyAssessmentList';
 import ViewTherapyAssessment from './pages/SpeechAndTheropyAssessment/ViewTherapyAssessment';
 
-//varsha parts
 import "./App.css";
 import SensoryProfileCreatePage from "./pages/SensoryProfile/SensoryProfileCreatePage";
 import SensoryProfileSectionsPage from "./pages/SensoryProfile/SensoryProfileSectionsPage";
@@ -23,7 +21,6 @@ import ChildManagementPage from "./pages/QrAttendance/ChildManagementPage";
 import ParentQrViewPage from "./pages/QrAttendance/ParentQrViewPage";
 import AdminQrAttendancePage from "./pages/QrAttendance/AdminQrAttendancePage";
 
-//Mathuja
 
 import AdminDashboard from './components/AdminDashboard';
 import Carsform from './forms/carsform';
@@ -45,7 +42,6 @@ import ViewPatientRecord from './pages/RecordSheet/ViewPatientRecord';
 import AdminUploadDocument from './components/doc_parent/AdminUploadDocument';
 import UserViewDocuments from './components/doc_parent/UserViewDocuments';
 
-//kujinsika
 import DSM5Form from './pages/DSM5/DSM5Form';
 import ViewDSM5Form from './pages/DSM5/ViewDSM5Form';
 import SnapForm from './pages/SNAP/SnapForm';
@@ -60,8 +56,8 @@ import PatientAppointment from './pages/Appointment/PatientAppoinment';
 
 import AppointmentManagement from './pages/Appointment/AppointmentManagement';
 import ServiceBookingForm from './pages/Appointment/ServiceBookingForm';
-import PractitionerCalendar from './pages/Appointment/PractitionerCalendar'; // NEW
-import AllAppointmentsList from './pages/Appointment/AllAppointmentsList'; // Will create this next for Admin view
+import PractitionerCalendar from './pages/Appointment/PractitionerCalendar';
+import AllAppointmentsList from './pages/Appointment/AllAppointmentsList';
 
 
 function App() {
@@ -70,20 +66,14 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginForm />} />
 
-        {/* Dashboard Layout - All nested routes will render inside the Dashboard's Outlet */}
         <Route path="/dashboard" element={<Dashboard />}>
-          {/* Default content for /dashboard. You can choose any component here, or redirect */}
           <Route index element={<AdminDashboard />} />{" "}
-          {/* This will be the content for /dashboard if you navigate directly to it */}
           <Route path="dashboard" element={<AdminDashboard />} />{" "}
-          {/* Also handle direct /dashboard access */}
-          {/* Patient Record Routes */}
           <Route path="record-sheet" element={<PatientRecordForm />} />
           <Route
             path="skill-assessment"
             element={<SkillAssessmentFlow />}
           />{" "}
-          {/* This seems like a specific flow, consider if it needs the full layout */}
           <Route path="patient-records" element={<PatientRecordList />} />
           <Route path="patient-records/new" element={<PatientRecordForm />} />
           <Route path="patient-records/:id" element={<ViewPatientRecord />} />
@@ -99,7 +89,6 @@ function App() {
             path="appointments/service-booking"
             element={<ServiceBookingForm />}
           />
-          {/* Conditionally include if you decide to keep SessionBookingForm distinct */}
           
           
           <Route
@@ -110,18 +99,14 @@ function App() {
             path="therapy-assessments/:id"
             element={<ViewTherapyAssessment />}
           />
-          {/* New Appointment Routes for Specific User Types */}
           <Route
             path="appointments/my-schedule"
             element={<PractitionerCalendar />}
           />{" "}
-          {/* Doctors/Therapists */}
           <Route
             path="appointments/all"
             element={<AllAppointmentsList />}
           />{" "}
-          {/* Admin/Super Admin (Next Part) */}
-          {/* Varsha's Sensory Profile Routes */}
           <Route
             path="sensory-profile-fill-form"
             element={<SensoryProfileCreatePage />}
@@ -142,12 +127,10 @@ function App() {
             path="sensory-profile/edit/:id"
             element={<SensoryProfileEditPage />}
           />
-          {/*Varsha QR*/}
           <Route path="service-qr" element={<ServiceQrPage />} />
           <Route path="manage-children" element={<ChildManagementPage />} />
           <Route path="parent-view/:childNo" element={<ParentQrViewPage />} />
           <Route path="qr-attendance" element={<AdminQrAttendancePage />} />
-          {/* Mathuja's Parts */}
           <Route path="forms" element={<FormHome />} />
           <Route path="forms/Carsform" element={<Carsform />} />
           <Route path="forms/carsform-previous-entries" element={<CarsPrevious />} />
@@ -173,7 +156,6 @@ function App() {
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
 
-          {/*Kujinsika*/}
           <Route path="snap-submitted-forms" element={<SubmittedSnapFormsList />} />
           <Route path="snapform" element={<SnapForm />} />
           <Route path="snapform/:id" element={<SnapForm />} />
@@ -183,11 +165,10 @@ function App() {
           <Route path="view-dsm5-form/:id" element={<ViewDSM5Form />} />
 
           <Route path="add-doctors" element={<Add_doctors />} />
-          <Route path="appointments/manage-availability" element={<DoctorAvailability />} />  {/*admin part*/}
-          <Route path="appointments/book-appointment" element={<Book_doctor_appoinment />} /> {/*user part*/}
-          <Route path="appointments/patient-appointments" element={<PatientAppointment />} /> {/*doctor part*/}
+          <Route path="appointments/manage-availability" element={<DoctorAvailability />} />
+          <Route path="appointments/book-appointment" element={<Book_doctor_appoinment />} />
+          <Route path="appointments/patient-appointments" element={<PatientAppointment />} />
 
-          {/* Catch-all for routes within Dashboard layout (optional, but good for empty states) */}
           <Route
             path="*"
             element={

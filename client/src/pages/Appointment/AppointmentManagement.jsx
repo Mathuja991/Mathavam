@@ -123,29 +123,7 @@ const AppointmentManagement = () => {
             </h2>
 
             {/* Quick Access for Practitioners */}
-            {isPractitioner && (
-                <div className="mb-10 p-5 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl shadow-inner border border-purple-200">
-                    <h3 className="text-xl font-bold text-indigo-800 mb-3">
-                        Practitioner Quick Actions
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <AppointmentCard
-                            type="my-schedule"
-                            icon={FaCalendarCheck} // Icon component passed as prop
-                            title="My Work Schedule"
-                            description="View and manage your upcoming schedule and availability."
-                            allowed={isPractitioner}
-                        />
-                        <AppointmentCard
-                            type="doctor"
-                            icon={FaUsers} // Icon component passed as prop
-                            title="Patient Appointments"
-                            description="View and manage appointments booked by patients."
-                            allowed={isPractitioner}
-                        />
-                    </div>
-                </div>
-            )}
+        
 
             {/* Main Appointment Options Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

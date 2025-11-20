@@ -343,7 +343,7 @@ const updateAvailabilitySlotBody = async (req, res) => {
 
 const getAllDoctorsFromAvailability = async (req, res) => {
   try {
-    const allAvailability = await Availability.find({}, "doctorId doctorName");
+    const allAvailability = await Availability.find({role:"Doctor"}, "doctorId doctorName");
 
     const unique = new Map();
 

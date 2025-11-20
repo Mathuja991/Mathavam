@@ -10,24 +10,31 @@ const apiClient = axios.create({
   },
 });
 
+const getAuthHeaders = () => {
+  const token = localStorage.getItem("token");
+  if (!token) return {};
+  return {
+    Authorization: `Bearer ${token}`,
+    "x-auth-token": token,
+  };
+};
+
 export const getChildByChildNo = (childNo) => {
-  return apiClient.get(`/child/${childNo}`);
+  return apiClient.get(`/child/${childNo}`, { headers: getAuthHeaders() });
 };
 
 export const createSessionLog = (payload) =>
-  axios.post("/api/sessions", payload);
+  apiClient.post("/sessions", payload, { headers: getAuthHeaders() });
 
 export const updateSessionLog = (id, payload) =>
-  axios.put(`/api/sessions/${id}`, payload);
+  apiClient.put(`/sessions/${id}`, payload, { headers: getAuthHeaders() });
 
 export const listSessions = (params) =>
-  axios.get("/api/sessions", { params });
+  apiClient.get("/sessions", { params, headers: getAuthHeaders() });
 
 export const getTodaySessions = (params) =>
-  axios.get("/api/sessions/today", { params });
+  apiClient.get("/sessions/today", { params, headers: getAuthHeaders() });
 
 export const getAllChildren = () => {
-  return apiClient.get("/child");
-
-
+  return apiClient.get("/child", { headers: getAuthHeaders() });
 };

@@ -38,12 +38,20 @@ const PatientAppointmentBooking = () => {
     doctorName: "",
     date: "",
     time: "",
-    status: "all"
+    status: "all",
   });
 
   // Simple day name helper
   const getDayName = (date) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
     return days[date.getDay()];
   };
 
@@ -54,20 +62,22 @@ const PatientAppointmentBooking = () => {
         setLoading(true);
 
         // Fetch all doctors
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/availability/all/doctors`);
-        console.log(' API RESPONSE RECEIVED:', response.data.data);
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/availability/all/doctors`
+        );
+        console.log(" API RESPONSE RECEIVED:", response.data.data);
 
         if (response.data.success) {
           const availabilityData = response.data.data || [];
 
           // Map unique doctors
           const uniqueDoctorsMap = new Map();
-          availabilityData.forEach(doc => {
+          availabilityData.forEach((doc) => {
             if (!uniqueDoctorsMap.has(doc._id)) {
               uniqueDoctorsMap.set(doc._id, {
                 _id: doc._id,
                 name: doc.name,
-                specialization: "General Practice"
+                specialization: "General Practice",
               });
             }
           });
@@ -76,8 +86,11 @@ const PatientAppointmentBooking = () => {
           setDoctors(doctorsList);
 
           // Fetch availability for all doctor IDs
-          const doctorIds = doctorsList.map(d => d._id);
-          const res = await axios.post(`${import.meta.env.VITE_API_URL}/availability/doctors`, { doctorIds });
+          const doctorIds = doctorsList.map((d) => d._id);
+          const res = await axios.post(
+            `${import.meta.env.VITE_API_URL}/availability/doctors`,
+            { doctorIds }
+          );
 
           const availability = res.data.data || [];
           const availabilityByDoctor = {};
@@ -93,16 +106,16 @@ const PatientAppointmentBooking = () => {
               availabilityByDoctor[doctorId].push({
                 day: slot.day,
                 startTime: slot.startTime,
-                endTime: slot.endTime
+                endTime: slot.endTime,
               });
             }
           }
 
-          console.log('🟢 Availability by Doctor:', availabilityByDoctor);
+          console.log("🟢 Availability by Doctor:", availabilityByDoctor);
           setDoctorAvailability(availabilityByDoctor);
         }
       } catch (error) {
-        console.error('Error fetching doctors and availability:', error);
+        console.error("Error fetching doctors and availability:", error);
         setDoctors([]);
         setDoctorAvailability({});
       } finally {
@@ -116,25 +129,31 @@ const PatientAppointmentBooking = () => {
   //  FETCH APPOINTMENTS FROM BACKEND
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments`);
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/doctorappointments`
+      );
       if (response.data.success) {
         setAppointments(response.data.appointments);
       }
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      console.error("Error fetching appointments:", error);
     }
   };
 
   // FETCH APPOINTMENTS BY DOCTOR AND DATE FOR AVAILABILITY CHECK
   const fetchAppointmentsByDoctorAndDate = async (doctorName, date) => {
     try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/doctorappointments/${doctorName}/${date}`);
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_URL
+        }/doctorappointments/${doctorName}/${date}`
+      );
       if (response.data.success) {
         return response.data.appointments;
       }
       return [];
     } catch (error) {
-      console.error('Error fetching appointments by doctor and date:', error);
+      console.error("Error fetching appointments by doctor and date:", error);
       return [];
     }
   };
@@ -148,7 +167,7 @@ const PatientAppointmentBooking = () => {
     if (!selectedDoctorId) return [];
 
     const availability = doctorAvailability[selectedDoctorId] || [];
-    const availableDays = [...new Set(availability.map(slot => slot.day))];
+    const availableDays = [...new Set(availability.map((slot) => slot.day))];
 
     const dates = [];
     const today = new Date();
@@ -159,8 +178,8 @@ const PatientAppointmentBooking = () => {
 
       // Use simple local date format
       const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
       const dateString = `${year}-${month}-${day}`;
 
       // Use simple getDay() method for consistency
@@ -170,7 +189,7 @@ const PatientAppointmentBooking = () => {
         dates.push({
           date: dateString,
           day: dayName,
-          appointmentCount: 0 // Will be updated when date is selected
+          appointmentCount: 0, // Will be updated when date is selected
         });
       }
     }
@@ -198,8 +217,8 @@ const PatientAppointmentBooking = () => {
 
       // Use same local date format as generateAvailableDates
       const yearPrev = date.getFullYear();
-      const monthPrev = String(date.getMonth() + 1).padStart(2, '0');
-      const dayPrev = String(date.getDate()).padStart(2, '0');
+      const monthPrev = String(date.getMonth() + 1).padStart(2, "0");
+      const dayPrev = String(date.getDate()).padStart(2, "0");
       const dateString = `${yearPrev}-${monthPrev}-${dayPrev}`;
 
       calendar.push({
@@ -207,7 +226,7 @@ const PatientAppointmentBooking = () => {
         isCurrentMonth: false,
         isAvailable: false,
         appointmentCount: 0,
-        dateString
+        dateString,
       });
     }
 
@@ -217,32 +236,40 @@ const PatientAppointmentBooking = () => {
 
       // Use same local date format as generateAvailableDates
       const yearCurr = date.getFullYear();
-      const monthCurr = String(date.getMonth() + 1).padStart(2, '0');
-      const dayCurr = String(date.getDate()).padStart(2, '0');
+      const monthCurr = String(date.getMonth() + 1).padStart(2, "0");
+      const dayCurr = String(date.getDate()).padStart(2, "0");
       const dateString = `${yearCurr}-${monthCurr}-${dayCurr}`;
 
-      const availableDate = availableDatesList.find(d => d.date === dateString);
+      const availableDate = availableDatesList.find(
+        (d) => d.date === dateString
+      );
       const isAvailable = !!availableDate;
-      const appointmentCount = availableDate ? availableDate.appointmentCount : 0;
+      const appointmentCount = availableDate
+        ? availableDate.appointmentCount
+        : 0;
 
       calendar.push({
         date,
         isCurrentMonth: true,
         isAvailable,
         appointmentCount,
-        dateString
+        dateString,
       });
     }
 
     // Add next month's leading days
     const totalCells = 42;
     while (calendar.length < totalCells) {
-      const date = new Date(year, month + 1, calendar.length - daysInMonth - firstDayOfWeek + 1);
+      const date = new Date(
+        year,
+        month + 1,
+        calendar.length - daysInMonth - firstDayOfWeek + 1
+      );
 
       // Use same local date format as generateAvailableDates
       const yearNext = date.getFullYear();
-      const monthNext = String(date.getMonth() + 1).padStart(2, '0');
-      const dayNext = String(date.getDate()).padStart(2, '0');
+      const monthNext = String(date.getMonth() + 1).padStart(2, "0");
+      const dayNext = String(date.getDate()).padStart(2, "0");
       const dateString = `${yearNext}-${monthNext}-${dayNext}`;
 
       calendar.push({
@@ -250,7 +277,7 @@ const PatientAppointmentBooking = () => {
         isCurrentMonth: false,
         isAvailable: false,
         appointmentCount: 0,
-        dateString
+        dateString,
       });
     }
 
@@ -284,7 +311,7 @@ const PatientAppointmentBooking = () => {
     const dayName = getDayName(dateObj);
     const availability = doctorAvailability[selectedDoctorId] || [];
 
-    const timeRanges = availability.filter(slot => slot.day === dayName);
+    const timeRanges = availability.filter((slot) => slot.day === dayName);
 
     setAvailableTimeRanges(timeRanges);
     setSelectedTime("");
@@ -317,12 +344,18 @@ const PatientAppointmentBooking = () => {
   };
 
   const handleMonthChange = (increment) => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + increment, 1));
+    setCurrentMonth(
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + increment,
+        1
+      )
+    );
   };
 
   const handleConfirmBooking = () => {
     if (!patientName.trim()) {
-      alert('Please enter patient name');
+      alert("Please enter patient name");
       return;
     }
     setShowConfirmation(true);
@@ -331,7 +364,7 @@ const PatientAppointmentBooking = () => {
   // REAL BOOKING FUNCTION
   const handleYesConfirm = async () => {
     try {
-      const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
+      const selectedDoctor = doctors.find((d) => d._id === selectedDoctorId);
 
       const appointmentData = {
         doctorName: selectedDoctor?.name,
@@ -339,14 +372,17 @@ const PatientAppointmentBooking = () => {
         appointmentDate: selectedDate,
         timeSlot: {
           startTime: selectedTime.startTime,
-          endTime: selectedTime.endTime
+          endTime: selectedTime.endTime,
         },
-        patientNote: patientNote.trim()
+        patientNote: patientNote.trim(),
       };
 
       console.log("📤 Sending appointment data:", appointmentData);
 
-      const response = await axios.post('/api/doctorappointments/book', appointmentData);
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/doctorappointments/book`,
+        appointmentData
+      );
 
       if (response.data.success) {
         // Store the complete appointment data from backend
@@ -361,15 +397,15 @@ const PatientAppointmentBooking = () => {
         setPatientName("");
         setPatientNote("");
       } else {
-        alert(response.data.message || 'Failed to book appointment');
+        alert(response.data.message || "Failed to book appointment");
         setShowConfirmation(false);
       }
     } catch (error) {
-      console.error(' Error booking appointment:', error);
+      console.error(" Error booking appointment:", error);
       if (error.response) {
         alert(`Failed to book appointment: ${error.response.data.message}`);
       } else {
-        alert('Failed to book appointment. Please check your connection.');
+        alert("Failed to book appointment. Please check your connection.");
       }
       setShowConfirmation(false);
     }
@@ -400,19 +436,23 @@ const PatientAppointmentBooking = () => {
 
   const handleConfirmCancel = async () => {
     try {
-      const response = await axios.put(`${import.meta.env.VITE_API_URL}/doctorappointments/${cancelConfirmation}/cancel`);
+      const response = await axios.put(
+        `${
+          import.meta.env.VITE_API_URL
+        }/doctorappointments/${cancelConfirmation}/cancel`
+      );
 
       if (response.data.success) {
         // Refresh appointments list
         await fetchAppointments();
         setCancelConfirmation(null);
       } else {
-        alert(response.data.message || 'Failed to cancel appointment');
+        alert(response.data.message || "Failed to cancel appointment");
         setCancelConfirmation(null);
       }
     } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      alert('Failed to cancel appointment. Please try again.');
+      console.error("Error cancelling appointment:", error);
+      alert("Failed to cancel appointment. Please try again.");
       setCancelConfirmation(null);
     }
   };
@@ -422,9 +462,9 @@ const PatientAppointmentBooking = () => {
   };
 
   const handleFilterChange = (filterType, value) => {
-    setHistoryFilters(prev => ({
+    setHistoryFilters((prev) => ({
       ...prev,
-      [filterType]: value
+      [filterType]: value,
     }));
   };
 
@@ -433,25 +473,40 @@ const PatientAppointmentBooking = () => {
       doctorName: "",
       date: "",
       time: "",
-      status: "all"
+      status: "all",
     });
   };
 
-  const selectedDoctor = doctors.find(d => d._id === selectedDoctorId);
+  const selectedDoctor = doctors.find((d) => d._id === selectedDoctorId);
   const calendarDays = generateCalendar();
 
   // Filter appointments for different tabs
-  const upcomingAppointments = appointments.filter(apt => apt.status === 'upcoming');
-  const historyAppointments = appointments.filter(apt => apt.status === 'completed' || apt.status === 'cancelled');
+  const upcomingAppointments = appointments.filter(
+    (apt) => apt.status === "upcoming"
+  );
+  const historyAppointments = appointments.filter(
+    (apt) => apt.status === "completed" || apt.status === "cancelled"
+  );
 
-  const filteredHistoryAppointments = historyAppointments.filter(apt => {
-    const matchesDoctor = historyFilters.doctorName === "" ||
-      apt.doctorName.toLowerCase().includes(historyFilters.doctorName.toLowerCase());
-    const matchesDate = historyFilters.date === "" ||
-      new Date(apt.appointmentDate).toISOString().split('T')[0].includes(historyFilters.date);
-    const matchesTime = historyFilters.time === "" ||
-      apt.timeSlot.startTime.toLowerCase().includes(historyFilters.time.toLowerCase());
-    const matchesStatus = historyFilters.status === "all" || apt.status === historyFilters.status;
+  const filteredHistoryAppointments = historyAppointments.filter((apt) => {
+    const matchesDoctor =
+      historyFilters.doctorName === "" ||
+      apt.doctorName
+        .toLowerCase()
+        .includes(historyFilters.doctorName.toLowerCase());
+    const matchesDate =
+      historyFilters.date === "" ||
+      new Date(apt.appointmentDate)
+        .toISOString()
+        .split("T")[0]
+        .includes(historyFilters.date);
+    const matchesTime =
+      historyFilters.time === "" ||
+      apt.timeSlot.startTime
+        .toLowerCase()
+        .includes(historyFilters.time.toLowerCase());
+    const matchesStatus =
+      historyFilters.status === "all" || apt.status === historyFilters.status;
     return matchesDoctor && matchesDate && matchesTime && matchesStatus;
   });
 
@@ -460,7 +515,9 @@ const PatientAppointmentBooking = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading doctors and availability...</p>
+          <p className="mt-4 text-gray-600">
+            Loading doctors and availability...
+          </p>
         </div>
       </div>
     );
@@ -469,10 +526,11 @@ const PatientAppointmentBooking = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <h1 className="text-4xl font-bold text-gray-900">Book Doctor Appointment</h1>
+            <h1 className="text-4xl font-bold text-gray-900">
+              Book Doctor Appointment
+            </h1>
           </div>
         </div>
 
@@ -509,7 +567,7 @@ const PatientAppointmentBooking = () => {
                 serialNo: index + 1,
                 doctorName: apt.doctorName,
                 date: apt.appointmentDate,
-                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`
+                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
               }))}
               handleCancelAppointment={handleCancelAppointment}
               setActiveTab={setActiveTab}
@@ -518,14 +576,16 @@ const PatientAppointmentBooking = () => {
 
           {activeTab === "history" && (
             <AppointmentHistoryTab
-              filteredHistoryAppointments={filteredHistoryAppointments.map((apt, index) => ({
-                id: apt._id,
-                serialNo: index + 1,
-                doctorName: apt.doctorName,
-                date: apt.appointmentDate,
-                time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
-                status: apt.status
-              }))}
+              filteredHistoryAppointments={filteredHistoryAppointments.map(
+                (apt, index) => ({
+                  id: apt._id,
+                  serialNo: index + 1,
+                  doctorName: apt.doctorName,
+                  date: apt.appointmentDate,
+                  time: `${apt.timeSlot.startTime} - ${apt.timeSlot.endTime}`,
+                  status: apt.status,
+                })
+              )}
               historyFilters={historyFilters}
               handleFilterChange={handleFilterChange}
               clearFilters={clearFilters}

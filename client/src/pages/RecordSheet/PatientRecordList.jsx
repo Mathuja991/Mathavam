@@ -1,21 +1,17 @@
-// PatientRecordList.jsx
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
-// Importing required icons (FaQrcode, FaDownload, FaTimes were already imported)
 import { 
     FaQrcode, 
     FaDownload, 
     FaTimes, 
-    FaEye,      // Eye icon for View
-    FaEdit,     // Edit icon for Edit
-    FaTrash,    // Trash icon for Delete
-    FaPlusSquare // Plus icon for 'Add New Record'
+    FaEye,
+    FaEdit,
+    FaTrash,
+    FaPlusSquare
 } from "react-icons/fa"; 
 
-// --- Helper function to get the auth token from localStorage ---
 const getAuthConfig = () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -29,21 +25,19 @@ const getAuthConfig = () => {
     };
 };
 
-// --- Helper function to get the logged-in user object (for role check) ---
 const getLoggedInUser = () => {
-    const userString = localStorage.getItem('user'); // Get 'user' object from localStorage
+    const userString = localStorage.getItem('user');
     if (!userString) {
         console.error('Logged in user object not found in localStorage');
         return null;
     }
     try {
-        return JSON.parse(userString); // Convert JSON string to object
+        return JSON.parse(userString);
     } catch (e) {
         console.error('Error parsing user from localStorage', e);
         return null;
     }
 };
-// --- END OF FUNCTION ---
 
 const PatientRecordList = () => {
     const [records, setRecords] = useState([]);
@@ -52,17 +46,14 @@ const PatientRecordList = () => {
     const [qrCodeDataUrl, setQrCodeDataUrl] = useState("");
     const [selectedChild, setSelectedChild] = useState({ name: "", childNo: "" });
 
-    // --- State for CRUD permission based on user role ---
-    const [canCRUD, setCanCRUD] = useState(false); // Can perform CRUD (Add, Edit, Delete)?
+    const [canCRUD, setCanCRUD] = useState(false);
 
     useEffect(() => {
-        // --- Logic to check user permission on component mount ---
         const loggedInUser = getLoggedInUser();
 
-        if (loggedInUser && loggedInUser.userType === 'Super Admin'|| loggedInUser && loggedInUser.userType === 'Admin') {
-            setCanCRUD(true); // Super Admin has CRUD permission
+        if (loggedInUser && loggedInUser.userType === 'Super Admin') { 
+            setCanCRUD(true); 
         }
-        // --- END OF USER PERMISSION CHECK ---
 
         fetchRecords();
     }, []);
@@ -75,21 +66,15 @@ const PatientRecordList = () => {
                 config 
             );
             
-            // ----------------------------------------------------------------------
-            // ✅ RECORD FILTERING LOGIC FOR PARENT USER:
-            // ----------------------------------------------------------------------
             const loggedInUser = getLoggedInUser();
             if (loggedInUser && loggedInUser.userType === 'Parent' && loggedInUser.childRegNo) {
-                // Filter records relevant only to the Parent User's childRegNo
                 const filteredRecords = response.data.filter(
                     record => record.childNo === loggedInUser.childRegNo
                 );
                 setRecords(filteredRecords);
             } else {
-                // Show all records for Super Admin, Admin, Doctor, Therapist, etc.
                 setRecords(response.data);
             }
-            // ----------------------------------------------------------------------
             
             setLoading(false);
         } catch (err) {
@@ -104,40 +89,28 @@ const PatientRecordList = () => {
     };
 
     const handleDelete = async (id) => {
-        // --- Permission Check before deletion ---
-        if (!canCRUD) {
-            alert("You do not have permission to delete this record.");
+        if (!window.confirm("Are you sure you want to delete this patient record? This action cannot be undone.")) {
             return;
         }
-        // --- END OF PERMISSION CHECK ---
 
-        if (
-            window.confirm("Are you sure you want to delete this patient record?")
-        ) {
-            try {
-                const config = getAuthConfig(); 
-                await axios.delete(
-                    `${import.meta.env.VITE_API_URL}/patientRecords/${id}`,
-                    config 
-                );
-                
-                alert("Patient record deleted successfully!");
-                fetchRecords();
-            } catch (err) {
-                console.error(`Error deleting record with ID ${id}:`, err);
-                if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-                    alert("You do not have permission to delete this record.");
-                } else {
-                    alert("Failed to delete patient record. Please try again.");
-                }
-            }
+        try {
+            const config = getAuthConfig();
+            await axios.delete(
+                `${import.meta.env.VITE_API_URL}/patientRecords/${id}`,
+                config
+            );
+            setRecords(records.filter(record => record._id !== id));
+        } catch (err) {
+            console.error("Error deleting patient record:", err);
+            alert("Failed to delete patient record. Check your permissions and try again.");
         }
     };
 
     const handleGenerateQr = async (record) => {
         try {
-            // Data for the QR code is the child's registration number
-            const qrData = await QRCode.toDataURL(record.childNo, { width: 300 }); 
+            // Include a public link to the view page
+            const viewUrl = `${window.location.origin}/patient-records/${record._id}`;
+            const qrData = await QRCode.toDataURL(viewUrl, { width: 300 });
             setQrCodeDataUrl(qrData);
             setSelectedChild({ name: record.name, childNo: record.childNo });
         } catch (err) {
@@ -146,165 +119,201 @@ const PatientRecordList = () => {
         }
     };
 
-    // Sanitize filename for download
-    const sanitizedFileName = selectedChild.name
-        ? `qr-code_${selectedChild.name.toLowerCase().replace(/\s+/g, "_")}.png`
-        : "qr-code.png";
+    const sanitizedFileName = selectedChild.name ? `qr-code_${selectedChild.name.toLowerCase().replace(/\s+/g, "_")}.png` : "qr-code.png";
 
     if (loading) {
-        // Loading UI (no changes)
         return (
-            <div className="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl shadow-xl font-['Roboto',_sans-serif]">
-                <svg /* ... loading svg ... */ >
+            <div className="flex flex-col items-center justify-center py-20 bg-white rounded-3xl shadow-2xl max-w-7xl mx-auto my-8 min-h-[500px]">
+                <svg className="animate-spin h-10 w-10 text-indigo-600 mb-3" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <p className="text-gray-600 text-lg font-medium">
-                    Loading patient records...
-                </p>
+                <p className="text-xl font-medium text-gray-700">Loading patient records...</p>
             </div>
         );
     }
 
     if (error) {
-        // Error UI (no changes)
         return (
-            <div className="max-w-4xl mx-auto mt-10 p-6 bg-red-50 border-2 border-red-400 rounded-xl shadow-xl text-red-800 text-center font-['Roboto',_sans-serif]">
-                <p className="text-xl font-bold mb-2">Data Error</p>
-                <p className="text-lg">{error}</p>
+            <div className="text-center p-10 bg-red-50 border-l-4 border-red-500 text-red-700 max-w-3xl mx-auto my-8 rounded-lg shadow-lg">
+                <p className="font-semibold text-lg">Error:</p>
+                <p>{error}</p>
+                <button 
+                    onClick={fetchRecords} 
+                    className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-150"
+                >
+                    Try Again
+                </button>
             </div>
         );
     }
 
-    // --- JSX (UI) CHANGES: Emojis replaced with Icons/Text ---
     return (
-        <div className="p-8 bg-white rounded-3xl shadow-2xl max-w-7xl mx-auto my-8 font-['Roboto',_sans-serif]">
-            <div className="flex flex-col sm:flex-row justify-between items-center pb-6 mb-6 border-b border-gray-100 gap-4">
-                <h1 className="text-4xl font-extrabold text-indigo-800 tracking-tight">
-                    Patient Records List
-                </h1>
-
-                {/* --- Add New Record Button: Only visible if canCRUD is true (Super Admin) --- */}
-                {canCRUD && (
-                    <Link
-                        to="../../dashboard/record-sheet"
-                        className="flex items-center px-6 py-2 bg-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-teal-400/50 hover:bg-teal-700 transition duration-300 transform hover:scale-[1.02]"
-                    >
-                        <FaPlusSquare className="text-xl mr-2" /> Add New Record 
-                    </Link>
-                )}
-                {/* --- END OF BUTTON --- */}
-            </div>
-
-            {records.length === 0 ? (
-                <div className="text-gray-600 text-center py-12 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-                    <p className="text-2xl font-semibold mb-2">No Records Found</p>
-                    <p>No patient records found. Start by adding a new one!</p>
+        <div className="bg-gray-50 p-4 md:p-8 min-h-screen">
+            <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-10 max-w-7xl mx-auto my-8">
+                {/* Header and Add Button */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                    <h1 className="text-4xl font-extrabold text-indigo-800 border-b-4 border-indigo-100 pb-2">
+                        Patient Records List
+                    </h1>
+                    {canCRUD && (
+                        <Link
+                            to="../patient-records/new"
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                        >
+                            <FaPlusSquare className="text-xl" />
+                            Add New Record
+                        </Link>
+                    )}
                 </div>
-            ) : (
-                <div className="overflow-x-auto rounded-2xl shadow-xl border border-gray-200">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            {/* Table Header (no changes to text) */}
-                            <tr className="bg-gradient-to-r from-indigo-500 to-indigo-600 sticky top-0 z-10 text-white shadow-lg">
-                                <th className="py-4 px-6 font-bold text-lg rounded-tl-2xl">
+
+                {/* Records Table */}
+                <div className="overflow-x-auto shadow-xl rounded-2xl border border-gray-100">
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-indigo-50">
+                            <tr>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-4 text-left text-sm font-bold text-indigo-700 uppercase tracking-wider"
+                                >
                                     Child No
                                 </th>
-                                <th className="py-4 px-6 font-bold text-lg">Name</th>
-                                <th className="py-4 px-6 font-bold text-lg">Contact No</th>
-                                <th className="py-4 px-6 font-bold text-lg">
+                                <th
+                                    scope="col"
+                                    className="px-6 py-4 text-left text-sm font-bold text-indigo-700 uppercase tracking-wider"
+                                >
+                                    Name
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-4 text-left text-sm font-bold text-indigo-700 uppercase tracking-wider hidden md:table-cell"
+                                >
+                                    Age
+                                </th>
+                                <th
+                                    scope="col"
+                                    className="px-6 py-4 text-left text-sm font-bold text-indigo-700 uppercase tracking-wider hidden lg:table-cell"
+                                >
                                     Date of Assessment
                                 </th>
-                                <th className="py-4 px-6 font-bold text-lg rounded-tr-2xl text-center">
+                                <th
+                                    scope="col"
+                                    className="px-6 py-4 text-center text-sm font-bold text-indigo-700 uppercase tracking-wider"
+                                >
                                     Actions
                                 </th>
                             </tr>
                         </thead>
-                        <tbody>
-                            {records.map((record, idx) => (
-                                <tr
-                                    key={record._id}
-                                    className={`border-b border-gray-100 text-gray-800 ${
-                                        idx % 2 === 0 ? "bg-white" : "bg-indigo-50/50"
-                                    } hover:bg-indigo-100/70 transition duration-300`}
-                                >
-                                    <td className="py-4 px-6 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {record.childNo}
-                                    </td>
-                                    <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-700 font-medium">
-                                        {record.name}
-                                    </td>
-                                    <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
-                                        {record.contactNo}
-                                    </td>
-                                    <td className="py-4 px-6 whitespace-nowrap text-sm text-gray-600">
-                                        {record.dateOfInitialAssessment
-                                            ? new Date(
-                                                  record.dateOfInitialAssessment
-                                                  ).toLocaleDateString()
-                                            : "N/A"}
-                                    </td>
-                                    <td className="py-4 px-6 whitespace-nowrap text-center space-x-3">
-                                        
-                                        {/* View Button (Visible to all users) */}
-                                        <Link
-                                            to={`../patient-records/${record._id}`}
-                                            className="inline-flex items-center gap-1 px-4 py-1.5 bg-blue-500 text-white font-semibold rounded-lg shadow-md hover:bg-blue-600 transition duration-200 transform hover:scale-[1.05] text-sm"
-                                        >
-                                            <FaEye /> View
-                                        </Link>
+                        <tbody className="bg-white divide-y divide-gray-100">
+                            {records.length > 0 ? (
+                                records.map((record, index) => (
+                                    <tr 
+                                        key={record._id} 
+                                        className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
+                                    >
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            {record.childNo}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            {record.name}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 hidden md:table-cell">
+                                            {record.age}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700 hidden lg:table-cell">
+                                            {record.dateOfInitialAssessment ? new Date(
+                                                record.dateOfInitialAssessment
+                                            ).toLocaleDateString() : "N/A"}
+                                        </td>
+                                        <td className="py-4 px-6 whitespace-nowrap text-center space-x-3">
+                                            {/* View Button */}
+                                            <Link
+                                                to={`../patient-records/${record._id}`}
+                                                className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-colors shadow-sm font-medium"
+                                                title="View Record"
+                                            >
+                                                <FaEye />
+                                                <span className="hidden sm:inline">View</span>
+                                            </Link>
+                                            
+                                            {/* Edit Button (Conditional) */}
+                                            {canCRUD && (
+                                                <>
+                                                    <Link
+                                                        to={`../patient-records/edit/${record._id}`}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-yellow-100 text-yellow-700 hover:bg-yellow-200 transition-colors shadow-sm font-medium"
+                                                        title="Edit Record"
+                                                    >
+                                                        <FaEdit />
+                                                        <span className="hidden sm:inline">Edit</span>
+                                                    </Link>
 
-                                        {/* --- Edit & Delete Buttons: Only visible if canCRUD is true (Super Admin) --- */}
-                                        {canCRUD && (
-                                            <>
-                                                <Link
-                                                    to={`../patient-records/edit/${record._id}`}
-                                                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-indigo-500 text-white font-semibold rounded-lg shadow-md hover:bg-indigo-600 transition duration-200 transform hover:scale-[1.05] text-sm"
-                                                >
-                                                    <FaEdit /> Edit
-                                                </Link>
-                                                <button
-                                                    onClick={() => handleDelete(record._id)}
-                                                    className="inline-flex items-center gap-1 px-4 py-1.5 bg-red-500 text-white font-semibold rounded-lg shadow-md hover:bg-red-600 transition duration-200 transform hover:scale-[1.05] text-sm"
-                                                >
-                                                    <FaTrash /> Delete
-                                                </button>
-                                            </>
-                                        )}
-                                        {/* --- END OF BUTTONS --- */}
+                                                    {/* Delete Button (Conditional) */}
+                                                    <button
+                                                        onClick={() => handleDelete(record._id)}
+                                                        className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition-colors shadow-sm font-medium"
+                                                        title="Delete Record"
+                                                    >
+                                                        <FaTrash />
+                                                        <span className="hidden sm:inline">Delete</span>
+                                                    </button>
+                                                </>
+                                            )}
 
+                                            {/* QR Code Button */}
+                                            <button
+                                                onClick={() => handleGenerateQr(record)}
+                                                className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded-lg bg-teal-100 text-teal-700 hover:bg-teal-200 transition-colors shadow-sm font-medium"
+                                                title="Generate QR Code"
+                                            >
+                                                <FaQrcode />
+                                                <span className="hidden sm:inline">QR</span>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-8 text-center text-lg text-gray-500">
+                                        No patient records found.
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
-            )}
+            </div>
+
+            {/* QR Code Modal */}
             {qrCodeDataUrl && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-sm w-full">
-                        <h3 className="text-2xl font-bold mb-2">QR Code Ready</h3>
-                        <p className="text-gray-500 mb-4">
-                            Scan or download this QR code for caregivers.
+                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+                    <div className="bg-white rounded-3xl shadow-3xl p-8 max-w-md w-full transform transition-transform duration-300 scale-100">
+                        <h3 className="text-2xl font-bold text-indigo-700 mb-4 border-b pb-2">
+                            QR Code for {selectedChild.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-6">
+                            Child No: <span className="font-mono font-semibold text-gray-700">{selectedChild.childNo}</span>
                         </p>
                         <img
                             src={qrCodeDataUrl}
                             alt="QR code preview"
-                            className="mx-auto mb-6"
+                            className="mx-auto mb-6 border-4 border-gray-100 rounded-lg"
                         />
                         <div className="flex justify-center gap-4">
                             <a
                                 href={qrCodeDataUrl}
                                 download={sanitizedFileName}
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+                                className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition-colors transform hover:scale-[1.03]"
                             >
                                 <FaDownload />
-                                Download
+                                Download QR
                             </a>
                             <button
                                 onClick={() => {
                                     setQrCodeDataUrl("");
                                     setSelectedChild({ name: "", childNo: "" });
                                 }}
-                                className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 transition-colors"
+                                className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-gray-300 transition-colors"
                             >
                                 <FaTimes />
                                 Close

@@ -19,7 +19,7 @@ const CarsPrevious = () => {
   useEffect(() => {
     const fetchEntries = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/carsform/entries");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/carsform/entries`);
         const data = await res.json();
         setEntries(data);
         setFiltered(data);
@@ -85,7 +85,7 @@ const CarsPrevious = () => {
     console.log("Deleting entry with ID:", id);
 
     try {
-      const res = await fetch(`http://localhost:5000/api/carsform/${id}`, {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/carsform/${id}`, {
         method: "DELETE",
       });
 

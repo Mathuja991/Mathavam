@@ -32,10 +32,26 @@ const DashboardSidebar = ({
     }
   };
 
+  const userRole = loggedInUser?.userType;
+
+  const isSuperAdmin = userRole === 'Super Admin';
+  const isAdmin = userRole === 'Admin';
+  const isDoctor = userRole === 'Doctor';
+  const isTherapist = userRole === 'Therapist' || userRole === 'Resource Person';
+  const isParent = userRole === 'Parent';
+
   const handleHome = () => handleNavigation('/dashboard');
   const handleSkillAssessmentForms = () => handleNavigation('/dashboard/forms');
   const handleRecordingSheet = () => handleNavigation('/dashboard/patient-records');
-  const handleAppointmentManagement = () => handleNavigation('/dashboard/appointments');
+
+  const handleAppointmentManagement = () => {
+    if (isParent) {
+      handleNavigation('/dashboard/appointments'); 
+    } else {
+      handleNavigation('/dashboard/appointments');
+    }
+  };
+
   const handleParentalTraining = () => handleNavigation('/dashboard/parental-training');
   const handleQRAttendance = () => handleNavigation('/dashboard/qr-attendance');
   const handleQRService = () => handleNavigation('/dashboard/service-qr');
@@ -61,17 +77,17 @@ const DashboardSidebar = ({
     if (path === '/dashboard') {
       return location.pathname === '/dashboard';
     }
+    
+    if (path === '/dashboard/appointments') {
+      return (
+        location.pathname.startsWith('/dashboard/appointments') ||
+        location.pathname.startsWith('/dashboard/appointments') 
+      );
+    }
+
     return location.pathname.startsWith(path);
   };
-
-  const userRole = loggedInUser?.userType;
-
-  const isSuperAdmin = userRole === 'Super Admin';
-  const isAdmin = userRole === 'Admin';
-  const isDoctor = userRole === 'Doctor';
-  const isTherapist = userRole === 'Therapist' || userRole === 'Resource Person';
-  const isParent = userRole === 'Parent';
-
+  
   const canViewChildInfo = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
   const canViewAssessmentsSection = isSuperAdmin || isAdmin || isDoctor || isTherapist || isParent;
   const canViewTherapyTracking = isSuperAdmin || isAdmin || isDoctor || isTherapist;
@@ -85,7 +101,7 @@ const DashboardSidebar = ({
   const canManageUsers = isSuperAdmin || isAdmin;
   const canManageStaffDetails = isSuperAdmin || isAdmin;
   const canUploadParentalResources = isSuperAdmin || isAdmin || isDoctor || isTherapist;
-  const canAccessMonthlyReturns = isSuperAdmin || isAdmin;
+  const canAccessMonthlyReturns = isSuperAdmin;
 
   const canViewAdminSection =
     canManageUsers ||
