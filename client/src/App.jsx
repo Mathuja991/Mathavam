@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './components/Dashboard';
 import PatientRecordForm from './pages/RecordSheet/PatientRecordForm';
+import PatientRecordFormAuto from './pages/RecordSheet/PatientRecordFormAuto';
 import SkillAssessmentFlow from './pages/SpeechAndTheropyAssessment/SkillAssessmentFlow';
 import PatientRecordList from './pages/RecordSheet/PatientRecordList';
 import LoginForm from './pages/Auth/LoginForm';
@@ -76,6 +77,7 @@ function App() {
           />{" "}
           <Route path="patient-records" element={<PatientRecordList />} />
           <Route path="patient-records/new" element={<PatientRecordForm />} />
+          <Route path="patient-records/new-auto" element={<PatientRecordFormAuto />} />
           <Route path="patient-records/:id" element={<ViewPatientRecord />} />
           <Route
             path="patient-records/edit/:id"
@@ -84,13 +86,13 @@ function App() {
           <Route path="manage-users" element={<ManageUser />} />
           <Route path="manage-users/add" element={<AddNewUser />} />
           <Route path="appointments" element={<AppointmentManagement />} />
-          
+
           <Route
             path="appointments/service-booking"
             element={<ServiceBookingForm />}
           />
-          
-          
+
+
           <Route
             path="therapy-assessments-list"
             element={<TherapyAssessmentList />}
@@ -149,10 +151,10 @@ function App() {
           <Route path="forms/bc-progress" element={<BcProgress />} />
           <Route path="editb/:id" element={<EditBcEntry />} />
           <Route path="editm/:id" element={<EditMfEntry />} />
-          
-         
+
+
           <Route path="monreturn" element={<MonthlyReturnForm />} />
-          
+
           <Route path="adminuploaddocs" element={<AdminUploadDocument />} />
           <Route path="viewdocs" element={<UserViewDocuments />} />
 

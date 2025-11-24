@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 const checkRole = require('../middleware/checkRoleMiddleware');
 
 const ROLES_VIEW_ALL = ['Super Admin', 'Admin', 'Doctor', 'Therapist', 'Resource Person', 'Parent'];
-const ROLES_CRUD_SUPER_ADMIN = ['Super Admin'];
+const ROLES_CRUD_SUPER_ADMIN = ['Super Admin', 'Admin'];
 
 router.get(
     '/', 

@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
 import QRCode from "qrcode";
-import { 
-    FaQrcode, 
-    FaDownload, 
-    FaTimes, 
+import {
+    FaQrcode,
+    FaDownload,
+    FaTimes,
     FaEye,
     FaEdit,
     FaTrash,
     FaPlusSquare
-} from "react-icons/fa"; 
+} from "react-icons/fa";
 
 const getAuthConfig = () => {
     const token = localStorage.getItem('token');
@@ -51,8 +51,8 @@ const PatientRecordList = () => {
     useEffect(() => {
         const loggedInUser = getLoggedInUser();
 
-        if (loggedInUser && loggedInUser.userType === 'Super Admin') { 
-            setCanCRUD(true); 
+        if (loggedInUser && (loggedInUser.userType === 'Super Admin' || loggedInUser.userType === 'Admin')) {
+            setCanCRUD(true);
         }
 
         fetchRecords();
@@ -60,12 +60,12 @@ const PatientRecordList = () => {
 
     const fetchRecords = async () => {
         try {
-            const config = getAuthConfig(); 
+            const config = getAuthConfig();
             const response = await axios.get(
                 `${import.meta.env.VITE_API_URL}/patientRecords`,
-                config 
+                config
             );
-            
+
             const loggedInUser = getLoggedInUser();
             if (loggedInUser && loggedInUser.userType === 'Parent' && loggedInUser.childRegNo) {
                 const filteredRecords = response.data.filter(
@@ -75,7 +75,7 @@ const PatientRecordList = () => {
             } else {
                 setRecords(response.data);
             }
-            
+
             setLoading(false);
         } catch (err) {
             console.error("Error fetching patient records:", err);
@@ -138,8 +138,8 @@ const PatientRecordList = () => {
             <div className="text-center p-10 bg-red-50 border-l-4 border-red-500 text-red-700 max-w-3xl mx-auto my-8 rounded-lg shadow-lg">
                 <p className="font-semibold text-lg">Error:</p>
                 <p>{error}</p>
-                <button 
-                    onClick={fetchRecords} 
+                <button
+                    onClick={fetchRecords}
                     className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-150"
                 >
                     Try Again
@@ -157,13 +157,22 @@ const PatientRecordList = () => {
                         Patient Records List
                     </h1>
                     {canCRUD && (
-                        <Link
-                            to="../patient-records/new"
-                            className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-indigo-300"
-                        >
-                            <FaPlusSquare className="text-xl" />
-                            Add New Record
-                        </Link>
+                        <div className="flex gap-2">
+                            <Link
+                                to="../patient-records/new-auto"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white font-semibold rounded-full shadow-lg hover:bg-teal-700 transition duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-teal-300"
+                            >
+                                <FaPlusSquare className="text-xl" />
+                                Add New (Auto ID)
+                            </Link>
+                            <Link
+                                to="../patient-records/new"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-full shadow-lg hover:bg-indigo-700 transition duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-4 focus:ring-indigo-300"
+                            >
+                                <FaPlusSquare className="text-xl" />
+                                Add New (Manual)
+                            </Link>
+                        </div>
                     )}
                 </div>
 
@@ -207,8 +216,8 @@ const PatientRecordList = () => {
                         <tbody className="bg-white divide-y divide-gray-100">
                             {records.length > 0 ? (
                                 records.map((record, index) => (
-                                    <tr 
-                                        key={record._id} 
+                                    <tr
+                                        key={record._id}
                                         className={index % 2 === 0 ? 'bg-white hover:bg-gray-50' : 'bg-gray-50 hover:bg-gray-100'}
                                     >
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -235,7 +244,7 @@ const PatientRecordList = () => {
                                                 <FaEye />
                                                 <span className="hidden sm:inline">View</span>
                                             </Link>
-                                            
+
                                             {/* Edit Button (Conditional) */}
                                             {canCRUD && (
                                                 <>
@@ -281,48 +290,50 @@ const PatientRecordList = () => {
                             )}
                         </tbody>
                     </table>
-                </div>
-            </div>
+                </div >
+            </div >
 
             {/* QR Code Modal */}
-            {qrCodeDataUrl && (
-                <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
-                    <div className="bg-white rounded-3xl shadow-3xl p-8 max-w-md w-full transform transition-transform duration-300 scale-100">
-                        <h3 className="text-2xl font-bold text-indigo-700 mb-4 border-b pb-2">
-                            QR Code for {selectedChild.name}
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-6">
-                            Child No: <span className="font-mono font-semibold text-gray-700">{selectedChild.childNo}</span>
-                        </p>
-                        <img
-                            src={qrCodeDataUrl}
-                            alt="QR code preview"
-                            className="mx-auto mb-6 border-4 border-gray-100 rounded-lg"
-                        />
-                        <div className="flex justify-center gap-4">
-                            <a
-                                href={qrCodeDataUrl}
-                                download={sanitizedFileName}
-                                className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition-colors transform hover:scale-[1.03]"
-                            >
-                                <FaDownload />
-                                Download QR
-                            </a>
-                            <button
-                                onClick={() => {
-                                    setQrCodeDataUrl("");
-                                    setSelectedChild({ name: "", childNo: "" });
-                                }}
-                                className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-gray-300 transition-colors"
-                            >
-                                <FaTimes />
-                                Close
-                            </button>
+            {
+                qrCodeDataUrl && (
+                    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 transition-opacity duration-300">
+                        <div className="bg-white rounded-3xl shadow-3xl p-8 max-w-md w-full transform transition-transform duration-300 scale-100">
+                            <h3 className="text-2xl font-bold text-indigo-700 mb-4 border-b pb-2">
+                                QR Code for {selectedChild.name}
+                            </h3>
+                            <p className="text-sm text-gray-500 mb-6">
+                                Child No: <span className="font-mono font-semibold text-gray-700">{selectedChild.childNo}</span>
+                            </p>
+                            <img
+                                src={qrCodeDataUrl}
+                                alt="QR code preview"
+                                className="mx-auto mb-6 border-4 border-gray-100 rounded-lg"
+                            />
+                            <div className="flex justify-center gap-4">
+                                <a
+                                    href={qrCodeDataUrl}
+                                    download={sanitizedFileName}
+                                    className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition-colors transform hover:scale-[1.03]"
+                                >
+                                    <FaDownload />
+                                    Download QR
+                                </a>
+                                <button
+                                    onClick={() => {
+                                        setQrCodeDataUrl("");
+                                        setSelectedChild({ name: "", childNo: "" });
+                                    }}
+                                    className="inline-flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-full font-semibold shadow-lg hover:bg-gray-300 transition-colors"
+                                >
+                                    <FaTimes />
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 
